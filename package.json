@@ -1,0 +1,21 @@
+{
+  "name": "filecab",
+  "private": true,
+  "packageManager": "pnpm@12.16.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "nx run-many -t dev --projects=extension,api --parallel=3",
+    "dev:web": "nx dev web",
+    "dev:extension": "nx dev extension",
+    "dev:api": "nx dev api",
+    "build": "nx run-many -t build",
+    "typecheck": "nx run-many -t typecheck"
+  },
+  "devDependencies": {
+    "nx": "24.0.3",
+    "typescript": "~5.9.3",
+    "@types/node": "^24.0.0"
+  }
+}
