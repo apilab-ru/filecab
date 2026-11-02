@@ -8,7 +8,7 @@ Provide a provider-independent catalog for anime, films, and TV series. This spe
 
 ### Requirement: Provider adapters and capabilities
 
-The backend SHALL implement independently configurable Shikimori, Smotret Anime, and Kinopoisk Dev adapters. It SHALL expose enabled providers and their supported categories, operations, filters, ordering, lookup namespaces, and language capabilities. Unsupported operations SHALL return a structured capability error rather than silently ignore inputs.
+The backend SHALL implement independently configurable Smotret Anime, and Kinopoisk Dev adapters. It SHALL expose enabled providers and their supported categories, operations, filters, ordering, lookup namespaces, and language capabilities. Unsupported operations SHALL return a structured capability error rather than silently ignore inputs.
 
 An adapter SHALL be enabled only after its configured API contract, credentials, quotas, and usage conditions are verified. Provider availability SHALL NOT be required for manual entry creation or stored-library CRUD.
 
