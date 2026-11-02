@@ -1,5 +1,7 @@
 # Filecab
 
+The [specification](specs/index.md).
+
 ## Setup
 
 Requires Node.js 22.12+ and pnpm 12.16.1. Run these commands from the repository root:
