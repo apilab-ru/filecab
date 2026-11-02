@@ -1,0 +1,55 @@
+# Implementation Baseline Decisions
+
+These decisions complete implementation-plan step 1 and are normative alongside the linked specifications. They define target behavior, not implemented functionality. Future changes must update the affected specifications and requirement checklist before implementation.
+
+## Scope and client storage
+
+Required delivery includes Google accounts, extension replication, sharing, server-managed parser configuration, provider metadata caching, and optional owner-connected Shikimori personal-list synchronization. Connecting an account is optional for an extension guest; delivering these capabilities is required. `plans.md` and the remaining recommendations in Functionality section 13 are excluded from this delivery.
+
+The extension uses durable RxDB/Dexie storage and supports offline library operations. The authenticated website uses online API operations and an in-memory TanStack Query cache; it has no persistent library or offline mutation queue. Network failures preserve unsaved form input and offer retry. Interface preferences may persist independently and are not replicated with the library.
+
+## Progress and provider roles
+
+Progress is a nonnegative JavaScript-safe integer. Exceeding a known positive total produces a warning and remains saveable. Unknown/zero provider totals normalize to null. No progress action automatically changes viewing status.
+
+Catalog defaults are `anime=smotret`, `films=kinopoisk-dev`, and `tv=kinopoisk-dev`, expressed explicitly in deployment configuration. Activation still requires provider verification. A disabled default produces an unavailable-provider error rather than silent switching. Shikimori is exclusively a personal-list connection, not a general catalog or genre provider. Catalog availability never gates manual library CRUD.
+
+## Viewing-source normalization
+
+Each entry has zero or more viewing sources, each with its original URL and normalized URL. Uniqueness is per owner and normalized URL among active entries. Reassignment requires explicit confirmation and an atomic version-checked change retaining both entries.
+
+Generic normalization parses an absolute HTTP(S) URL, rejects embedded credentials, lowercases scheme/hostname, and applies standard URL serialization including default-port removal. Preserve scheme differences, path case, trailing slash, query parameters and their order, and fragments because their meaning is unknown. Do not equate HTTP with HTTPS or remove `www` globally. Exact matching uses the resulting serialized URL.
+
+Only fixture-verified host/path adapters may additionally normalize episode paths to title paths or remove specifically allowlisted tracking parameters. Preserve the original URL. Version the normalization policy; changing it must preview collisions and apply a migration rather than silently transferring ownership. Home/search URLs are optional viewing sources and do not prove media identity.
+
+## Backup extension
+
+Export remains a flat array named `backup.json`. A per-entry `_filecab` object is required in new exports and optional in legacy imports. It contains `schemaVersion: 1`, immutable `entryId`, boolean `manual`, `sources` containing every original/normalized URL and normalization-policy version, `snapshot` containing available localized metadata/provenance, and `legacy` containing bounded unresolved/support data. `manual` is true exactly when no internal catalog association exists. Import validates agreement between extension and legacy fields instead of choosing a conflicting value silently.
+
+The legacy URL field projects the first source in stored order, or the legacy empty representation when there are no sources. Additional sources round-trip through `_filecab.sources`. Preserve source order. `dateAd` maps to `createdAt`, `dateChange` to `updatedAt`, and catalog-backed `item.id` retains its internal catalog meaning. Manual entries omit catalog `item` rather than invent an ID. Unsupported future extension versions produce an actionable validation error; no replacement occurs. Existing clients are not promised support for this extension or manual entries.
+
+## Mutation and clearing semantics
+
+PATCH omission means unchanged. Explicit null clears optional catalog association, status, and nullable metadata where that operation permits it; it does not clear required category/title/identity/version fields. Empty notes are an explicit empty string. Rating zero clears personal rating; progress zero resets progress. An empty source array removes all viewing sources. Server-owned timestamps, ownership, and catalog provenance cannot be overwritten through ordinary entry PATCH. Snapshot refresh is a separate catalog operation.
+
+Setting a catalog association requires verified resolution and duplicate/category conflict checks. Detaching it preserves the snapshot, entry UUID, and user fields. Clearing the association requires a valid manual title. Source changes and entry changes commit together; no-op edits do not change user modification timestamps.
+
+## Sessions
+
+Initial application access-token lifetime is 15 minutes. Website sessions and extension refresh-session families have a 30-day absolute lifetime and 7-day idle limit, whichever expires first. Refresh rotates credentials and cannot extend absolute expiry. Login state/nonce and extension attempt binding expire after 10 minutes; extension exchange codes expire after 60 seconds and are single-use. Application lifetimes are validated server configuration; Google/provider token expiry follows the issuer response.
+
+Clients serialize refresh per session; the backend atomically consumes and replaces each refresh credential. Reuse of a consumed credential revokes its session family and requires login. Concurrent duplicate refresh attempts are treated as replay, not issued multiple successors; a lost refresh response may therefore require login. Website cookies use HttpOnly, Secure in production, SameSite=Lax, and CSRF validation on mutations. Session tests must cover idle/absolute expiry, rotation, replay, concurrent requests, logout, and all-session revocation.
+
+## Replication batch semantics
+
+Authenticate and validate the entire bounded push batch before applying writes. Any structurally invalid/unauthorized row rejects the batch with indexed validation errors and commits no rows. Reject duplicate document IDs within a push batch. An ownership violation must not disclose another owner's document.
+
+For a valid batch, evaluate assumed-master-state comparisons under one transaction and owner serialization. Version conflicts leave their rows unchanged and return current owner-scoped server documents using the installed RxDB protocol. Non-conflicting rows commit atomically together with change tracking; a database failure rolls back all accepted rows. Retrying accepted rows must converge without additional semantic writes. Retain rejected local intent durably outside the server-master result so it remains reviewable. Wire shape and batch limit must be documented against the installed RxDB version during steps 3 and 9.
+
+## Installment boundaries
+
+A provider's independently identified series, season, film, special, remake, and edition remain distinct catalog records. Format is separate from library category; an anime movie remains anime. A provider-wide series is not equivalent to another provider's season. Relationships describe links, never automatic merges. Cross-provider equivalence requires a trusted explicit reference or verified crosswalk with compatible granularity; title similarity and numeric equality are insufficient. Unknown installment granularity remains unresolved. Rich rewatch history and automated installment grouping are outside this baseline.
+
+## Evidence and external dependencies
+
+The requirement checklist records pending implementation, code, verification evidence, and blockers separately. Provider schema/version, credentials, permissions, quotas, and usage conditions must be verified during their integration steps; this document makes no live availability claims. Google consent configuration and provider credentials are activation dependencies, not reasons to mark fixture-tested integrations complete.

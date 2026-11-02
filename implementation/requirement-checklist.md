@@ -1,0 +1,280 @@
+# Requirement Delivery Checklist
+
+Status: implementation pending. Step 1 establishes this checklist; it does not implement the requirements. Each row is a checkable delivery unit. A named requirement includes every clause under that heading.
+
+For each completed row, replace Pending with Complete and record actual code paths, test names/results, and any remaining blocker. Use Blocked only with a concrete dependency. Planned code areas below are targets, not evidence. `—` means no implementation or verification evidence recorded. Provider fixtures and live verification must be recorded separately.
+
+Delivery steps refer to [Implementation Plan](implementation-plan.md). Baseline choices are defined in [Baseline Decisions](baseline-decisions.md). `plans.md` and optional Functionality section 13 recommendations are excluded.
+
+## Product requirements
+
+| Done | Requirement | Steps | Planned code area | Status | Code / verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | [NAV-01](../specs/functionality.md#2-users-surfaces-and-navigation) | 10, 11, 16 | packages/library; apps/web; apps/extension | Pending | — | — |
+| [ ] | [NAV-02](../specs/functionality.md#2-users-surfaces-and-navigation) | 10, 11, 16 | packages/library; apps/web; apps/extension | Pending | — | — |
+| [ ] | [NAV-03](../specs/functionality.md#2-users-surfaces-and-navigation) | 10, 11, 16 | packages/library; apps/web; apps/extension | Pending | — | — |
+| [ ] | [NAV-04](../specs/functionality.md#2-users-surfaces-and-navigation) | 10, 11, 16 | packages/library; apps/web; apps/extension | Pending | — | — |
+| [ ] | [NAV-05](../specs/functionality.md#2-users-surfaces-and-navigation) | 10, 11, 16 | packages/library; apps/web; apps/extension | Pending | — | — |
+| [ ] | [MODEL-01](../specs/functionality.md#3-domain-identity-and-validation) | 3, 4, 11 | packages/contracts; packages/library; apps/api | Pending | — | — |
+| [ ] | [MODEL-02](../specs/functionality.md#3-domain-identity-and-validation) | 3, 4, 11 | packages/contracts; packages/library; apps/api | Pending | — | — |
+| [ ] | [MODEL-03](../specs/functionality.md#3-domain-identity-and-validation) | 3, 4, 11 | packages/contracts; packages/library; apps/api | Pending | — | — |
+| [ ] | [MODEL-04](../specs/functionality.md#3-domain-identity-and-validation) | 3, 4, 11 | packages/contracts; packages/library; apps/api | Pending | — | — |
+| [ ] | [MODEL-05](../specs/functionality.md#3-domain-identity-and-validation) | 3, 4, 11 | packages/contracts; packages/library; apps/api | Pending | — | — |
+| [ ] | [MODEL-06](../specs/functionality.md#3-domain-identity-and-validation) | 3, 4, 11 | packages/contracts; packages/library; apps/api | Pending | — | — |
+| [ ] | [MODEL-07](../specs/functionality.md#3-domain-identity-and-validation) | 3, 4, 11 | packages/contracts; packages/library; apps/api | Pending | — | — |
+| [ ] | [MODEL-08](../specs/functionality.md#3-domain-identity-and-validation) | 3, 4, 11 | packages/contracts; packages/library; apps/api | Pending | — | — |
+| [ ] | [PAGE-01](../specs/functionality.md#4-page-extraction-and-matching) | 16 | apps/extension; apps/api | Pending | — | — |
+| [ ] | [PAGE-02](../specs/functionality.md#4-page-extraction-and-matching) | 16 | apps/extension; apps/api | Pending | — | — |
+| [ ] | [PAGE-03](../specs/functionality.md#4-page-extraction-and-matching) | 16 | apps/extension; apps/api | Pending | — | — |
+| [ ] | [PAGE-04](../specs/functionality.md#4-page-extraction-and-matching) | 16 | apps/extension; apps/api | Pending | — | — |
+| [ ] | [MATCH-01](../specs/functionality.md#4-page-extraction-and-matching) | 4, 15, 16 | packages/library; apps/api | Pending | — | — |
+| [ ] | [MATCH-02](../specs/functionality.md#4-page-extraction-and-matching) | 4, 15, 16 | packages/library; apps/api | Pending | — | — |
+| [ ] | [MATCH-03](../specs/functionality.md#4-page-extraction-and-matching) | 4, 15, 16 | packages/library; apps/api | Pending | — | — |
+| [ ] | [SEARCH-01](../specs/functionality.md#5-catalog-search-editing-and-saving) | 12–15 | packages/library; apps/api | Pending | — | — |
+| [ ] | [SEARCH-02](../specs/functionality.md#5-catalog-search-editing-and-saving) | 12–15 | packages/library; apps/api | Pending | — | — |
+| [ ] | [SEARCH-03](../specs/functionality.md#5-catalog-search-editing-and-saving) | 12–15 | packages/library; apps/api | Pending | — | — |
+| [ ] | [SEARCH-04](../specs/functionality.md#5-catalog-search-editing-and-saving) | 12–15 | packages/library; apps/api | Pending | — | — |
+| [ ] | [EDIT-01](../specs/functionality.md#5-catalog-search-editing-and-saving) | 7, 8, 11 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [EDIT-02](../specs/functionality.md#5-catalog-search-editing-and-saving) | 7, 8, 11 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [EDIT-03](../specs/functionality.md#5-catalog-search-editing-and-saving) | 7, 8, 11 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [EDIT-04](../specs/functionality.md#5-catalog-search-editing-and-saving) | 7, 8, 11 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [LIB-01](../specs/functionality.md#6-library-browsing) | 10, 11 | packages/library | Pending | — | — |
+| [ ] | [LIB-02](../specs/functionality.md#6-library-browsing) | 10, 11 | packages/library | Pending | — | — |
+| [ ] | [LIB-03](../specs/functionality.md#6-library-browsing) | 10, 11 | packages/library | Pending | — | — |
+| [ ] | [LIB-04](../specs/functionality.md#6-library-browsing) | 10, 11 | packages/library | Pending | — | — |
+| [ ] | [LIB-05](../specs/functionality.md#6-library-browsing) | 10, 11 | packages/library | Pending | — | — |
+| [ ] | [LIB-06](../specs/functionality.md#6-library-browsing) | 10, 11 | packages/library | Pending | — | — |
+| [ ] | [LIB-07](../specs/functionality.md#6-library-browsing) | 10, 11 | packages/library | Pending | — | — |
+| [ ] | [DATA-01](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11 | apps/api; apps/extension; apps/web | Pending | — | — |
+| [ ] | [DATA-02](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11 | apps/api; apps/extension; apps/web | Pending | — | — |
+| [ ] | [DATA-03](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11 | apps/api; apps/extension; apps/web | Pending | — | — |
+| [ ] | [DATA-04](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11 | apps/api; apps/extension; apps/web | Pending | — | — |
+| [ ] | [DATA-05](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11 | apps/api; apps/extension; apps/web | Pending | — | — |
+| [ ] | [DATA-06](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11 | apps/api; apps/extension; apps/web | Pending | — | — |
+| [ ] | [BACKUP-01](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [BACKUP-02](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [BACKUP-03](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [BACKUP-04](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [BACKUP-05](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [MIG-01](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [MIG-02](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [MIG-03](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [MIG-04](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [MIG-05](../specs/functionality.md#8-backup-restore-and-migration) | 17 | packages/library; apps/api; apps/extension | Pending | — | — |
+| [ ] | [API-01](../specs/functionality.md#9-backend-and-shared-contracts) | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api | Pending | — | — |
+| [ ] | [API-02](../specs/functionality.md#9-backend-and-shared-contracts) | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api | Pending | — | — |
+| [ ] | [API-03](../specs/functionality.md#9-backend-and-shared-contracts) | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api | Pending | — | — |
+| [ ] | [API-04](../specs/functionality.md#9-backend-and-shared-contracts) | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api | Pending | — | — |
+| [ ] | [API-05](../specs/functionality.md#9-backend-and-shared-contracts) | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api | Pending | — | — |
+| [ ] | [API-06](../specs/functionality.md#9-backend-and-shared-contracts) | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api | Pending | — | — |
+| [ ] | [API-07](../specs/functionality.md#9-backend-and-shared-contracts) | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api | Pending | — | — |
+| [ ] | [LANG-01](../specs/functionality.md#10-english-and-russian) | 3, 10–15 | packages/library; packages/ui; apps/api | Pending | — | — |
+| [ ] | [LANG-02](../specs/functionality.md#10-english-and-russian) | 3, 10–15 | packages/library; packages/ui; apps/api | Pending | — | — |
+| [ ] | [LANG-03](../specs/functionality.md#10-english-and-russian) | 3, 10–15 | packages/library; packages/ui; apps/api | Pending | — | — |
+| [ ] | [LANG-04](../specs/functionality.md#10-english-and-russian) | 3, 10–15 | packages/library; packages/ui; apps/api | Pending | — | — |
+| [ ] | [LANG-05](../specs/functionality.md#10-english-and-russian) | 3, 10–15 | packages/library; packages/ui; apps/api | Pending | — | — |
+| [ ] | [LANG-06](../specs/functionality.md#10-english-and-russian) | 3, 10–15 | packages/library; packages/ui; apps/api | Pending | — | — |
+| [ ] | [PLAT-01](../specs/functionality.md#11-platform-privacy-and-usability) | 5, 6, 16 | apps/extension; apps/api | Pending | — | — |
+| [ ] | [PLAT-02](../specs/functionality.md#11-platform-privacy-and-usability) | 5, 6, 16 | apps/extension; apps/api | Pending | — | — |
+| [ ] | [PLAT-03](../specs/functionality.md#11-platform-privacy-and-usability) | 5, 6, 16 | apps/extension; apps/api | Pending | — | — |
+| [ ] | [UX-01](../specs/functionality.md#11-platform-privacy-and-usability) | 10, 11, 21 | packages/ui; packages/library | Pending | — | — |
+
+## Acceptance scenarios
+
+| Done | Scenario | Steps | Status | Verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- |
+| [ ] | [AC01](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC02](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC03](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC04](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC05](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC06](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC07](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC08](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC09](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC10](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC11](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC12](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC13](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC14](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC15](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC16](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC17](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC18](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC19](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC20](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC21](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC22](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC23](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC24](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+| [ ] | [AC25](../specs/functionality.md#12-release-acceptance-and-defect-resolution) | 21 (and owning implementation steps above) | Pending | — | — |
+
+## Backend
+
+| Done | Requirement | Step | Planned code area | Status | Code / verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | [Google authentication](../specs/backend.md#requirement-google-authentication) | 6 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Website and extension login](../specs/backend.md#requirement-website-and-extension-login) | 6 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Session lifecycle](../specs/backend.md#requirement-session-lifecycle) | 6 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Independent entry identity](../specs/backend.md#requirement-independent-entry-identity) | 3 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Library fields](../specs/backend.md#requirement-library-fields) | 3 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Ownership and duplicate protection](../specs/backend.md#requirement-ownership-and-duplicate-protection) | 4 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Multiple viewing links](../specs/backend.md#requirement-multiple-viewing-links) | 4 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Create, read, update, and delete](../specs/backend.md#requirement-create-read-update-and-delete) | 7 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Delete and undo](../specs/backend.md#requirement-delete-and-undo) | 7 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Retrieve the complete owner library](../specs/backend.md#requirement-retrieve-the-complete-owner-library) | 7 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Client-side search, filters, sorting, and pagination](../specs/backend.md#requirement-client-side-search-filters-sorting-and-pagination) | 11 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Provider adapters](../specs/backend.md#requirement-provider-adapters) | 12 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Search contract](../specs/backend.md#requirement-search-contract) | 12 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Catalog identity and metadata refresh](../specs/backend.md#requirement-catalog-identity-and-metadata-refresh) | 12 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Genres](../specs/backend.md#requirement-genres) | 12 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Candidate identification](../specs/backend.md#requirement-candidate-identification) | 16 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Manual entry reconciliation](../specs/backend.md#requirement-manual-entry-reconciliation) | 15 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Durable local extension state](../specs/backend.md#requirement-durable-local-extension-state) | 8 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [RxDB pull and push](../specs/backend.md#requirement-rxdb-pull-and-push) | 9 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Commit-safe change tracking](../specs/backend.md#requirement-commit-safe-change-tracking) | 4 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Conflict recovery](../specs/backend.md#requirement-conflict-recovery) | 9 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Sync lifecycle and retention](../specs/backend.md#requirement-sync-lifecycle-and-retention) | 9 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Guest adoption](../specs/backend.md#requirement-guest-adoption) | 9 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Sharing controls](../specs/backend.md#requirement-sharing-controls) | 18 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Shared data projection](../specs/backend.md#requirement-shared-data-projection) | 18 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Shared freshness and privacy](../specs/backend.md#requirement-shared-freshness-and-privacy) | 18 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Export and import formats](../specs/backend.md#requirement-export-and-import-formats) | 17 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Preview and atomic replacement](../specs/backend.md#requirement-preview-and-atomic-replacement) | 17 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Locale-aware API](../specs/backend.md#requirement-locale-aware-api) | 12 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Preserve user text](../specs/backend.md#requirement-preserve-user-text) | 3 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Declarative extraction configuration](../specs/backend.md#requirement-declarative-extraction-configuration) | 16 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Configuration compatibility and rollback](../specs/backend.md#requirement-configuration-compatibility-and-rollback) | 16 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Page data minimization](../specs/backend.md#requirement-page-data-minimization) | 16 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Validated, versioned contracts](../specs/backend.md#requirement-validated-versioned-contracts) | 5 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Actionable errors](../specs/backend.md#requirement-actionable-errors) | 5 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Provider resilience and cache](../specs/backend.md#requirement-provider-resilience-and-cache) | 12 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Secure operations](../specs/backend.md#requirement-secure-operations) | 2, 5, 21 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Swagger API documentation](../specs/backend.md#requirement-swagger-api-documentation) | 5 | apps/api; packages/contracts; client adapters | Pending | — | — |
+| [ ] | [Cross-cutting verification](../specs/backend.md#verification) | 21 | All applications | Pending | — | — |
+
+## Catalog
+
+| Done | Requirement | Step | Planned code area | Status | Code / verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | [Provider adapters and capabilities](../specs/catalog-spec.md#requirement-provider-adapters-and-capabilities) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Routing and selection](../specs/catalog-spec.md#requirement-routing-and-selection) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Search contract](../specs/catalog-spec.md#requirement-search-contract) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Pagination integrity](../specs/catalog-spec.md#requirement-pagination-integrity) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Identity and cross-provider references](../specs/catalog-spec.md#requirement-identity-and-cross-provider-references) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Details and safe enrichment](../specs/catalog-spec.md#requirement-details-and-safe-enrichment) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Normalized media metadata](../specs/catalog-spec.md#requirement-normalized-media-metadata) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Localization](../specs/catalog-spec.md#requirement-localization) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Genres](../specs/catalog-spec.md#requirement-genres) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Provider resilience and metadata cache](../specs/catalog-spec.md#requirement-provider-resilience-and-metadata-cache) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Client and API boundaries](../specs/catalog-spec.md#requirement-client-and-api-boundaries) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+| [ ] | [Verification](../specs/catalog-spec.md#requirement-verification) | 12 | apps/api catalog; packages/contracts | Pending | — | — |
+
+## External list synchronization
+
+| Done | Requirement | Step | Planned code area | Status | Code / verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | [Provider abstraction](../specs/user-list-sync-spec.md#requirement-provider-abstraction) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Separation from catalog providers](../specs/user-list-sync-spec.md#requirement-separation-from-catalog-providers) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Account connection](../specs/user-list-sync-spec.md#requirement-account-connection) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Common sync records](../specs/user-list-sync-spec.md#requirement-common-sync-records) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Identity resolution](../specs/user-list-sync-spec.md#requirement-identity-resolution) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Initial synchronization](../specs/user-list-sync-spec.md#requirement-initial-synchronization) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Field policy and privacy](../specs/user-list-sync-spec.md#requirement-field-policy-and-privacy) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Three-way reconciliation](../specs/user-list-sync-spec.md#requirement-three-way-reconciliation) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Scheduling and asynchronous writes](../specs/user-list-sync-spec.md#requirement-scheduling-and-asynchronous-writes) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Retry safety and feedback-loop prevention](../specs/user-list-sync-spec.md#requirement-retry-safety-and-feedback-loop-prevention) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Complete scans and missing records](../specs/user-list-sync-spec.md#requirement-complete-scans-and-missing-records) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Explicit deletion policy](../specs/user-list-sync-spec.md#requirement-explicit-deletion-policy) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Pause, disconnect, and authorization loss](../specs/user-list-sync-spec.md#requirement-pause-disconnect-and-authorization-loss) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [User-visible state and API documentation](../specs/user-list-sync-spec.md#requirement-user-visible-state-and-api-documentation) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+| [ ] | [Reliability verification](../specs/user-list-sync-spec.md#requirement-reliability-verification) | 19 | apps/api list-sync; packages/library settings | Pending | — | — |
+
+## Smotret catalog adapter
+
+| Done | Requirement | Step | Planned code area | Status | Code / verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | [Configuration and provider identity](../specs/integration-smotret-anime-spec.md#requirement-configuration-and-provider-identity) | 13 | apps/api catalog/smotret | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Series search](../specs/integration-smotret-anime-spec.md#requirement-series-search) | 13 | apps/api catalog/smotret | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [External-reference separation](../specs/integration-smotret-anime-spec.md#requirement-external-reference-separation) | 13 | apps/api catalog/smotret | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Titles and descriptions](../specs/integration-smotret-anime-spec.md#requirement-titles-and-descriptions) | 13 | apps/api catalog/smotret | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Media and episode metadata](../specs/integration-smotret-anime-spec.md#requirement-media-and-episode-metadata) | 13 | apps/api catalog/smotret | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Genre normalization](../specs/integration-smotret-anime-spec.md#requirement-genre-normalization) | 13 | apps/api catalog/smotret | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Persistence and pagination integrity](../specs/integration-smotret-anime-spec.md#requirement-persistence-and-pagination-integrity) | 13 | apps/api catalog/smotret | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Failure handling](../specs/integration-smotret-anime-spec.md#requirement-failure-handling) | 13 | apps/api catalog/smotret | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Verification and documentation](../specs/integration-smotret-anime-spec.md#requirement-verification-and-documentation) | 13 | apps/api catalog/smotret | Pending | — | Provider contract/credentials/usage verification required before activation |
+
+## Kinopoisk catalog adapter
+
+| Done | Requirement | Step | Planned code area | Status | Code / verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | [Configuration and scope](../specs/integration-kinopoisk-spec.md#requirement-configuration-and-scope) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Text search and filtered discovery](../specs/integration-kinopoisk-spec.md#requirement-text-search-and-filtered-discovery) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Film and TV classification](../specs/integration-kinopoisk-spec.md#requirement-film-and-tv-classification) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Detail and external-reference lookup](../specs/integration-kinopoisk-spec.md#requirement-detail-and-external-reference-lookup) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Metadata normalization](../specs/integration-kinopoisk-spec.md#requirement-metadata-normalization) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Episode totals](../specs/integration-kinopoisk-spec.md#requirement-episode-totals) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Genres, filters, and ordering](../specs/integration-kinopoisk-spec.md#requirement-genres-filters-and-ordering) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Pagination](../specs/integration-kinopoisk-spec.md#requirement-pagination) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Localization and enrichment](../specs/integration-kinopoisk-spec.md#requirement-localization-and-enrichment) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Authentication failures and quotas](../specs/integration-kinopoisk-spec.md#requirement-authentication-failures-and-quotas) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Contract verification](../specs/integration-kinopoisk-spec.md#requirement-contract-verification) | 14 | apps/api catalog/kinopoisk | Pending | — | Provider contract/credentials/usage verification required before activation |
+
+## Shikimori list adapter
+
+| Done | Requirement | Step | Planned code area | Status | Code / verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | [Independent OAuth connection](../specs/integration-shikimori-spec.md#requirement-independent-oauth-connection) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Token lifecycle](../specs/integration-shikimori-spec.md#requirement-token-lifecycle) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Anime-list reading](../specs/integration-shikimori-spec.md#requirement-anime-list-reading) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Verified identity mapping](../specs/integration-shikimori-spec.md#requirement-verified-identity-mapping) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Bidirectional field mapping](../specs/integration-shikimori-spec.md#requirement-bidirectional-field-mapping) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Remote list mutations](../specs/integration-shikimori-spec.md#requirement-remote-list-mutations) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Reconciliation and consistency](../specs/integration-shikimori-spec.md#requirement-reconciliation-and-consistency) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Scheduling, limits, and failures](../specs/integration-shikimori-spec.md#requirement-scheduling-limits-and-failures) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Connection management and disconnect](../specs/integration-shikimori-spec.md#requirement-connection-management-and-disconnect) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+| [ ] | [Documentation and verification](../specs/integration-shikimori-spec.md#requirement-documentation-and-verification) | 20 | apps/api list-sync/shikimori; packages/library settings | Pending | — | Provider contract/credentials/usage verification required before activation |
+
+## Architecture and stack constraints
+
+Each row covers the complete linked section, including its table rows, bullets, and normative paragraphs. Optional Brewfile inclusion and optional injected UI remain conditional; their stated constraints apply if introduced.
+
+| Done | Constraint group | Steps | Planned code area | Status | Code / verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- | --- |
+| [ ] | [Scope](../specs/stack.md#scope) | 1, 3 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Core stack](../specs/stack.md#core-stack) | 2–10 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Repository structure](../specs/stack.md#repository-structure) | 2 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Shared UI components](../specs/stack.md#shared-ui-components) | 10 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Styling convention](../specs/stack.md#styling-convention) | 10 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Extension surfaces](../specs/stack.md#extension-surfaces) | 8, 10, 16 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Data ownership and database usage](../specs/stack.md#data-ownership-and-database-usage) | 4, 7–9, 11 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Extension persistence and replication](../specs/stack.md#extension-persistence-and-replication) | 8–9 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Website server state](../specs/stack.md#website-server-state) | 6, 11 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Read-only sharing through unlisted links](../specs/stack.md#read-only-sharing-through-unlisted-links) | 18 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Temporary UI state and shared packages](../specs/stack.md#temporary-ui-state-and-shared-packages) | 3, 10–11 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Identity and catalog integration](../specs/stack.md#identity-and-catalog-integration) | 3, 12–15 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Parser configuration](../specs/stack.md#parser-configuration) | 16 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Google authentication](../specs/stack.md#google-authentication) | 6 | Relevant apps/packages | Pending | — | — |
+| [ ] | [Local development on macOS](../specs/stack.md#local-development-on-macos) | 2 | Relevant apps/packages | Pending | — | — |
+
+## Baseline decision constraints
+
+| Done | Decision | Steps | Status | Code / verification evidence | Blocker |
+| --- | --- | --- | --- | --- | --- |
+| [ ] | [Scope and client storage](baseline-decisions.md#scope-and-client-storage) | 3–21 as applicable | Pending | — | — |
+| [ ] | [Progress and provider roles](baseline-decisions.md#progress-and-provider-roles) | 3–21 as applicable | Pending | — | — |
+| [ ] | [Viewing-source normalization](baseline-decisions.md#viewing-source-normalization) | 3–21 as applicable | Pending | — | — |
+| [ ] | [Backup extension](baseline-decisions.md#backup-extension) | 3–21 as applicable | Pending | — | — |
+| [ ] | [Mutation and clearing semantics](baseline-decisions.md#mutation-and-clearing-semantics) | 3–21 as applicable | Pending | — | — |
+| [ ] | [Sessions](baseline-decisions.md#sessions) | 3–21 as applicable | Pending | — | — |
+| [ ] | [Replication batch semantics](baseline-decisions.md#replication-batch-semantics) | 3–21 as applicable | Pending | — | — |
+| [ ] | [Installment boundaries](baseline-decisions.md#installment-boundaries) | 3–21 as applicable | Pending | — | — |
+| [ ] | [Evidence and external dependencies](baseline-decisions.md#evidence-and-external-dependencies) | 3–21 as applicable | Pending | — | — |
+
+## Scope and delivery rules
+
+- [ ] [Release scope and product defaults](../specs/functionality.md#11-release-scope): implement the aligned baseline, including anime/films/TV and bilingual surfaces; steps 3–21. Evidence: pending.
+- [ ] [Categories and statuses](../specs/functionality.md#31-categories-and-statuses): preserve stable domain keys and distinct media format; steps 3 and 11. Evidence: pending.
+- [ ] [Required defect resolutions](../specs/functionality.md#121-problems-in-the-source-and-required-resolutions): verify each listed problem through its mapped requirement; step 21. Evidence: pending.
+- [ ] [Delivery and evidence](../specs/functionality.md#122-delivery-order): follow foundation-first sequencing and record actual implementation traceability; all steps. Evidence: pending.
+- [ ] [Contributing](../specs/contributing.md): update affected specifications before each implementation change; all steps. Evidence: pending.
