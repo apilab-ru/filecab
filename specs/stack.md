@@ -156,11 +156,11 @@ Share UI components, plain contracts, and domain rules between clients. Keep ext
 - Catalog adapters and page parsers are separate concerns.
 - Exact verified identities can recognize existing entries; title similarity should produce suggestions rather than automatic merges.
 
-Catalog providers and the precise season/installation model remain product decisions.
+Catalog defaults are Smotret for anime and Kinopoisk Dev for films/TV; Shikimori is exclusively an optional personal-list connection. Distinct installments remain separate identities; relationships shall not automatically merge seasons, films, specials, remakes, or editions.
 
 ## Parser configuration
 
-Keep the extraction engine bundled with the extension. NestJS may serve narrow, versioned configuration containing hostname mappings, selectors, allowed attributes, and fixed fallbacks.
+Keep the extraction engine bundled with the extension. NestJS shall serve narrow, versioned configuration containing hostname mappings, selectors, allowed attributes, and fixed fallbacks.
 
 Cache the last valid configuration and bundle defaults for offline operation. Do not fetch executable JavaScript, evaluate expressions, or build an interpreter for remote commands. Remote JSON is not automatically policy-compliant; new capabilities and permissions can still require an extension release and store review.
 

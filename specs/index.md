@@ -10,4 +10,3 @@
 - [Shikimori User List Synchronization](integration-shikimori-spec.md)
 - [Smotret Anime Integration](integration-smotret-anime-spec.md)
 - [Plans](plans.md)
-- [Implementation Plan](implementation-plan.md)

@@ -8,13 +8,15 @@ Provide a provider-independent catalog for anime, films, and TV series. This spe
 
 ### Requirement: Provider adapters and capabilities
 
-The backend SHALL implement independently configurable Smotret Anime, and Kinopoisk Dev adapters. It SHALL expose enabled providers and their supported categories, operations, filters, ordering, lookup namespaces, and language capabilities. Unsupported operations SHALL return a structured capability error rather than silently ignore inputs.
+The backend SHALL implement independently configurable Smotret Anime and Kinopoisk Dev catalog adapters. It SHALL expose enabled providers and their supported categories, operations, filters, ordering, lookup namespaces, and language capabilities. Unsupported operations SHALL return a structured capability error rather than silently ignore inputs.
+
+Shikimori SHALL be a personal-list synchronization provider only, as defined in its integration specification; it SHALL NOT be advertised for catalog search, browsing, or genre refresh.
 
 An adapter SHALL be enabled only after its configured API contract, credentials, quotas, and usage conditions are verified. Provider availability SHALL NOT be required for manual entry creation or stored-library CRUD.
 
 ### Requirement: Routing and selection
 
-Catalog requests SHALL accept an optional explicit provider and otherwise use the configured default for the category. Defaults SHALL be explicit deployment configuration. Search SHALL use one selected provider; automatic aggregation and silent provider switching are not required. Clients SHALL be able to select another enabled provider after a failure.
+Catalog requests SHALL accept an optional explicit provider and otherwise use the configured default for the category. Defaults SHALL be explicit deployment configuration: `anime=smotret`, `films=kinopoisk-dev`, and `tv=kinopoisk-dev`. Disabled defaults SHALL return an unavailable-provider result; they SHALL NOT silently switch providers. Search SHALL use one selected provider; automatic aggregation and silent provider switching are not required. Clients SHALL be able to select another enabled provider after a failure.
 
 Provider routing SHALL NOT alter Google authentication, entry ownership, or extension replication.
 

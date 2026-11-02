@@ -40,7 +40,7 @@ An entry SHALL retain category, user title, available catalog snapshot, status, 
 
 Category SHALL be `anime`, `films`, or `tv`. Media format SHALL remain separate from category. Distinct seasons, movies, specials, editions, and remakes SHALL NOT be merged solely because their names are similar.
 
-Status SHALL be `planned`, `process`, `complete`, `drop`, `hide`, or null. Rating SHALL be an integer from 0 to 10, where 0 means unrated. Progress SHALL be a nonnegative integer. Unknown episode totals SHALL be null. Exceeding a known total SHALL produce a warning without silently truncating progress. Reaching the total SHALL NOT automatically change status.
+Status SHALL be `planned`, `process`, `complete`, `drop`, `hide`, or null. Rating SHALL be an integer from 0 to 10, where 0 means unrated. Progress SHALL be a nonnegative safe integer. Unknown episode totals SHALL be null. Exceeding a known total SHALL produce a warning without silently truncating progress. Reaching the total SHALL NOT automatically change status.
 
 ### Requirement: Ownership and duplicate protection
 
@@ -60,7 +60,7 @@ Within one account, a normalized title-level source association SHALL belong to 
 
 ### Requirement: Create, read, update, and delete
 
-The backend SHALL provide owner-scoped entry creation, retrieval, listing, updates, deletion, and restoration. Updates and deletes SHALL require an expected server version. Changes to an entry and its source associations SHALL commit atomically.
+The backend SHALL provide owner-scoped entry creation, retrieval, listing, updates, deletion, and restoration. Updates and deletes SHALL require an expected server version. Explicit field-clearing and mixed replication-batch behavior SHALL be documented and tested. Changes to an entry and its source associations SHALL commit atomically.
 
 User edits SHALL update the modification timestamp without changing creation time. Catalog refresh alone SHALL NOT be presented as a user edit. Client timestamps SHALL NOT determine replication order.
 
@@ -94,7 +94,7 @@ Changing search, filters, sorting, or page size SHALL reset pagination to page 1
 
 ### Requirement: Provider adapters
 
-The backend SHALL expose a common catalog interface through independently configurable provider adapters. Anime integration SHALL support Smotret Anime and Shikimori adapters; film/TV integration SHALL support a Kinopoisk Dev adapter. Only adapters verified against current provider contracts, credentials, and applicable usage conditions SHALL be enabled. A capability response SHALL identify enabled providers and supported operations/filters/locales.
+The backend SHALL expose a common catalog interface through independently configurable provider adapters. Anime catalog integration SHALL support Smotret Anime; film/TV integration SHALL support Kinopoisk Dev. Shikimori SHALL serve optional owner-connected personal-list synchronization only, as required by the User List Synchronization and Shikimori specifications; it SHALL NOT serve general catalog search/browse/genre refresh. Only adapters verified against current provider contracts, credentials, and applicable usage conditions SHALL be enabled. A capability response SHALL identify enabled providers and supported operations/filters/locales.
 
 Search SHALL route to the configured provider rather than assume automatic multi-provider aggregation. Provider configuration SHALL NOT affect manual-entry availability. Provider keys SHALL remain server-side; key rotation SHALL NOT be used to evade quotas.
 
@@ -184,7 +184,7 @@ Shared responses SHALL represent server-committed data only. Responses SHALL use
 
 ### Requirement: Export and import formats
 
-The system SHALL export library data with user fields, identities, links, snapshots, timestamps, and unresolved legacy information. It SHALL accept legacy flat entry arrays and grouped `data` shapes through explicit adapters. New extension fields SHALL NOT overload legacy meanings, especially catalog `item.id`.
+The system SHALL export library data with user fields, identities, links, snapshots, timestamps, and unresolved legacy information. It SHALL accept legacy flat entry arrays and grouped `data` shapes through explicit adapters. New extension fields SHALL NOT overload legacy meanings, especially catalog `item.id`. New exports SHALL use a versioned per-entry `_filecab` object retaining all sources and provenance.
 
 The importer SHALL validate JSON shape, categories, enums, bounds, dates, URL schemes, duplicate IDs, catalog duplicates, and source conflicts. The initial maximum import size SHALL be 10 MiB. Unknown legacy data SHALL be retained in bounded compatibility metadata where safe.
 
