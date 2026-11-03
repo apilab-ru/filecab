@@ -28,7 +28,14 @@ See the [extension README](apps/extension/README.md) for loading the extension i
 ```sh
 pnpm build
 pnpm typecheck
+pnpm format        # Format supported source, config and documentation
+pnpm format:check  # Check formatting without changing files
 ```
+
+The root install enables the Husky pre-commit hook. It formats staged files with
+Prettier through lint-staged, preserving unstaged edits. Run `pnpm prepare` to
+reinstall the hook if needed. Generated files, lockfiles and local environment
+files are excluded; CI runs `pnpm format:check`.
 
 Nx also accepts individual targets: `pnpm exec nx build web`, `pnpm exec nx build extension`, `pnpm exec nx build api`, and `pnpm exec nx typecheck library`. Libraries have build and typecheck targets too.
 
