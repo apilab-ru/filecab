@@ -26,13 +26,22 @@
     "db:status": "pnpm --filter @filecab/api db:status",
     "db:start": "brew services run postgresql@17",
     "db:stop": "brew services stop postgresql@17",
-    "db:service-status": "brew services info postgresql@17"
+    "db:service-status": "brew services info postgresql@17",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "9.1.7",
+    "lint-staged": "^16.4.0",
     "nx": "24.0.3",
+    "prettier": "3.9.10",
     "typescript": "~5.9.3",
     "@types/node": "^24.0.0",
     "vitest": "4.1.12",
     "@playwright/test": "1.64.1"
+  },
+  "lint-staged": {
+    "*": "prettier --write --ignore-unknown"
   }
 }
