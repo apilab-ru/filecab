@@ -7,18 +7,24 @@ export function validateEnvironment(env: Environment) {
   const invalid = new Set<string>();
   const required = (key: string) => {
     const value = env[key]?.trim() ?? '';
+
     if (!value) invalid.add(key);
+
     return value;
   };
   const flag = (key: string) => {
     const value = env[key] ?? 'false';
+
     if (value !== 'true' && value !== 'false') invalid.add(key);
+
     return value === 'true';
   };
   const mode = env.NODE_ENV ?? 'development';
+
   if (!['development', 'test', 'production'].includes(mode)) invalid.add('NODE_ENV');
   const portText = env.PORT ?? '3001';
   const port = Number(portText);
+
   if (!/^\d+$/.test(portText) || !Number.isInteger(port) || port < 1 || port > 65535)
     invalid.add('PORT');
 
@@ -26,6 +32,7 @@ export function validateEnvironment(env: Environment) {
   try {
     const parsed = new URL(databaseUrl);
     const name = decodeURIComponent(parsed.pathname.slice(1));
+
     if (
       !['postgres:', 'postgresql:'].includes(parsed.protocol) ||
       !parsed.hostname ||
@@ -34,8 +41,11 @@ export function validateEnvironment(env: Environment) {
       name.includes('/')
     )
       invalid.add('DATABASE_URL');
+
     if (mode === 'test' && !name.endsWith('_test')) invalid.add('DATABASE_URL');
+
     if (mode === 'production' && /_(dev|test)$/.test(name)) invalid.add('DATABASE_URL');
+
     if (mode === 'development' && !name.endsWith('_dev')) invalid.add('DATABASE_URL');
   } catch {
     invalid.add('DATABASE_URL');
@@ -44,6 +54,7 @@ export function validateEnvironment(env: Environment) {
   const httpUrl = (key: string, value: string, originOnly = false) => {
     try {
       const parsed = new URL(value);
+
       if (
         !['http:', 'https:'].includes(parsed.protocol) ||
         parsed.username ||
@@ -51,11 +62,15 @@ export function validateEnvironment(env: Environment) {
         parsed.hash
       )
         invalid.add(key);
+
       if (mode === 'production' && parsed.protocol !== 'https:') invalid.add(key);
+
       if (originOnly && (parsed.pathname !== '/' || parsed.search)) invalid.add(key);
+
       return originOnly ? parsed.origin : parsed.href;
     } catch {
       invalid.add(key);
+
       return '';
     }
   };
@@ -71,11 +86,13 @@ export function validateEnvironment(env: Environment) {
   }
   const secret = (key: string, needed: boolean) => {
     const value = env[key] ?? '';
+
     if (
       (needed || value) &&
       (!/^[A-Za-z0-9+/]{43}=$/.test(value) || Buffer.from(value, 'base64').length !== 32)
     )
       invalid.add(key);
+
     return value;
   };
   const googleEnabled = flag('GOOGLE_ENABLED');
@@ -87,6 +104,7 @@ export function validateEnvironment(env: Environment) {
     'PROVIDER_ENCRYPTION_KEY',
     mode === 'production' || shikimoriEnabled,
   );
+
   if (sessionSecret && encryptionKey && sessionSecret === encryptionKey) {
     invalid.add('SESSION_SECRET');
     invalid.add('PROVIDER_ENCRYPTION_KEY');
@@ -94,7 +112,9 @@ export function validateEnvironment(env: Environment) {
   const integrationUrl = (key: string, fallback: string) => {
     const value = env[key] ?? fallback;
     const normalized = httpUrl(key, value, true);
+
     if (!value.startsWith('https://')) invalid.add(key);
+
     return normalized;
   };
   const google = {
@@ -127,8 +147,10 @@ export function validateEnvironment(env: Environment) {
     },
     shikimori,
   };
+
   if (invalid.size)
     throw new Error(`Invalid configuration fields: ${[...invalid].sort().join(', ')}`);
+
   return {
     mode,
     port,
@@ -144,5 +166,6 @@ export function validateEnvironment(env: Environment) {
 
 export function loadEnvironment() {
   config({ path: resolve(__dirname, '../../.env'), quiet: true });
+
   return validateEnvironment(process.env);
 }

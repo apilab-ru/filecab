@@ -5,15 +5,19 @@ import { builtinModules } from 'node:module';
 import ts from 'typescript';
 
 const ignored = new Set(['node_modules', 'dist', '.wxt', '.output', 'generated']);
+
 function files(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     if (ignored.has(entry.name)) return [];
     const path = join(directory, entry.name);
+
     return entry.isDirectory() ? files(path) : [path];
   });
 }
+
 function imports(source) {
   const result = [];
+
   function visit(node) {
     if (
       (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
@@ -21,6 +25,7 @@ function imports(source) {
       ts.isStringLiteralLike(node.moduleSpecifier)
     )
       result.push(node.moduleSpecifier.text);
+
     if (
       ts.isImportEqualsDeclaration(node) &&
       ts.isExternalModuleReference(node.moduleReference) &&
@@ -28,12 +33,14 @@ function imports(source) {
       ts.isStringLiteralLike(node.moduleReference.expression)
     )
       result.push(node.moduleReference.expression.text);
+
     if (
       ts.isImportTypeNode(node) &&
       ts.isLiteralTypeNode(node.argument) &&
       ts.isStringLiteralLike(node.argument.literal)
     )
       result.push(node.argument.literal.text);
+
     if (
       ts.isCallExpression(node) &&
       (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
@@ -48,6 +55,7 @@ function imports(source) {
     ts.forEachChild(node, visit);
   }
   visit(source);
+
   return result;
 }
 
@@ -59,6 +67,7 @@ export function checkBoundaries(root) {
       .filter((entry) => entry.isDirectory())
       .map((entry) => {
         const path = join(root, group, entry.name);
+
         return {
           path,
           id: `${group}/${entry.name}`,
@@ -94,8 +103,10 @@ export function checkBoundaries(root) {
     };
     const validateEdge = (name, target, path) => {
       if (client && serverOnly(name)) fail(path, `server-only dependency ${name}`);
+
       if (['packages/ui', 'packages/contracts'].includes(project.id) && dataLayer(name))
         fail(path, `data adapter dependency ${name}`);
+
       if (target && target.id !== project.id && !allowedWorkspace[project.id]?.includes(target.id))
         fail(path, `forbidden workspace dependency ${target.id}`);
     };
@@ -105,6 +116,7 @@ export function checkBoundaries(root) {
         projects.find((candidate) => candidate.manifest.name === name),
         join(project.path, 'package.json'),
       );
+
       if (typeof version === 'string' && version.startsWith('npm:'))
         validateEdge(
           version.slice(4).replace(/@[^@/]+$/, ''),
@@ -114,6 +126,7 @@ export function checkBoundaries(root) {
     }
     const configPath = ts.findConfigFile(project.path, ts.sys.fileExists, 'tsconfig.json');
     let options = {};
+
     if (configPath) {
       const config = ts.readConfigFile(configPath, ts.sys.readFile);
       options = ts.parseJsonConfigFileContent(config.config, ts.sys, dirname(configPath)).options;
@@ -137,21 +150,25 @@ export function checkBoundaries(root) {
                 name === candidate.manifest.name || name.startsWith(candidate.manifest.name + '/'),
             );
         validateEdge(name, target, path);
+
         if (
           client &&
           /(?:src|entrypoints)\//.test(relative(project.path, path)) &&
           (name.startsWith('node:') || builtinModules.includes(name))
         )
           fail(path, `Node-only module in client source ${name}`);
+
         if (
           client &&
           (/(^|\/)\.env(?:\.|$)/.test(name) ||
             (targetPath && /(^|\/)\.env(?:\.|$)/.test(targetPath)))
         )
           fail(path, 'environment file import');
+
         if (name.startsWith('.') && targetPath && !target)
           fail(path, 'relative import leaves workspace projects');
       }
+
       if (client && /(?:src|entrypoints)\//.test(relative(project.path, path))) {
         // Analyze member access rather than matching text in comments or strings.
         const member = (node) =>
@@ -169,10 +186,12 @@ export function checkBoundaries(root) {
           member(node) === 'env' &&
           ts.isMetaProperty(node.expression) &&
           node.expression.keywordToken === ts.SyntaxKind.ImportKeyword;
+
         function inspect(node) {
           if (isClientEnv(node)) {
             const parent = node.parent;
             const key = isMember(parent) && parent.expression === node ? member(parent) : undefined;
+
             if (
               !key ||
               ![
@@ -190,6 +209,7 @@ export function checkBoundaries(root) {
                 `non-allowlisted client environment access ${key ?? '(dynamic or whole environment)'}`,
               );
           }
+
           if (
             isMember(node) &&
             member(node) === 'env' &&
@@ -203,11 +223,13 @@ export function checkBoundaries(root) {
       }
     }
   }
+
   return violations;
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const violations = checkBoundaries(resolve(dirname(fileURLToPath(import.meta.url)), '..'));
+
   if (violations.length) {
     console.error(violations.join('\n'));
     process.exitCode = 1;

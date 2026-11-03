@@ -4,7 +4,13 @@
 
 # Validation rules
 
-Do not use Zod or add it as a dependency anywhere in the repository. Use class-validator/class-transformer for server request validation and framework-independent validation functions for shared domain rules and client runtime validation.
+Do not use Zod or add it as a dependency anywhere in the repository. Use class-validator/class-transformer for server request validation. Shared contracts use typed models directly, without runtime parsers or client validation.
+
+# Function declaration rules
+
+Separate function declarations from preceding code with a blank line (before their JSDoc, when present). Add a short JSDoc comment describing the purpose of every module-level function declaration, including non-exported helpers.
+
+Require a blank line before function declarations (before attached JSDoc) and before `if` and `return` statements when another statement precedes them in the same block. Do not insert blank lines at the start of a block or between an unbraced `if` and its body. Enforce statement spacing with ESLint Stylistic alongside Prettier in format, format:check and the staged-file hook.
 
 # Style rules
 
@@ -54,3 +60,5 @@ For example:
 # Testing rules
 
 Write tests only when they verify meaningful behavior or prevent regressions. Avoid redundant tests and tests that merely mirror the implementation.
+
+Use primitive types (`string`, `number`, etc.) directly instead of branded types or aliases for individual IDs, timestamps, versions and cursors.

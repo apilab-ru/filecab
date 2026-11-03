@@ -8,6 +8,7 @@ const temporary: string[] = [];
 afterEach(() => {
   for (const path of temporary.splice(0)) rmSync(path, { recursive: true, force: true });
 });
+
 function workspace() {
   const root = mkdtempSync(join(tmpdir(), 'filecab-boundaries-'));
   temporary.push(root);
@@ -31,6 +32,7 @@ function workspace() {
     );
   }
   writeFileSync(join(root, 'apps/api/src/private.ts'), 'export const privateValue = 1;');
+
   return root;
 }
 
