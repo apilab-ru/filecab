@@ -1,6 +1,10 @@
 # SDD
 [Important rules for making changes](specs/index.md)
 
+# Validation rules
+
+Do not use Zod or add it as a dependency anywhere in the repository. Use class-validator/class-transformer for server request validation and framework-independent validation functions for shared domain rules and client runtime validation.
+
 # Style rules
 
 These rules apply to styles throughout the repository.
