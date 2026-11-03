@@ -8,3 +8,7 @@ dist/
 !.env.example
 *.tsbuildinfo
 .DS_Store
+apps/api/src/generated/
+coverage/
+playwright-report/
+test-results/

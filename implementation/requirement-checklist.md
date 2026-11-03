@@ -1,6 +1,6 @@
 # Requirement Delivery Checklist
 
-Status: implementation pending. Step 1 establishes this checklist; it does not implement the requirements. Each row is a checkable delivery unit. A named requirement includes every clause under that heading.
+Status: steps 1–2 complete. Infrastructure evidence is recorded below; application domain requirements remain pending. Step 1 establishes this checklist; it does not implement the requirements. Each row is a checkable delivery unit. A named requirement includes every clause under that heading.
 
 For each completed row, replace Pending with Complete and record actual code paths, test names/results, and any remaining blocker. Use Blocked only with a concrete dependency. Planned code areas below are targets, not evidence. `—` means no implementation or verification evidence recorded. Provider fixtures and live verification must be recorded separately.
 
@@ -278,3 +278,24 @@ Each row covers the complete linked section, including its table rows, bullets, 
 - [ ] [Required defect resolutions](../specs/functionality.md#121-problems-in-the-source-and-required-resolutions): verify each listed problem through its mapped requirement; step 21. Evidence: pending.
 - [ ] [Delivery and evidence](../specs/functionality.md#122-delivery-order): follow foundation-first sequencing and record actual implementation traceability; all steps. Evidence: pending.
 - [ ] [Contributing](../specs/contributing.md): update affected specifications before each implementation change; all steps. Evidence: pending.
+
+## Workspace infrastructure (step 2)
+
+Infrastructure initially verified on 2 November 2026; test review and current suites verified on 3 November 2026 with Node 24.20.0, pnpm 12.16.1, Prisma 7.10.1, and PostgreSQL 17.11. CI has been configured but has not yet executed remotely. Infrastructure checks do not establish product acceptance or live provider availability.
+
+| Done | Deliverable | Code | Verification evidence | Status / blocker |
+| --- | --- | --- | --- | --- |
+| [x] | Dependency boundaries | [Checker](../scripts/check-boundaries.mjs), [negative cases](../tests/unit/boundaries.test.ts) | `pnpm check:boundaries`; 16 unit cases cover relative/alias server imports, re-exports, type imports, npm aliases, Node modules, environment access, and UI data dependencies | Complete |
+| [x] | Validated server configuration | [Validation](../apps/api/src/config/environment.ts), [bootstrap](../apps/api/src/main.ts), backend/client `.env.example` files | 19 configuration cases in [unit suite](../tests/unit/environment.test.ts); rejects invalid configuration without echoing values; disabled providers require no credentials | Complete; actual auth/provider features remain pending |
+| [x] | Test and Nx targets | [Vitest](../vitest.config.ts), [Playwright](../playwright.config.ts), [Nx checks](../tools/checks/project.json) | `pnpm test` (35 passed), `pnpm test:contracts` (1 passed), `pnpm test:e2e` (1 passed); Nx test target verified | Complete; later product suites remain pending |
+| [x] | CI pipeline | [GitHub workflow](../.github/workflows/checks.yml) | Configures PostgreSQL 17, frozen install, boundaries, migrations, all suites, build/typecheck, and Chromium; corresponding commands verified locally | Configured; GitHub execution pending |
+| [x] | Prisma/PostgreSQL foundation | [Schema](../apps/api/prisma/schema.prisma), [migration](../apps/api/prisma/migrations/20261102000000_workspace_baseline/migration.sql), [client factory](../apps/api/src/database/client.ts) | `db:validate`, `db:generate`, `db:deploy`, `db:status`; [database tests](../tests/integration/database.test.ts) verify the committed migration marker through generated-client queries on an isolated PostgreSQL 17 cluster | Complete; domain schema remains step 4 |
+| [x] | Reproducible setup and checks | [README](../README.md), [Brewfile](../Brewfile), root/API package scripts and lockfile | `pnpm install --frozen-lockfile`; `pnpm build` (6 targets); `pnpm typecheck` (7 targets); `pnpm typecheck:tools` | Complete |
+
+The PostgreSQL test cluster used a temporary directory and port 55439; it was stopped after verification. The Homebrew PostgreSQL service was not started. No production database or live provider credentials were used.
+
+### Test review — 3 November 2026
+
+Applied the testing rule from AGENTS.md: retain checks of Filecab behavior and regression risks. Removed the generic Prisma transaction rollback test, which exercised third-party behavior without a Filecab operation. Kept the migration/client integration smoke check and real-workspace dependency contract. Removed the separate CI boundary command because the contract suite already invokes it. The standalone local command remains available.
+
+Production configuration coverage now independently checks missing session/encryption secrets and HTTP-origin rejection from an otherwise valid production configuration. The redaction assertion checks that sensitive input is absent without depending on exact error formatting. Boundary negative cases and browser startup smoke coverage remain relevant. Application transaction rollback tests will accompany application mutation behavior in later steps.

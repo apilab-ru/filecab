@@ -1,0 +1,17 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Infrastructure only. Domain tables are introduced in implementation step 4.
+model WorkspaceState {
+  id        String   @id
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@map("workspace_state")
+}

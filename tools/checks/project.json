@@ -1,0 +1,34 @@
+{
+  "name": "checks",
+  "projectType": "application",
+  "targets": {
+    "boundaries": {
+      "executor": "nx:run-commands",
+      "options": { "command": "pnpm check:boundaries", "cwd": "{workspaceRoot}" }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "options": { "command": "pnpm test", "cwd": "{workspaceRoot}" }
+    },
+    "test-contracts": {
+      "executor": "nx:run-commands",
+      "options": { "command": "pnpm test:contracts", "cwd": "{workspaceRoot}" }
+    },
+    "test-integration": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": { "command": "pnpm test:integration", "cwd": "{workspaceRoot}" }
+    },
+    "test-e2e": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": { "command": "pnpm test:e2e", "cwd": "{workspaceRoot}" }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "inputs": ["{workspaceRoot}/tests/**/*", "{workspaceRoot}/scripts/**/*", "{workspaceRoot}/*.config.ts", "{workspaceRoot}/tsconfig.tools.json", "{workspaceRoot}/apps/api/**/*", "sharedGlobals"],
+      "dependsOn": [{ "projects": ["api"], "target": "typecheck" }],
+      "options": { "command": "pnpm typecheck:tools", "cwd": "{workspaceRoot}" }
+    }
+  }
+}

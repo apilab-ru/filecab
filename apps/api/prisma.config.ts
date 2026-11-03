@@ -1,0 +1,12 @@
+import { config } from 'dotenv';
+import { defineConfig } from 'prisma/config';
+import { resolve } from 'node:path';
+
+config({ path: resolve(__dirname, '.env'), quiet: true });
+
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  migrations: { path: 'prisma/migrations' },
+  // Generation/validation need no connection; migration commands require DATABASE_URL.
+  datasource: { url: process.env.DATABASE_URL ?? '' },
+});

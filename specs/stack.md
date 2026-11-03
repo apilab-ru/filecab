@@ -174,6 +174,45 @@ Google sign-in does not grant Google Drive access. PostgreSQL is the selected pr
 
 ## Local development on macOS
 
+### Workspace infrastructure and verification
+
+The workspace SHALL provide `check:boundaries`, `test`, `test:contracts`,
+`test:integration`, and `test:e2e` commands alongside build/typecheck.
+Boundary checks SHALL reject client imports of backend source, Prisma,
+server environment files, and server-only dependencies, including relative
+imports and re-exports. UI SHALL remain independent of library/data adapters.
+
+Vitest SHALL run unit and contract suites separately from PostgreSQL integration
+tests. Integration tests SHALL require an explicitly configured dedicated test
+database and SHALL fail rather than silently skip when it is unavailable.
+Playwright SHALL provide an initial website smoke check; later feature steps
+SHALL expand it into product workflows. CI SHALL run these checks with
+PostgreSQL 17 and synthetic credentials; provider/Google credentials SHALL NOT
+be needed for infrastructure verification.
+
+Prisma SHALL expose generate, validate, development-migration, deployment-migration,
+and migration-status commands. The first migration SHALL create a minimal
+infrastructure marker, leaving application domain tables to their delivery step.
+Generated Prisma source SHALL stay backend-only and out of version control.
+
+Backend configuration SHALL load a backend-local environment file, validate
+required database and origin settings before listening, reject invalid ports,
+and validate enabled integrations and production secrets. Errors SHALL identify
+configuration field names without printing their values. Disabled integrations
+SHALL need no credentials. Frontend configuration SHALL expose only a public API
+origin. Development, test, and production SHALL use distinct database targets.
+
+Synthetic `.env.example` files SHALL document local setup. CI SHALL validate
+schema generation, apply committed migrations to PostgreSQL 17, verify migration
+status, and exercise the generated client against that database.
+
+Infrastructure tests SHALL verify Filecab configuration, dependency boundaries,
+migration compatibility, and application startup. Tests of third-party behavior
+alone, such as Prisma's generic transaction rollback, SHALL wait until an
+application operation needs regression coverage. CI SHALL run the real-workspace
+boundary check once through its contract suite; the standalone command remains
+available for local use.
+
 Use native Homebrew PostgreSQL 17. Add this optional `Brewfile` entry:
 
 ```ruby

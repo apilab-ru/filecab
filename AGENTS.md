@@ -45,3 +45,7 @@ For example:
   }
 }
 ```
+
+# Testing rules
+
+Write tests only when they verify meaningful behavior or prevent regressions. Avoid redundant tests and tests that merely mirror the implementation.

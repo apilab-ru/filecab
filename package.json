@@ -6,16 +6,33 @@
     "node": ">=22.12.0"
   },
   "scripts": {
+    "code": "codex --ask-for-approval never --sandbox danger-full-access",
     "dev": "nx run-many -t dev --projects=extension,api --parallel=3",
     "dev:web": "nx dev web",
     "dev:extension": "nx dev extension",
     "dev:api": "nx dev api",
     "build": "nx run-many -t build",
-    "typecheck": "nx run-many -t typecheck"
+    "typecheck": "nx run-many -t typecheck",
+    "check:boundaries": "node scripts/check-boundaries.mjs",
+    "test": "vitest run --project unit",
+    "test:contracts": "vitest run --project contracts",
+    "test:integration": "pnpm --filter @filecab/api db:generate && vitest run --project integration",
+    "test:e2e": "playwright test",
+    "typecheck:tools": "tsc -p tsconfig.tools.json --noEmit",
+    "db:generate": "pnpm --filter @filecab/api db:generate",
+    "db:validate": "pnpm --filter @filecab/api db:validate",
+    "db:migrate": "pnpm --filter @filecab/api db:migrate",
+    "db:deploy": "pnpm --filter @filecab/api db:deploy",
+    "db:status": "pnpm --filter @filecab/api db:status",
+    "db:start": "brew services run postgresql@17",
+    "db:stop": "brew services stop postgresql@17",
+    "db:service-status": "brew services info postgresql@17"
   },
   "devDependencies": {
     "nx": "24.0.3",
     "typescript": "~5.9.3",
-    "@types/node": "^24.0.0"
+    "@types/node": "^24.0.0",
+    "vitest": "4.1.12",
+    "@playwright/test": "1.64.1"
   }
 }

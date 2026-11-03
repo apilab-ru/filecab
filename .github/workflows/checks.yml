@@ -1,0 +1,62 @@
+name: Workspace checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NX_DAEMON: 'false'
+      NX_NO_CLOUD: 'true'
+      NODE_ENV: test
+      DATABASE_URL: postgresql://postgres:filecab_ci@127.0.0.1:5432/filecab_test
+      WEBSITE_ORIGINS: http://127.0.0.1:5173
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: filecab_ci
+          POSTGRES_DB: filecab_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.16.1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:validate
+      - run: pnpm db:generate
+      - run: pnpm test
+      - run: pnpm test:contracts
+      - run: pnpm db:deploy
+      - run: pnpm db:status
+      - run: pnpm test:integration
+      - run: pnpm typecheck
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

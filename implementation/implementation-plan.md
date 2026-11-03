@@ -1,6 +1,6 @@
 # Filecab — Implementation Plan
 
-Status: execution baseline, 2 November 2026. Step 1 is complete; steps 2–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
+Status: execution baseline, 2 November 2026. Steps 1–2 are complete; steps 3–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
 
 ## Baseline and scope
 
@@ -26,12 +26,12 @@ Exit satisfied: Functionality, Backend, Catalog, and Stack share the recorded ba
 
 Depends on step 1.
 
-- [ ] Keep Nx/pnpm and strict TypeScript; enforce workspace boundaries so clients cannot import Prisma, backend DTO implementations, or secrets.
-- [ ] Configure appropriate unit/integration runners and later Playwright targets; add CI targets for typecheck, build, contract checks, database integration tests, and E2E workflows.
-- [ ] Add validated environment configuration and synthetic example files for database, origins, Google, provider settings, encryption, and session keys.
-- [ ] Add PostgreSQL 17/Prisma setup, migrations, development database instructions, and the documented Homebrew scripts. Keep development and production storage separate.
+- [x] Keep Nx/pnpm and strict TypeScript; enforce workspace boundaries so clients cannot import Prisma, backend DTO implementations, or secrets.
+- [x] Configure appropriate unit/integration runners and later Playwright targets; add CI targets for typecheck, build, contract checks, database integration tests, and E2E workflows.
+- [x] Add validated environment configuration and synthetic example files for database, origins, Google, provider settings, encryption, and session keys.
+- [x] Add PostgreSQL 17/Prisma setup, migrations, development database instructions, and the documented Homebrew scripts. Keep development and production storage separate.
 
-Exit: clean setup, builds, typechecks, test discovery, and an initial migration work reproducibly without production credentials.
+Exit satisfied: frozen-lockfile install, boundary checks, 35 unit tests, one workspace contract check, one PostgreSQL 17 migration/client integration test, one Chromium smoke test, all six application/package builds, and seven Nx typecheck targets pass locally. Prisma schema validation, client generation, deployment migration, and migration status pass against an isolated PostgreSQL 17.11 cluster. CI is configured but has not yet run on GitHub. See [step 2 evidence](requirement-checklist.md#workspace-infrastructure-step-2).
 
 ## 3. Define shared domain contracts and rules
 
