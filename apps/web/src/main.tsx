@@ -5,6 +5,8 @@ import './styles.scss';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <main className="web"><Library name="Filecab" /></main>
+    <main className="web">
+      <Library name="Filecab" />
+    </main>
   </StrictMode>,
 );

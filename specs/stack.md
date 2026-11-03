@@ -9,7 +9,7 @@ This document records the chosen architecture. It does not claim that the planne
 ## Core stack
 
 | Area                 | Technology                                                                | Responsibility                                                                    |
-|----------------------|---------------------------------------------------------------------------|-----------------------------------------------------------------------------------|
+| -------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
 | Monorepo             | Nx + pnpm workspaces                                                      | Project organization, shared packages, task execution and caching                 |
 | Language             | TypeScript, strict mode                                                   | Frontend, extension, backend, shared contracts                                    |
 | Website              | React + Vite                                                              | Standalone browser application                                                    |
@@ -74,12 +74,12 @@ Use ordinary `.scss` files imported by components, example:
 
 ```scss
 .filecab-media-card {
-  &__title { 
-    font-weight: 600; 
+  &__title {
+    font-weight: 600;
   }
-  
-  &.-selected { 
-    outline: 2px solid var(--color-accent); 
+
+  &.-selected {
+    outline: 2px solid var(--color-accent);
   }
 }
 ```
@@ -89,7 +89,7 @@ Keep shared colors, spacing, and typography in CSS variables. Prefix reusable bl
 ## Extension surfaces
 
 | Surface                   | Responsibility                                                            |
-|---------------------------|---------------------------------------------------------------------------|
+| ------------------------- | ------------------------------------------------------------------------- |
 | Popup                     | Quick capture and editing for the active tab                              |
 | Full extension page       | Browse and maintain the library                                           |
 | Background service worker | Privileged messaging, persistent capture coordination and resumable tasks |
@@ -100,7 +100,7 @@ Keep shared colors, spacing, and typography in CSS variables. Prefix reusable bl
 Offline support is required only for the extension. PostgreSQL is the authoritative server database for authenticated libraries and shared views. RxDB stores the extension's local working copy and guest library. Neither the website nor the extension connects directly to PostgreSQL.
 
 | Client                   | Data access                                                     | Offline behavior                                                 |
-|--------------------------|-----------------------------------------------------------------|------------------------------------------------------------------|
+| ------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------- |
 | Extension owner or guest | React → RxDB → Dexie adapter → IndexedDB                        | Browse and edit locally; authenticated changes synchronize later |
 | Website owner            | React → TanStack Query → NestJS → Prisma → PostgreSQL           | Requires connectivity for supported library operations           |
 | Shared-list viewer       | React → TanStack Query → read-only NestJS endpoint → PostgreSQL | No offline support required                                      |

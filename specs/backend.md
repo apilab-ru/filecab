@@ -254,6 +254,7 @@ The backend SHALL use `@nestjs/swagger` to generate OpenAPI documentation
 and provide Swagger UI at `/api/docs` and OpenAPI JSON at `/api/docs-json`.
 
 Documentation SHALL cover all supported endpoints and describe:
+
 - Parameters and request bodies.
 - Response schemas and status codes.
 - Validation constraints and nullable fields.
@@ -271,4 +272,3 @@ with controllers and DTOs.
 Swagger SHALL be enabled for local development. In production, Swagger UI
 and OpenAPI JSON SHALL be disabled or protected by operator authentication
 by default.
-

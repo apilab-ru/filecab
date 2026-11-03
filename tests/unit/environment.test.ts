@@ -22,39 +22,79 @@ describe('startup configuration', () => {
     expect(config.google.enabled).toBe(false);
     expect(config.providers.shikimori.enabled).toBe(false);
   });
-  it.each(['0', '65536', 'NaN', '1.5', ''])('rejects invalid port %s', port => {
+  it.each(['0', '65536', 'NaN', '1.5', ''])('rejects invalid port %s', (port) => {
     expect(() => validateEnvironment({ ...development, PORT: port })).toThrow('PORT');
   });
   it('enforces isolated development, test, and production database names', () => {
     expect(() => validateEnvironment({ ...development, NODE_ENV: 'test' })).toThrow('DATABASE_URL');
-    expect(() => validateEnvironment({ ...development, DATABASE_URL: development.DATABASE_URL.replace('_dev', '_prod') })).toThrow('DATABASE_URL');
-    expect(validateEnvironment({ ...development, NODE_ENV: 'test', DATABASE_URL: development.DATABASE_URL.replace('_dev', '_test') }).mode).toBe('test');
+    expect(() =>
+      validateEnvironment({
+        ...development,
+        DATABASE_URL: development.DATABASE_URL.replace('_dev', '_prod'),
+      }),
+    ).toThrow('DATABASE_URL');
+    expect(
+      validateEnvironment({
+        ...development,
+        NODE_ENV: 'test',
+        DATABASE_URL: development.DATABASE_URL.replace('_dev', '_test'),
+      }).mode,
+    ).toBe('test');
   });
   it('accepts production configuration with HTTPS and independent secrets', () => {
     expect(() => validateEnvironment(production)).not.toThrow();
   });
-  it.each(['SESSION_SECRET', 'PROVIDER_ENCRYPTION_KEY'])('rejects production without %s', field => {
-    expect(() => validateEnvironment({ ...production, [field]: '' })).toThrow(field);
-  });
+  it.each(['SESSION_SECRET', 'PROVIDER_ENCRYPTION_KEY'])(
+    'rejects production without %s',
+    (field) => {
+      expect(() => validateEnvironment({ ...production, [field]: '' })).toThrow(field);
+    },
+  );
   it('rejects HTTP website origins even when all production secrets are valid', () => {
-    expect(() => validateEnvironment({ ...production, WEBSITE_ORIGINS: 'http://filecab.example' })).toThrow('WEBSITE_ORIGINS');
+    expect(() =>
+      validateEnvironment({ ...production, WEBSITE_ORIGINS: 'http://filecab.example' }),
+    ).toThrow('WEBSITE_ORIGINS');
   });
   it('requires separate encryption and session keys', () => {
-    expect(() => validateEnvironment({ ...development, SESSION_SECRET: keyA, PROVIDER_ENCRYPTION_KEY: keyA })).toThrow('SESSION_SECRET');
+    expect(() =>
+      validateEnvironment({ ...development, SESSION_SECRET: keyA, PROVIDER_ENCRYPTION_KEY: keyA }),
+    ).toThrow('SESSION_SECRET');
   });
-  it.each(['https://example.test/path', 'https://user:secret@example.test', '*', 'not-an-origin'])('rejects unsafe website allowlist value %s', origin => {
-    expect(() => validateEnvironment({ ...development, WEBSITE_ORIGINS: origin })).toThrow('WEBSITE_ORIGINS');
-  });
+  it.each(['https://example.test/path', 'https://user:secret@example.test', '*', 'not-an-origin'])(
+    'rejects unsafe website allowlist value %s',
+    (origin) => {
+      expect(() => validateEnvironment({ ...development, WEBSITE_ORIGINS: origin })).toThrow(
+        'WEBSITE_ORIGINS',
+      );
+    },
+  );
   it('validates exact Chrome extension origins', () => {
-    expect(validateEnvironment({ ...development, EXTENSION_ORIGINS: `chrome-extension://${'a'.repeat(32)}` }).extensionOrigins).toHaveLength(1);
-    expect(() => validateEnvironment({ ...development, EXTENSION_ORIGINS: 'chrome-extension://*' })).toThrow('EXTENSION_ORIGINS');
+    expect(
+      validateEnvironment({
+        ...development,
+        EXTENSION_ORIGINS: `chrome-extension://${'a'.repeat(32)}`,
+      }).extensionOrigins,
+    ).toHaveLength(1);
+    expect(() =>
+      validateEnvironment({ ...development, EXTENSION_ORIGINS: 'chrome-extension://*' }),
+    ).toThrow('EXTENSION_ORIGINS');
   });
   it('requires enabled integration credentials and rejects insecure provider origins', () => {
-    expect(() => validateEnvironment({ ...development, GOOGLE_ENABLED: 'true' })).toThrow('GOOGLE_CLIENT_SECRET');
-    expect(() => validateEnvironment({ ...development, SHIKIMORI_ENABLED: 'true' })).toThrow('SHIKIMORI_CLIENT_SECRET');
-    expect(() => validateEnvironment({ ...development, KINOPOISK_ENABLED: 'true' })).toThrow('KINOPOISK_API_KEY');
-    expect(() => validateEnvironment({ ...development, SMOTRET_API_ORIGIN: 'http://example.test' })).toThrow('SMOTRET_API_ORIGIN');
-    expect(() => validateEnvironment({ ...development, GOOGLE_ENABLED: 'yes' })).toThrow('GOOGLE_ENABLED');
+    expect(() => validateEnvironment({ ...development, GOOGLE_ENABLED: 'true' })).toThrow(
+      'GOOGLE_CLIENT_SECRET',
+    );
+    expect(() => validateEnvironment({ ...development, SHIKIMORI_ENABLED: 'true' })).toThrow(
+      'SHIKIMORI_CLIENT_SECRET',
+    );
+    expect(() => validateEnvironment({ ...development, KINOPOISK_ENABLED: 'true' })).toThrow(
+      'KINOPOISK_API_KEY',
+    );
+    expect(() =>
+      validateEnvironment({ ...development, SMOTRET_API_ORIGIN: 'http://example.test' }),
+    ).toThrow('SMOTRET_API_ORIGIN');
+    expect(() => validateEnvironment({ ...development, GOOGLE_ENABLED: 'yes' })).toThrow(
+      'GOOGLE_ENABLED',
+    );
   });
   it('does not include database passwords or rejected values in errors', () => {
     let failure: unknown;

@@ -272,13 +272,13 @@ Exit: every mandatory requirement in scope has implementation and verification e
 
 ## Delivery milestones
 
-| Milestone | Steps | Reviewable outcome |
-| --- | --- | --- |
-| Agreed foundation | 1–5 | Consistent specs, validated contracts, database transactions, documented API foundation. |
-| Manual library | 6–11 | Google login, online website, durable guest/account extension library, safe replication, bilingual shared UI. |
-| Discovery and capture | 12–16 | Verified catalog capabilities, add/edit/reconciliation, safe page extraction/configuration. |
-| Data portability and sharing | 17–18 | Recoverable imports/migrations and private unlisted read-only projection. |
-| External anime list | 19–20 | Optional account connection with explicit, reliable bidirectional Shikimori synchronization. |
-| Release readiness | 21 | Complete requirement evidence and tested operational recovery. |
+| Milestone                    | Steps | Reviewable outcome                                                                                            |
+| ---------------------------- | ----- | ------------------------------------------------------------------------------------------------------------- |
+| Agreed foundation            | 1–5   | Consistent specs, validated contracts, database transactions, documented API foundation.                      |
+| Manual library               | 6–11  | Google login, online website, durable guest/account extension library, safe replication, bilingual shared UI. |
+| Discovery and capture        | 12–16 | Verified catalog capabilities, add/edit/reconciliation, safe page extraction/configuration.                   |
+| Data portability and sharing | 17–18 | Recoverable imports/migrations and private unlisted read-only projection.                                     |
+| External anime list          | 19–20 | Optional account connection with explicit, reliable bidirectional Shikimori synchronization.                  |
+| Release readiness            | 21    | Complete requirement evidence and tested operational recovery.                                                |
 
 No calendar estimate is assigned before the specification conflicts and external provider verification are resolved. External credentials can block live activation while deterministic domain, UI, and fixture work continues.

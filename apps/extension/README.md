@@ -26,14 +26,14 @@ To run the API alongside the extension, use `pnpm dev:api` in another terminal, 
 
 ## Source files and debugging
 
-| File | Purpose |
-| --- | --- |
-| `entrypoints/popup/main.tsx` | Popup UI |
-| `entrypoints/full-page/main.tsx` | Full page UI |
-| `entrypoints/background.ts` | Background service worker |
-| `entrypoints/content.ts` | Script injected into matching webpages |
-| `styles.scss` | Extension styles |
-| `wxt.config.ts` | WXT configuration and manifest settings |
+| File                             | Purpose                                 |
+| -------------------------------- | --------------------------------------- |
+| `entrypoints/popup/main.tsx`     | Popup UI                                |
+| `entrypoints/full-page/main.tsx` | Full page UI                            |
+| `entrypoints/background.ts`      | Background service worker               |
+| `entrypoints/content.ts`         | Script injected into matching webpages  |
+| `styles.scss`                    | Extension styles                        |
+| `wxt.config.ts`                  | WXT configuration and manifest settings |
 
 - **Popup:** open it, right-click inside it, and select **Inspect**.
 - **Background:** open `chrome://extensions` and click **service worker** on the Filecab card.

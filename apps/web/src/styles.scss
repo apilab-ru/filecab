@@ -1,4 +1,11 @@
 @use '@filecab/library/styles.scss';
 
-body { margin: 0; font-family: system-ui, sans-serif; }
-.web { max-width: 60rem; margin: 0 auto; padding: 2rem; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+.web {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 2rem;
+}

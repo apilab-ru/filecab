@@ -13,6 +13,10 @@ async function bootstrap() {
 
 void bootstrap().catch((error: unknown) => {
   // Configuration errors contain field names only, never submitted values.
-  Logger.error(error instanceof Error ? error.message : 'API startup failed', undefined, 'Bootstrap');
+  Logger.error(
+    error instanceof Error ? error.message : 'API startup failed',
+    undefined,
+    'Bootstrap',
+  );
   process.exitCode = 1;
 });

@@ -40,18 +40,18 @@ Minimal anime metadata embedded in list reads MAY create a usable imported snaps
 
 ### Requirement: Bidirectional field mapping
 
-| Filecab field | Shikimori field | Behavior |
-| --- | --- | --- |
-| `planned` | `planned` | Bidirectional |
-| `process` | `watching` | Bidirectional, subject to preserved remote rewatch status |
-| `complete` | `completed` | Bidirectional |
-| `drop` | `dropped` | Bidirectional |
-| `hide` | No equivalent | Filecab-only state; do not map to deletion, dropped, or on_hold |
-| null status | No equivalent | Do not export as a guessed status; require an explicit supported choice when creating a remote rate |
-| Rating 0–10 | `score` 0–10 | Bidirectional; 0 means unrated |
-| Episode progress | `episodes` | Bidirectional absolute integer; preserve decreases chosen by user |
-| Private notes | `text` | Excluded by default in both directions |
-| Viewing links | No synchronized field | Never export |
+| Filecab field    | Shikimori field       | Behavior                                                                                            |
+| ---------------- | --------------------- | --------------------------------------------------------------------------------------------------- |
+| `planned`        | `planned`             | Bidirectional                                                                                       |
+| `process`        | `watching`            | Bidirectional, subject to preserved remote rewatch status                                           |
+| `complete`       | `completed`           | Bidirectional                                                                                       |
+| `drop`           | `dropped`             | Bidirectional                                                                                       |
+| `hide`           | No equivalent         | Filecab-only state; do not map to deletion, dropped, or on_hold                                     |
+| null status      | No equivalent         | Do not export as a guessed status; require an explicit supported choice when creating a remote rate |
+| Rating 0–10      | `score` 0–10          | Bidirectional; 0 means unrated                                                                      |
+| Episode progress | `episodes`            | Bidirectional absolute integer; preserve decreases chosen by user                                   |
+| Private notes    | `text`                | Excluded by default in both directions                                                              |
+| Viewing links    | No synchronized field | Never export                                                                                        |
 
 Remote `on_hold` SHALL import with a null Filecab status plus namespaced preserved remote status. Remote `rewatching` SHALL import with `process` plus preserved remote status and `rewatches`. These projections SHALL be visibly distinguishable from ordinary null/watching state and SHALL not trigger a reverse status rewrite by themselves.
 

@@ -1,4 +1,5 @@
 # SDD
+
 [Important rules for making changes](specs/index.md)
 
 # Validation rules

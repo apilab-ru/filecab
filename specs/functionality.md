@@ -17,18 +17,18 @@ Google accounts, extension replication, unlisted sharing, server-managed parser 
 
 The following choices resolve ambiguities in the supplied description and are implementation defaults, rather than claims about existing behavior:
 
-| Topic                        | Release decision                                                                                                                                   |
-|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| Data                         | Extension guest data stays in RxDB; authenticated libraries replicate with PostgreSQL. Website library access is online through TanStack Query.                                                                                        |
-| Accounts and synchronization | Extension guests can work offline without server storage. Google sign-in enables account persistence and extension replication. |
-| Unsupported pages            | Offer editable extracted metadata and manual entry creation; never require a catalog match.                                                        |
-| Uncertain media category     | Ask for a category rather than silently assuming films.                                                                                            |
-| Hidden titles                | Excluded from ordinary library results; an explicit Hidden filter reveals them.                                                                    |
-| Progress and completion      | No automatic status changes; preserve progress when statuses change.                                                                               |
-| Rating and progress fields   | Consistent across popup, cabinet, and website; rating is always editable, progress applies to episodic media.                                      |
-| Page URL ownership           | Multiple viewing sources per entry; one active entry per owner and normalized source URL, with explicit atomic reassignment.                                                 |
-| Delete                       | Immediate deletion with Undo for 10 seconds.                                                                                                       |
-| Backup format                | Continue exporting a legacy-compatible flat array; adapt the internal model at the boundary.                                                       |
+| Topic                        | Release decision                                                                                                                                |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Data                         | Extension guest data stays in RxDB; authenticated libraries replicate with PostgreSQL. Website library access is online through TanStack Query. |
+| Accounts and synchronization | Extension guests can work offline without server storage. Google sign-in enables account persistence and extension replication.                 |
+| Unsupported pages            | Offer editable extracted metadata and manual entry creation; never require a catalog match.                                                     |
+| Uncertain media category     | Ask for a category rather than silently assuming films.                                                                                         |
+| Hidden titles                | Excluded from ordinary library results; an explicit Hidden filter reveals them.                                                                 |
+| Progress and completion      | No automatic status changes; preserve progress when statuses change.                                                                            |
+| Rating and progress fields   | Consistent across popup, cabinet, and website; rating is always editable, progress applies to episodic media.                                   |
+| Page URL ownership           | Multiple viewing sources per entry; one active entry per owner and normalized source URL, with explicit atomic reassignment.                    |
+| Delete                       | Immediate deletion with Undo for 10 seconds.                                                                                                    |
+| Backup format                | Continue exporting a legacy-compatible flat array; adapt the internal model at the boundary.                                                    |
 
 ## 2. Users, surfaces, and navigation
 
@@ -49,7 +49,7 @@ The following choices resolve ambiguities in the supplied description and are im
 Category shall be `anime`, `films`, or `tv`. Catalog subtype is separate: an anime may have subtype `movie`, `tv`, `special`, `ova`, `ona`, or `music` without leaving the anime library category.
 
 | Stored status | English  | Russian       |
-|---------------|----------|---------------|
+| ------------- | -------- | ------------- |
 | `planned`     | Planned  | Запланировано |
 | `process`     | Watching | Смотрю        |
 | `complete`    | Watched  | Просмотрено   |
@@ -81,13 +81,13 @@ Category shall be `anime`, `films`, or `tv`. Catalog subtype is separate: an ani
 
 **PAGE-03.** The initial supported-rule set shall cover the following hosts. Extraction behavior shall be checked against representative fixtures before a host is advertised as supported; the source description does not prove live compatibility.
 
-| Hosts                                                                                                 | Expected seed                                                                                            |
-|-------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
-| `animego.org`,  `animesss.com`, `smotret-anime.online`, `shikimori.io`, `dreamerscast.com`, `jut.su`  | Anime title; heading/selector or cleaned document title, with safe fallback.                             |
-| `kino.mail.ru`, `afisha.mail.ru`                                                                      | Film title; allow user category correction.                                                              |
-| `ivi.ru`                                                                                              | Film or TV title, using available page evidence.                                                         |
-| `kinopoisk.ru`, `hd.kinopoisk.ru`                                                                     | Title, film/TV evidence, and a namespaced Kinopoisk reference when extractable.                          |
-| `mirf.ru`                                                                                             | Nonblank selected text as an anime search seed; Search mode shall not attach the page URL automatically. |
+| Hosts                                                                                               | Expected seed                                                                                            |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `animego.org`, `animesss.com`, `smotret-anime.online`, `shikimori.io`, `dreamerscast.com`, `jut.su` | Anime title; heading/selector or cleaned document title, with safe fallback.                             |
+| `kino.mail.ru`, `afisha.mail.ru`                                                                    | Film title; allow user category correction.                                                              |
+| `ivi.ru`                                                                                            | Film or TV title, using available page evidence.                                                         |
+| `kinopoisk.ru`, `hd.kinopoisk.ru`                                                                   | Title, film/TV evidence, and a namespaced Kinopoisk reference when extractable.                          |
+| `mirf.ru`                                                                                           | Nonblank selected text as an anime search seed; Search mode shall not attach the page URL automatically. |
 
 **PAGE-04.** Unknown hosts and broken site rules shall fall back to a usable heading or document title. Users shall be able to correct the name and category, search the catalog, or save a manual entry. Missing category evidence shall require selection. A catalog outage shall not prevent manual creation.
 
@@ -212,57 +212,57 @@ The website shall keep non-sensitive browsing filters in URL parameters.
 
 Each scenario shall pass on the extension; website-applicable cases shall also pass on the website. Page extraction cases require extension checks. Provider integrations shall have contract/fixture checks in addition to live smoke checks when available.
 
-| ID | Scenario and expected outcome | Requirements |
-| --- | --- | --- |
-| AC01 | Open a supported page: extract editable title/category and namespaced references; parser failure offers generic fallback. | PAGE-01–04 |
-| AC02 | On an unknown host or offline, create a manual entry and reopen it with all user fields intact. | MODEL-04, PAGE-04, DATA-05 |
-| AC03 | Catalog/provider identity and URL suggest different entries: display the conflict; no silent edit or merge. | MATCH-01 |
-| AC04 | Equal numeric IDs from IMDb/TMDB/Kinopoisk/internal namespaces do not identify or delete one another. | MODEL-01–02, MIG-04 |
-| AC05 | Add from popup, cabinet, and website; repeated catalog addition opens one existing entry. | MODEL-08, SEARCH-03–04 |
-| AC06 | Failed save retains dirty values and retry; successful edits update modified date only. | MODEL-07, EDIT-02 |
-| AC07 | Change status or locale with an unsaved editor: retain rating/progress/comment and dirty state. | EDIT-01, LANG-01 |
-| AC08 | Invalid ratings/noninteger or negative progress are blocked; excess progress warns without truncation; rating clears to 0; reaching known total does not change status. | MODEL-05, EDIT-01 |
-| AC09 | Reassign a URL: cancellation changes nothing; confirmation atomically retains both entries with one URL owner. | EDIT-04 |
-| AC10 | Search titles/descriptions/comments across available languages; verify OR/AND/exclusion rules and hidden default. | LIB-02–04 |
-| AC11 | Change filters/sort/page size, delete last item on a page, reopen and switch categories: pagination and preferences remain valid. | LIB-05–06 |
-| AC12 | Delete and Undo within 10 seconds restores exactly the selected record. | LIB-07 |
-| AC13 | Export/import round-trip retains semantic entry data, manual entries, user fields, and unresolved legacy references. | BACKUP-01–03 |
-| AC14 | Malformed JSON, wrong schema, conflicting identities, or oversized file leaves the library unchanged with actionable errors. | BACKUP-03–05 |
-| AC15 | Cancel replacement or simulate a persistence failure: existing library remains. Empty-array deletion needs explicit confirmation. | BACKUP-04–05 |
-| AC16 | Two interfaces edit different entries: both persist. Same-entry conflict and stale import require deliberate resolution. | DATA-03 |
-| AC17 | Storage read fails: recovery state appears; existing bytes are not overwritten by an empty store. | DATA-04 |
-| AC18 | Restart the MV3 worker during migration; recover staged, skipped, ambiguous, and failed entries without duplicates. | MIG-01–05 |
-| AC19 | Search returns no total: Next works from hasMore; Last/exact page count is absent. TV results obey TV filtering. | API-01–03 |
-| AC20 | Search fails or older response arrives late: error is distinct from empty results and newest query retains control. | SEARCH-02, API-06 |
-| AC21 | Fresh browser languages choose ru/en correctly; explicit selection persists; plurals for 1/2/5/11/21 are correct. | LANG-01–02 |
-| AC22 | Switch en/ru for the same title online/offline: identity/user data stay stable; field fallback/provenance remain truthful. | LANG-03–06 |
-| AC23 | Load a legacy backup with provider-namespace collisions, nullable fields, and missing dates: retain data and flag unresolved values. | MODEL-03–07, MIG-04 |
-| AC24 | On the authenticated online website without extension APIs, search/add/edit/delete/export/import work against the account library; network failure preserves unsaved input and offers retry. | NAV-03, DATA-01 |
-| AC25 | Keyboard-only editing, 200% zoom, poster failure, and malicious imported text do not block core workflows or execute content. | PLAT-03, UX-01 |
+| ID   | Scenario and expected outcome                                                                                                                                                                | Requirements               |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| AC01 | Open a supported page: extract editable title/category and namespaced references; parser failure offers generic fallback.                                                                    | PAGE-01–04                 |
+| AC02 | On an unknown host or offline, create a manual entry and reopen it with all user fields intact.                                                                                              | MODEL-04, PAGE-04, DATA-05 |
+| AC03 | Catalog/provider identity and URL suggest different entries: display the conflict; no silent edit or merge.                                                                                  | MATCH-01                   |
+| AC04 | Equal numeric IDs from IMDb/TMDB/Kinopoisk/internal namespaces do not identify or delete one another.                                                                                        | MODEL-01–02, MIG-04        |
+| AC05 | Add from popup, cabinet, and website; repeated catalog addition opens one existing entry.                                                                                                    | MODEL-08, SEARCH-03–04     |
+| AC06 | Failed save retains dirty values and retry; successful edits update modified date only.                                                                                                      | MODEL-07, EDIT-02          |
+| AC07 | Change status or locale with an unsaved editor: retain rating/progress/comment and dirty state.                                                                                              | EDIT-01, LANG-01           |
+| AC08 | Invalid ratings/noninteger or negative progress are blocked; excess progress warns without truncation; rating clears to 0; reaching known total does not change status.                      | MODEL-05, EDIT-01          |
+| AC09 | Reassign a URL: cancellation changes nothing; confirmation atomically retains both entries with one URL owner.                                                                               | EDIT-04                    |
+| AC10 | Search titles/descriptions/comments across available languages; verify OR/AND/exclusion rules and hidden default.                                                                            | LIB-02–04                  |
+| AC11 | Change filters/sort/page size, delete last item on a page, reopen and switch categories: pagination and preferences remain valid.                                                            | LIB-05–06                  |
+| AC12 | Delete and Undo within 10 seconds restores exactly the selected record.                                                                                                                      | LIB-07                     |
+| AC13 | Export/import round-trip retains semantic entry data, manual entries, user fields, and unresolved legacy references.                                                                         | BACKUP-01–03               |
+| AC14 | Malformed JSON, wrong schema, conflicting identities, or oversized file leaves the library unchanged with actionable errors.                                                                 | BACKUP-03–05               |
+| AC15 | Cancel replacement or simulate a persistence failure: existing library remains. Empty-array deletion needs explicit confirmation.                                                            | BACKUP-04–05               |
+| AC16 | Two interfaces edit different entries: both persist. Same-entry conflict and stale import require deliberate resolution.                                                                     | DATA-03                    |
+| AC17 | Storage read fails: recovery state appears; existing bytes are not overwritten by an empty store.                                                                                            | DATA-04                    |
+| AC18 | Restart the MV3 worker during migration; recover staged, skipped, ambiguous, and failed entries without duplicates.                                                                          | MIG-01–05                  |
+| AC19 | Search returns no total: Next works from hasMore; Last/exact page count is absent. TV results obey TV filtering.                                                                             | API-01–03                  |
+| AC20 | Search fails or older response arrives late: error is distinct from empty results and newest query retains control.                                                                          | SEARCH-02, API-06          |
+| AC21 | Fresh browser languages choose ru/en correctly; explicit selection persists; plurals for 1/2/5/11/21 are correct.                                                                            | LANG-01–02                 |
+| AC22 | Switch en/ru for the same title online/offline: identity/user data stay stable; field fallback/provenance remain truthful.                                                                   | LANG-03–06                 |
+| AC23 | Load a legacy backup with provider-namespace collisions, nullable fields, and missing dates: retain data and flag unresolved values.                                                         | MODEL-03–07, MIG-04        |
+| AC24 | On the authenticated online website without extension APIs, search/add/edit/delete/export/import work against the account library; network failure preserves unsaved input and offers retry. | NAV-03, DATA-01            |
+| AC25 | Keyboard-only editing, 200% zoom, poster failure, and malicious imported text do not block core workflows or execute content.                                                                | PLAT-03, UX-01             |
 
 ### 12.1 Problems in the source and required resolutions
 
-| Source problem | Target resolution |
-| --- | --- |
-| Cabinet Add event unconnected; no saved-state decoration | SEARCH-04 |
-| Generic-page Search lacks initialized context | NAV-04, PAGE-04, SEARCH-01 |
-| Kinopoisk parser ID mapped as internal ID | PAGE-02, MODEL-02 |
-| Internal/provider IDs collide during import/update/delete | MODEL-01–02, MIG-04 |
-| Cabinet edits skip timestamp updates | MODEL-07 |
-| Hidden status does not hide entries | LIB-04 |
-| Pending save flag cleared before persistence | EDIT-02 |
-| Unguarded import and legacy parsing; immediate replacement | BACKUP-03–05, MIG-01 |
-| Failed/cancelled migration loses context; skipped records lack recovery | MIG-02–05 |
-| Background migration depends on unavailable localStorage | DATA-01, MIG-02 |
-| Genres and genre-click filters not wired | LIB-03 |
-| Errors shown as empty results; stale requests can win | SEARCH-02, API-06 |
-| No rating reset or coherent progress rules | MODEL-05, EDIT-01 |
-| Backend pagination mismatches frontend | API-01–02 |
-| TV route does not enforce TV-only selection | API-03 |
-| Provider identity namespaces overloaded | MODEL-02, MIG-04, API-05 |
-| Catalog refresh leaves stale descriptive fields | API-05 |
-| Single-language metadata/cache contradicts multilingual goal | LANG-03–06 |
-| Website parity and storage relationship unspecified | NAV-03, section 1.2 |
+| Source problem                                                          | Target resolution          |
+| ----------------------------------------------------------------------- | -------------------------- |
+| Cabinet Add event unconnected; no saved-state decoration                | SEARCH-04                  |
+| Generic-page Search lacks initialized context                           | NAV-04, PAGE-04, SEARCH-01 |
+| Kinopoisk parser ID mapped as internal ID                               | PAGE-02, MODEL-02          |
+| Internal/provider IDs collide during import/update/delete               | MODEL-01–02, MIG-04        |
+| Cabinet edits skip timestamp updates                                    | MODEL-07                   |
+| Hidden status does not hide entries                                     | LIB-04                     |
+| Pending save flag cleared before persistence                            | EDIT-02                    |
+| Unguarded import and legacy parsing; immediate replacement              | BACKUP-03–05, MIG-01       |
+| Failed/cancelled migration loses context; skipped records lack recovery | MIG-02–05                  |
+| Background migration depends on unavailable localStorage                | DATA-01, MIG-02            |
+| Genres and genre-click filters not wired                                | LIB-03                     |
+| Errors shown as empty results; stale requests can win                   | SEARCH-02, API-06          |
+| No rating reset or coherent progress rules                              | MODEL-05, EDIT-01          |
+| Backend pagination mismatches frontend                                  | API-01–02                  |
+| TV route does not enforce TV-only selection                             | API-03                     |
+| Provider identity namespaces overloaded                                 | MODEL-02, MIG-04, API-05   |
+| Catalog refresh leaves stale descriptive fields                         | API-05                     |
+| Single-language metadata/cache contradicts multilingual goal            | LANG-03–06                 |
+| Website parity and storage relationship unspecified                     | NAV-03, section 1.2        |
 
 ### 12.2 Delivery order
 
@@ -275,17 +275,17 @@ Each scenario shall pass on the extension; website-applicable cases shall also p
 
 These are recommendations, not implied requirements or existing features.
 
-| Priority | Suggestion | Benefit and boundary |
-| --- | --- | --- |
-| High | Import merge mode with per-field conflict preview | Avoid replacing the whole library for incremental transfers; retain replacement as a distinct action. |
-| High | Viewing-source usability enhancements | Multiple links are already required by Backend; optional enhancements may improve their presentation. |
-| High | Popup draft recovery | Recover edits after accidental popup closure; drafts must be visibly distinct from saved entries. |
-| Medium | Versioned backup envelope | Include settings, translations, and explicit schema versions while retaining legacy array import. |
-| Medium | Additional declarative parser coverage | Versioned configuration, validation, caching, and rollback are required by Backend; additional hosts are optional beyond PAGE-03. |
-| Medium | Season/edition relationships and rewatch history | Avoid conflating a series, season, special, or remake; define identity and progress units before adding automation. |
-| Medium | User-triggered metadata refresh UI | Provider caching and freshness are required by Catalog and Backend; an additional manual refresh interface is optional. |
-| Medium | Optional local duplicate-review tool | Suggest ambiguous/manual matches with an explicit merge preview; never auto-merge by title. |
-| Low | Tags, release schedules, notifications, keyboard search shortcut | Add after core reliability; notifications need their own permission and scheduling design. |
+| Priority | Suggestion                                                       | Benefit and boundary                                                                                                              |
+| -------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| High     | Import merge mode with per-field conflict preview                | Avoid replacing the whole library for incremental transfers; retain replacement as a distinct action.                             |
+| High     | Viewing-source usability enhancements                            | Multiple links are already required by Backend; optional enhancements may improve their presentation.                             |
+| High     | Popup draft recovery                                             | Recover edits after accidental popup closure; drafts must be visibly distinct from saved entries.                                 |
+| Medium   | Versioned backup envelope                                        | Include settings, translations, and explicit schema versions while retaining legacy array import.                                 |
+| Medium   | Additional declarative parser coverage                           | Versioned configuration, validation, caching, and rollback are required by Backend; additional hosts are optional beyond PAGE-03. |
+| Medium   | Season/edition relationships and rewatch history                 | Avoid conflating a series, season, special, or remake; define identity and progress units before adding automation.               |
+| Medium   | User-triggered metadata refresh UI                               | Provider caching and freshness are required by Catalog and Backend; an additional manual refresh interface is optional.           |
+| Medium   | Optional local duplicate-review tool                             | Suggest ambiguous/manual matches with an explicit merge preview; never auto-merge by title.                                       |
+| Low      | Tags, release schedules, notifications, keyboard search shortcut | Add after core reliability; notifications need their own permission and scheduling design.                                        |
 
 ## 14. Evidence and implementation traceability
 

@@ -9,32 +9,18 @@
       "!{projectRoot}/.output/**/*",
       "sharedGlobals"
     ],
-    "sharedGlobals": [
-      "{workspaceRoot}/tsconfig.base.json",
-      "{workspaceRoot}/pnpm-lock.yaml"
-    ]
+    "sharedGlobals": ["{workspaceRoot}/tsconfig.base.json", "{workspaceRoot}/pnpm-lock.yaml"]
   },
   "targetDefaults": {
     "build": {
-      "dependsOn": [
-        "^build"
-      ],
+      "dependsOn": ["^build"],
       "cache": true,
-      "outputs": [
-        "{projectRoot}/dist",
-        "{projectRoot}/.output"
-      ],
-      "inputs": [
-        "default",
-        "^default"
-      ]
+      "outputs": ["{projectRoot}/dist", "{projectRoot}/.output"],
+      "inputs": ["default", "^default"]
     },
     "typecheck": {
       "cache": true,
-      "inputs": [
-        "default",
-        "^default"
-      ]
+      "inputs": ["default", "^default"]
     },
     "dev": {
       "cache": false,

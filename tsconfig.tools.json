@@ -8,5 +8,10 @@
     "checkJs": false,
     "noEmit": true
   },
-  "include": ["vitest.config.ts", "playwright.config.ts", "tests/**/*.ts", "apps/api/prisma.config.ts"]
+  "include": [
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "tests/**/*.ts",
+    "apps/api/prisma.config.ts"
+  ]
 }

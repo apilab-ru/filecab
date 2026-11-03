@@ -1,5 +1,15 @@
 @use '@filecab/library/styles.scss';
 
-body { margin: 0; font-family: system-ui, sans-serif; }
-.popup { min-width: 20rem; padding: 1rem; }
-.full-page { max-width: 60rem; margin: 0 auto; padding: 2rem; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+}
+.popup {
+  min-width: 20rem;
+  padding: 1rem;
+}
+.full-page {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 2rem;
+}

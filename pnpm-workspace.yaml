@@ -8,9 +8,9 @@ strictPeerDependencies: true
 minimumReleaseAge: 0
 
 allowBuilds:
-  "@parcel/watcher": false
+  '@parcel/watcher': false
   nx: true
   esbuild: true
-  "@nestjs/core": true
-  "@prisma/engines": true
+  '@nestjs/core': true
+  '@prisma/engines': true
   prisma: true
