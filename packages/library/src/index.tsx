@@ -1,7 +1,6 @@
 import { Panel } from '@filecab/ui';
-import type { ScaffoldInfo } from '@filecab/contracts';
 
-export function Library({ name }: ScaffoldInfo) {
+export function Library({ name }: { name: string }) {
   return (
     <Panel>
       <h1 className="library__title">{name}</h1>

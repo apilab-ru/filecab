@@ -1,10 +1,10 @@
 # Filecab — Implementation Plan
 
-Status: execution baseline, 2 November 2026. Steps 1–2 are complete; steps 3–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
+Status: execution baseline, 2 November 2026. Steps 1–3 are complete; steps 4–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
 
 ## Baseline and scope
 
-The current workspace contains React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. The API module is empty; contracts, UI, and library packages contain placeholders. Authentication, persistence, catalog providers, replication, and external list synchronization must be implemented. Historical Angular paths and route names in the product specification are migration references, not code available in this workspace.
+The current workspace contains React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. The API module is empty; contracts, UI, and library packages contain placeholders. Authentication, persistence, catalog providers, replication, and external list synchronization must be implemented. Old-data migration and old route compatibility are out of scope.
 
 This plan covers required behavior in [Functionality](../specs/functionality.md), [Backend](../specs/backend.md), [Stack](../specs/stack.md), [Catalog](../specs/catalog-spec.md), [User List Synchronization](../specs/user-list-sync-spec.md), and all three integration specifications. [Plans](../specs/plans.md) is a separate future-feature backlog and is excluded from this implementation plan. Section 13 of Functionality contains recommendations rather than additional release requirements.
 
@@ -12,13 +12,13 @@ Implement in the order below. Each step must update its affected specifications 
 
 ## 1. Resolve specification conflicts and establish traceability
 
-- [x] Create the [Requirement Delivery Checklist](requirement-checklist.md), covering all 68 product requirement IDs, AC01–AC25, every named backend/catalog/sync/provider requirement, and stack constraints. Implementation evidence remains pending.
+- [x] Create the [Requirement Delivery Checklist](requirement-checklist.md), covering all 63 current product requirement IDs, AC01–AC25, every named backend/catalog/sync/provider requirement, and stack constraints. Implementation evidence remains pending.
 - [x] Align website persistence: extension-only offline editing; website uses online TanStack Query and preserves unsaved input after network failure.
 - [x] Align progress validation: accept nonnegative safe integers, warn above known totals, preserve historical values, and never automatically change status.
 - [x] Align provider roles: Smotret supplies anime catalog data, Kinopoisk supplies films/TV, and Shikimori supplies optional owner-connected personal-list synchronization only.
-- [x] Align multiple viewing-source associations and legacy single-URL backup projections without losing additional sources.
+- [x] Align multiple viewing-source associations and preserve all sources in current-format backups.
 - [x] Align required scope: accounts, replication, sharing, declarative parser configuration, metadata caches, and personal-list synchronization are delivery capabilities. Future-feature plans and optional recommendations remain excluded.
-- [x] Define URL normalization, `_filecab` backup extension, clearing semantics, session lifetimes, replication batch behavior, provider defaults, and installment boundaries in [Baseline Decisions](baseline-decisions.md).
+- [x] Define URL normalization, current-format backup, clearing semantics, session lifetimes, replication batch behavior, provider defaults, and installment boundaries in [Baseline Decisions](baseline-decisions.md).
 
 Exit satisfied: Functionality, Backend, Catalog, and Stack share the recorded baseline. This step changes specifications only; runtime capabilities and live provider verification remain pending in the checklist.
 
@@ -37,13 +37,13 @@ Exit satisfied: frozen-lockfile install, boundary checks, 35 unit tests, one wor
 
 Depends on steps 1–2. Covers MODEL-01–08, API-01/04–06, LANG-03–06.
 
-- [ ] Replace placeholder contracts with versioned entry, snapshot, source, catalog, genre, locale/provenance, error, conflict, backup, and replication models.
-- [ ] Separate immutable entry UUID, backend catalog identity, provider namespace/entity/string ID, and remote list-record identity. Preserve leading zeros and unresolved legacy references.
-- [ ] Define categories, formats, statuses, nullable metadata, personal/provider ratings, progress, translations, timestamps, deletion state, and safe server versions/cursors.
-- [ ] Implement reusable domain validation, title/description fallback, semantic-change detection, conservative URL normalization, and deterministic matching helpers.
-- [ ] Keep framework-independent rules shareable while using class-validator/class-transformer for server request validation. Define client runtime validation for persisted data and API responses.
+- [x] Replace placeholder contracts with versioned entry, snapshot, source, catalog, genre, locale/provenance, error, conflict, backup, and replication models.
+- [x] Separate immutable entry UUID, backend catalog identity, provider namespace/entity/string ID, and remote list-record identity. Preserve string IDs and leading zeros.
+- [x] Define categories, formats, statuses, nullable metadata, personal/provider ratings, progress, translations, timestamps, deletion state, and safe server versions/cursors.
+- [x] Implement reusable domain helpers, title/description fallback, semantic-change detection, conservative URL normalization, and deterministic matching helpers.
+- [x] Keep framework-independent rules shareable while using class-validator/class-transformer for server request validation. Use typed client models directly without shared runtime parsers.
 
-Exit: meaningful tests cover identity collisions, nullable metadata, exact user-text preservation, invalid values, timestamp/no-op behavior, and language fallback.
+Exit satisfied: plain TypeScript v1 models and domain helpers replace the placeholder. Shared rules and backend class-validator/class-transformer request validation are implemented without Zod. Meaningful tests cover identity collisions, nullable metadata, exact user-text preservation, no-op behavior, language fallback, safe enrichment. See [step 3 evidence](requirement-checklist.md#shared-domain-contracts-step-3). Persistence, endpoint wiring, native RxDB protocol adaptation and backup restore remain in their planned later steps.
 
 ## 4. Create database models and transactional mutation services
 
@@ -203,25 +203,24 @@ Depends on steps 3, 5, 10–12, and 15.
 
 Exit: AC01/03/09 and parser rollback tests pass; unknown hosts, broken rules, offline configuration, and denied tab access retain useful manual/search workflows.
 
-## 17. Deliver backup, import, and resumable migration
+## 17. Deliver current-format backup and restore
 
-Depends on steps 7–11 and catalog reconciliation from step 15 for optional matching.
+Depends on steps 7–11.
 
-- [ ] Implement `backup.json` flat-array export with legacy date/internal-ID meanings and the agreed extension fields for UUIDs, manual entries, multiple sources, provenance, and unresolved metadata.
-- [ ] Add explicit adapters for legacy flat arrays and grouped `data`; preserve tags and bounded unknown fields, classify ambiguous IDs without guessing, and record inferred timestamps.
-- [ ] Reject files above 10 MiB before parsing; provide indexed validation errors, duplicate/source conflicts, counts, and a downloadable pre-replacement backup/report.
-- [ ] Tie apply confirmation to owner, digest, and expected revision; require distinct empty-library confirmation. Apply atomically with rollback and replication tombstones; keep settings/sharing independent.
-- [ ] Persist staged migration outcomes and default batch size 20 with bounds 1–50. Support retry, pause/cancel, correction, matching, manual retention, recoverable skipping, and recheck without consuming unresolved work or duplicating results.
-- [ ] Use the same preview/version/atomicity rules for migration completion; local conversion must work offline while remote matching can wait.
+- [ ] Export `backup.json` as `{ schemaVersion: 1, entries: [...] }` with current portable entry data; exclude tombstones, server versions, credentials and settings.
+- [ ] Accept only the current format; validate required timestamps, identities, source ownership and all domain fields. Reject old formats/unsupported versions; no conversion or staged migration.
+- [ ] Reject files above 10 MiB before parsing; show indexed errors, conflicts, counts and a downloadable pre-replacement backup/report.
+- [ ] Tie confirmation to owner, digest and expected revision; require distinct empty-library confirmation. Apply atomically with rollback and replication tombstones; keep settings/sharing independent.
+- [ ] Support current-format export/restore offline in the extension and preserve acknowledged results across restart.
 
-Exit: AC13–18/23 pass, including round-trip, storage/transaction failure, stale preview, malformed input, worker restart, and complete accounting for every legacy entry.
+Exit: AC13–18/23 pass, including round-trip, failure/cancellation, stale preview, malformed/old formats and restart durability.
 
 ## 18. Implement unlisted read-only sharing
 
 Depends on steps 6–7 and 10–11.
 
 - [ ] Add owner enable/state/disable/rotate operations with at least 128-bit random tokens, hashed storage, and one-time plaintext link presentation.
-- [ ] Implement an anonymous allowlisted projection excluding hidden/deleted entries, notes, sources, private identity data, legacy payloads, and synchronization metadata.
+- [ ] Implement an anonymous allowlisted projection excluding hidden/deleted entries, notes, sources, private identity data, and synchronization metadata.
 - [ ] Apply shared filters/counts/order only to that visible projection and render a TanStack Query read-only website page without durable offline state.
 - [ ] Set no-store/noindex/referrer controls, redact tokens in logs, and return non-enumerating not-found for invalid/revoked links.
 
@@ -229,7 +228,7 @@ Exit: tests prove revocation/rotation, hidden-field privacy, server-committed fr
 
 ## 19. Build common external-list synchronization
 
-Depends on steps 4–7, 9, 12, and 17's import/reconciliation rules. This is separate from RxDB replication.
+Depends on steps 4–7, 9, 12, and the common import/ownership validation rules. This is separate from RxDB replication.
 
 - [ ] Define provider adapters/capabilities and persist connections, verified remote account identities, scopes, field policies, generations, mappings, remote list-record IDs, common per-field baselines, and issues.
 - [ ] Encrypt recoverable provider credentials with a server-held key; exclude them from client responses, backups, logs, sharing, and replicated documents. Enforce one active connection per owner/provider and remote-account uniqueness across Filecab accounts.
@@ -264,7 +263,7 @@ Depends on steps 1–20 for the agreed release scope.
 - [ ] Execute AC01–AC25 against the aligned baseline on the extension and all applicable website flows. Record fixtures versus live-provider evidence separately.
 - [ ] Complete the requirement checklist for Backend, Catalog, User List Sync, every provider, and Stack; inspect failures for cross-cutting privacy and concurrency regressions.
 - [ ] Run focused tests, all required CI checks, build/typecheck, database integration tests, and Playwright scenarios. Include keyboard-only use, 200% zoom, locale plurals 1/2/5/11/21, unsafe imported/provider text, and poster/network failures.
-- [ ] Verify real Chrome MV3 popup/full-page/worker lifecycle, least permissions, account isolation, reconnect, offline import/export, conflict recovery, and migration resumption.
+- [ ] Verify real Chrome MV3 popup/full-page/worker lifecycle, least permissions, account isolation, reconnect, offline import/export, conflict recovery, and restore durability.
 - [ ] Test deployment migrations, PostgreSQL backup/restore, rollback/recovery, secret configuration, redacted logs, health checks, tombstone retention cleanup, provider job recovery, and production Swagger protection.
 - [ ] Update setup/API/user documentation, enabled-provider capabilities, known limitations, and release evidence. Document external credential/availability blockers precisely; do not mark disabled mandatory integrations complete.
 
@@ -277,7 +276,7 @@ Exit: every mandatory requirement in scope has implementation and verification e
 | Agreed foundation            | 1–5   | Consistent specs, validated contracts, database transactions, documented API foundation.                      |
 | Manual library               | 6–11  | Google login, online website, durable guest/account extension library, safe replication, bilingual shared UI. |
 | Discovery and capture        | 12–16 | Verified catalog capabilities, add/edit/reconciliation, safe page extraction/configuration.                   |
-| Data portability and sharing | 17–18 | Recoverable imports/migrations and private unlisted read-only projection.                                     |
+| Data portability and sharing | 17–18 | Current-format backup/restore and private unlisted read-only projection.                                      |
 | External anime list          | 19–20 | Optional account connection with explicit, reliable bidirectional Shikimori synchronization.                  |
 | Release readiness            | 21    | Complete requirement evidence and tested operational recovery.                                                |
 

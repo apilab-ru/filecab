@@ -247,3 +247,12 @@ DATABASE_URL=postgresql://filecab_dev:YOUR_PASSWORD@localhost:5432/filecab_dev
 ```
 
 Use URL encoding for special characters in credentials. Keep actual environment files out of git and never expose database credentials through Vite frontend variables.
+
+### Shared domain contracts
+
+`packages/contracts` SHALL expose plain TypeScript v1 models, framework-independent
+domain rules as defined in [Shared Domain Contract](domain-contract.md).
+Clients SHALL use typed models directly without shared runtime parsers.
+NestJS DTOs SHALL use class-validator/class-transformer with
+unknown-field rejection and no implicit coercion. Server DTO dependencies SHALL
+remain backend-only. Later client adapters and services SHALL call these rules.

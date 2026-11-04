@@ -1,6 +1,6 @@
 # Filecab — Product Requirements
 
-Version: 1.0 · 2 November 2026 · Status: agreed implementation baseline
+Version: 1.1 · 3 November 2026 · Status: agreed implementation baseline
 
 ### 1.1 Release scope
 
@@ -8,7 +8,7 @@ Version: 1.0 · 2 November 2026 · Status: agreed implementation baseline
 - A standalone website with catalog search, add, edit, delete, filtering, and backup/restore using the same domain rules as the extension.
 - Anime, films, and TV series.
 - English and Russian application interfaces, with available localized catalog metadata.
-- Extension offline persistence, online website access, JSON import/export, and legacy migration.
+- Extension offline persistence, online website access, current-format JSON backup/restore. Old-data migration is out of scope.
 - Catalog-backed entries and manual entries that do not require a catalog match.
 
 Google accounts, extension replication, unlisted sharing, server-managed parser configuration, metadata caches, and owner-connected external list synchronization are required delivery capabilities defined in the adjacent specifications. Guests need not sign in or connect an external account.
@@ -28,7 +28,7 @@ The following choices resolve ambiguities in the supplied description and are im
 | Rating and progress fields   | Consistent across popup, cabinet, and website; rating is always editable, progress applies to episodic media.                                   |
 | Page URL ownership           | Multiple viewing sources per entry; one active entry per owner and normalized source URL, with explicit atomic reassignment.                    |
 | Delete                       | Immediate deletion with Undo for 10 seconds.                                                                                                    |
-| Backup format                | Continue exporting a legacy-compatible flat array; adapt the internal model at the boundary.                                                    |
+| Backup format                | Versioned current-format JSON; no legacy array or grouped-data import.                                                                          |
 
 ## 2. Users, surfaces, and navigation
 
@@ -61,7 +61,7 @@ Category shall be `anime`, `films`, or `tv`. Catalog subtype is separate: an ani
 
 **MODEL-02.** Provider references shall be namespaced values, for example `{ provider: "imdb", id: "tt1234567" }`. IMDb strings, TMDB IDs, MyAnimeList IDs, Shikimori IDs, Kinopoisk IDs, and internal catalog IDs shall never be interchangeable. Preserve identifiers as strings, including prefixes and significant leading zeros.
 
-**MODEL-03.** An entry shall contain category, display metadata snapshot, user name, zero or more viewing-source associations, status, rating, progress, comment, added and modified timestamps, and provider references when known. The metadata snapshot shall support original title, available translations, poster, description, year, genre IDs, subtype, and optional episode count. Tags and unresolved legacy fields shall be preserved on import even though tag editing is outside release scope.
+**MODEL-03.** An entry shall contain category, display metadata snapshot, user name, zero or more viewing-source associations, status, rating, progress, comment, added and modified timestamps, and provider references when known. The metadata snapshot shall support original title, available translations, poster, description, year, genre IDs, subtype, and optional episode count.
 
 **MODEL-04.** A valid manual entry shall require category and a nonblank user title. A catalog entry shall have a displayable title after fallback. Missing descriptions, posters, original titles, genres, years, and episode totals shall be supported without rendering failures.
 
@@ -69,7 +69,7 @@ Category shall be `anime`, `films`, or `tv`. Catalog subtype is separate: an ani
 
 **MODEL-06.** User-entered name and comment shall be preserved exactly after validation; trimming for blank checks shall not rewrite their contents. Catalog refresh, locale changes, and provider failures shall not overwrite user fields.
 
-**MODEL-07.** New timestamps shall be UTC ISO 8601 values. Every successful semantic user edit shall refresh `updatedAt`; `createdAt` shall remain unchanged. A no-op save, locale switch, or metadata display refresh shall not alter those timestamps. Imported missing dates shall use one recorded import timestamp and be marked as inferred; invalid original date values shall remain available in legacy data.
+**MODEL-07.** New timestamps shall be UTC ISO 8601 values. Every successful semantic user edit shall refresh `updatedAt`; `createdAt` shall remain unchanged. A no-op save, locale switch, or metadata display refresh shall not alter those timestamps. Backups shall include valid timestamps; missing or invalid dates shall be rejected without inference.
 
 **MODEL-08.** Repeated addition of an already resolved catalog identity shall open the existing entry. Manual entries may share a title; equal titles alone shall not trigger merging. Category disagreement for an existing catalog identity shall require explicit resolution rather than creating a silent duplicate or changing category automatically.
 
@@ -138,7 +138,7 @@ The website shall keep non-sensitive browsing filters in URL parameters.
 
 **DATA-02.** Popup and cabinet operations shall acknowledge success only after durable RxDB writes; website operations shall acknowledge success only after the backend transaction commits. Each persisted library mutation shall increment a monotonic library revision and record a millisecond last-update value. Open extension surfaces shall receive updates.
 
-**DATA-03.** Writes shall be serialized or use revision checks to prevent stale whole-library replacement. Editing different entries concurrently shall retain both edits. Conflicting edits to the same entry shall offer reload or deliberate overwrite with a preview. Import and migration replacement shall abort or request a renewed preview if the library revision changed.
+**DATA-03.** Writes shall be serialized or use revision checks to prevent stale whole-library replacement. Editing different entries concurrently shall retain both edits. Conflicting edits to the same entry shall offer reload or deliberate overwrite with a preview. Backup replacement shall abort or request a renewed preview if the library revision changed.
 
 **DATA-04.** A missing store shall initialize an empty library. A failed read or corrupt store shall show a recovery state and preserve the existing bytes; it shall not initialize and overwrite them as an empty library. Recovery shall allow retry and export of recoverable raw data.
 
@@ -146,43 +146,33 @@ The website shall keep non-sensitive browsing filters in URL parameters.
 
 **DATA-06.** Closing an interface or suspending/restarting the service worker after an acknowledged save shall not lose the saved mutation. Cached genres and metadata shall remain readable when remote refresh fails.
 
-## 8. Backup, restore, and migration
+## 8. Backup and restore
 
-**BACKUP-01.** Export shall create `backup.json` as a flat entry array, retaining category, embedded metadata, user fields, dates, URL, and preserved legacy/support fields. Export/import adapters shall map `createdAt` to legacy `dateAd` and `updatedAt` to `dateChange`. Catalog-backed `item.id` shall retain its established internal catalog meaning; a local entry ID or provider ID shall never be substituted into it.
+**BACKUP-01.** Export shall create `backup.json` as `{ schemaVersion: 1, entries: [...] }`, retaining entry IDs, optional catalog associations, all user fields, ordered sources, metadata/provenance, and creation/modification timestamps. Exclude deleted entries, per-entry schemaVersion, server versions, deletion state, credentials and account/settings data.
 
-**BACKUP-02.** A per-entry `_filecab` extension object with `schemaVersion: 1` shall carry entry IDs, manual-entry markers, all viewing sources, translation provenance, and unresolved identifiers without overloading legacy fields. New exports shall include it; imports shall accept legacy entries without it. The target importer shall round-trip these fields. Existing clients are not guaranteed to understand manual entries or new fields; the interface shall disclose that limitation instead of claiming universal backward compatibility. A future versioned envelope is optional.
+**BACKUP-02.** Restore shall accept only the current versioned format and round-trip its entry data. Old arrays, grouped `data`, `_filecab` extensions and unsupported versions shall be rejected. No old-data conversion, timestamp inference or migration workflow is required.
 
-**BACKUP-03.** Import shall validate JSON syntax, supported root shape, categories, field types, enums, numbers, dates, URLs, duplicate entry IDs, conflicting catalog identities, and URL ownership before applying changes. The importer shall report item-indexed errors and inferred legacy values. Invalid or ambiguous entries shall not be silently discarded or merged.
+**BACKUP-03.** Before applying, validate JSON shape, categories, enums, field types, numeric bounds, timestamps, URLs, duplicate entry/catalog IDs and source ownership. Report indexed errors; invalid entries shall not be discarded or merged silently.
 
-**BACKUP-04.** Before replacement, show valid/invalid counts, conflicts, and the resulting entry count, provide a downloadable pre-import backup, and require explicit confirmation. A file with validation errors shall not replace the library; the user may explicitly download/correct a report and retry. An empty valid array shall require an explicit “replace with empty library” confirmation.
+**BACKUP-04.** Before replacement, show counts/conflicts, offer a downloadable pre-restore backup and require confirmation tied to the owner, payload digest and expected revision. Invalid data shall not replace the library. An empty entries array requires distinct confirmation.
 
-**BACKUP-05.** Confirmed replacement shall be atomic: either the complete validated result is saved, or existing data remains. Empty file selection shall do nothing. Import shall not reset locale or browsing preferences. Oversized files shall be rejected before parsing using a documented 10 MiB initial limit with an actionable error.
-
-**MIG-01.** Settings shall accept legacy grouped JSON under `data`, validate it safely, flatten category groups, and stage migration separately from the active library. Local shape conversion shall not require network access; resolving provider identities may require the backend.
-
-**MIG-02.** Batch size shall default to 20 and accept integers 1–50. Remaining, matched, ambiguous, skipped, and failed entries shall be stored durably using the platform adapter. Failed batches shall remain retryable; successful earlier work shall survive cancellation, browser restart, and service-worker restart.
-
-**MIG-03.** Users shall be able to search, correct category/name/metadata, select a match, retain an unresolved manual entry, or skip. Skipped entries shall remain recoverable. Closing a matching dialog shall pause processing without consuming its entry. Repeated processing shall not duplicate completed results.
-
-**MIG-04.** Legacy internal and provider IDs shall be classified by trustworthy provenance, never guessed from numeric equality. Unclear `imdbId` and `shikimoriId` mappings shall remain unresolved legacy references until verified. Missing dates shall be normalized before submission to contracts requiring timestamps.
-
-**MIG-05.** Recheck shall validate completed results without deleting user metadata. Save to library shall use the same validation, revision guard, backup, preview, confirmation, and atomic replacement rules as import. Completion shall account for every input as matched, manual, skipped, or failed.
+**BACKUP-05.** Replacement shall be atomic and publish replication changes, including tombstones. Failure/cancellation preserves the library; settings/sharing remain independent. Empty file selection does nothing. Reject files over 10 MiB before parsing. Current-format validation and restore shall work offline in the extension.
 
 ## 9. Backend and shared contracts
 
-**API-01.** New client/backend boundaries shall use a versioned shared contract with runtime validation. Canonical search responses shall be `{ page, results, hasMore, total? }`, where page is one-based, `hasMore` is boolean, and total, when known, is a nonnegative exact count of matching unique records. Page size shall be bounded to 1–50 for provider-backed operations; larger UI pages may aggregate multiple requests without misrepresenting page numbers.
+**API-01.** New client/backend boundaries shall use a versioned shared TypeScript contract with server request validation. Canonical search responses shall be `{ page, results, hasMore, total? }`, where page is one-based, `hasMore` is boolean, and total, when known, is a nonnegative exact count of matching unique records. Page size shall be bounded to 1–50 for provider-backed operations; larger UI pages may aggregate multiple requests without misrepresenting page numbers.
 
-**API-02.** Without total, show Previous/Next using actual `hasMore`; omit Last and exact page counts. An adapter shall translate older `total_results`/`total_pages` responses if required. `hasMore` shall reflect deliverable normalized results after grouping/deduplication; uncertain provider continuation shall be handled explicitly, not derived from an unrelated intermediate count.
+**API-02.** Without total, show Previous/Next using actual `hasMore`; omit Last and exact page counts. `hasMore` shall reflect deliverable normalized results after grouping/deduplication; uncertain provider continuation shall be handled explicitly, not derived from an unrelated intermediate count.
 
 **API-03.** Film and TV searches shall apply distinct provider category filters. Unsupported filters/sorts shall be disabled or explained in Catalog mode; controls shall not suggest that a setting was applied when the backend ignored it. User-library statuses shall not be submitted as provider catalog filters.
 
-**API-04.** Detail lookup shall distinguish internal catalog lookup from provider lookup in the route or typed parameters. Existing `anime/v2/:id` shall be treated as a Smotret provider lookup by its legacy adapter, not as an internal-ID endpoint.
+**API-04.** Detail lookup shall distinguish internal catalog lookup from provider lookup in the route or typed parameters.
 
 **API-05.** Backend catalog upsert shall use verified namespaced references, return stable internal identities across categories/locales, and refresh available catalog fields without overwriting populated fields with absent provider values. User metadata shall remain outside catalog refresh operations.
 
-**API-06.** Catalog, genre, migration, and verification endpoints shall return structured validation and service errors. Shared models shall allow actual nullable/absent provider fields. Transport errors, invalid responses, and valid empty results shall be distinguishable.
+**API-06.** Catalog, genre, backup/restore, and verification endpoints shall return structured validation and service errors. Shared models shall allow actual nullable/absent provider fields. Transport errors, invalid responses, and valid empty results shall be distinguishable.
 
-**API-07.** Existing route mappings are compatibility inputs, not guarantees of deployment: `anime/v2/search`, `anime/v2/:id`, `films/v2/movie`, `films/v2/tv`, `genres/list`, `library/migrate/v3`, and `library/check/v3`. Legacy grouped authenticated `user-library/list` endpoints shall not be reused as flat-array synchronization. Required account replication shall use the Backend specification’s versioned RxDB pull/push contracts.
+**API-07.** Support only the versioned endpoints defined by the current contracts. Account replication shall use the Backend specification’s RxDB pull/push contracts; old route compatibility is not required.
 
 ## 10. English and Russian
 
@@ -192,9 +182,9 @@ The website shall keep non-sensitive browsing filters in URL parameters.
 
 **LANG-03.** Catalog title, description, and genre shall prefer the requested locale. Title fallback: original title, another available translation, localized unavailable-title label. Description fallback: another available translation, comment when rendering a library card, localized empty label. Genre fallback: another available label, then stable genre key. Original title shall remain separate and shall not be assumed to be English.
 
-**LANG-04.** Search/detail/genre requests shall send `locale: en | ru`. Legacy callers omitting locale shall retain Russian behavior; unsupported nonempty locale values shall produce a structured validation error. Responses shall identify requested locale and actual language per localized field, including `unknown` for unverified legacy text. Machine translation is not required.
+**LANG-04.** Search/detail/genre requests shall send `locale: en | ru`. Missing or unsupported locale values shall produce a structured validation error. Responses shall identify requested locale and actual language per localized field, including `unknown` when language is unverified. Machine translation is not required.
 
-**LANG-05.** Backend storage and cache shall retain multiple translations or key localized projections by locale while preserving stable media/genre IDs. Fetching Russian text shall not overwrite English text. Local snapshots shall preserve available translations and provenance. Legacy imports shall not label unknown text using the current UI language.
+**LANG-05.** Backend storage and cache shall retain multiple translations or key localized projections by locale while preserving stable media/genre IDs. Fetching Russian text shall not overwrite English text. Local snapshots shall preserve available translations and provenance. Text of unknown language shall not be labeled using the current UI language.
 
 **LANG-06.** Remote query text shall be passed unchanged, with locale controlling presentation; universal cross-language provider search coverage is not guaranteed. Local search shall inspect available translations. Changing language shall preserve identity, user fields, timestamps, associations, and stable filter values. Offline switching shall use cached translations/fallbacks without erasing data.
 
@@ -217,7 +207,7 @@ Each scenario shall pass on the extension; website-applicable cases shall also p
 | AC01 | Open a supported page: extract editable title/category and namespaced references; parser failure offers generic fallback.                                                                    | PAGE-01–04                 |
 | AC02 | On an unknown host or offline, create a manual entry and reopen it with all user fields intact.                                                                                              | MODEL-04, PAGE-04, DATA-05 |
 | AC03 | Catalog/provider identity and URL suggest different entries: display the conflict; no silent edit or merge.                                                                                  | MATCH-01                   |
-| AC04 | Equal numeric IDs from IMDb/TMDB/Kinopoisk/internal namespaces do not identify or delete one another.                                                                                        | MODEL-01–02, MIG-04        |
+| AC04 | Equal numeric IDs from IMDb/TMDB/Kinopoisk/internal namespaces do not identify or delete one another.                                                                                        | MODEL-01–02                |
 | AC05 | Add from popup, cabinet, and website; repeated catalog addition opens one existing entry.                                                                                                    | MODEL-08, SEARCH-03–04     |
 | AC06 | Failed save retains dirty values and retry; successful edits update modified date only.                                                                                                      | MODEL-07, EDIT-02          |
 | AC07 | Change status or locale with an unsaved editor: retain rating/progress/comment and dirty state.                                                                                              | EDIT-01, LANG-01           |
@@ -226,49 +216,47 @@ Each scenario shall pass on the extension; website-applicable cases shall also p
 | AC10 | Search titles/descriptions/comments across available languages; verify OR/AND/exclusion rules and hidden default.                                                                            | LIB-02–04                  |
 | AC11 | Change filters/sort/page size, delete last item on a page, reopen and switch categories: pagination and preferences remain valid.                                                            | LIB-05–06                  |
 | AC12 | Delete and Undo within 10 seconds restores exactly the selected record.                                                                                                                      | LIB-07                     |
-| AC13 | Export/import round-trip retains semantic entry data, manual entries, user fields, and unresolved legacy references.                                                                         | BACKUP-01–03               |
+| AC13 | Current-format backup/restore round-trip retains manual/catalog entries, user fields, ordered sources, metadata/provenance and timestamps.                                                   | BACKUP-01–03               |
 | AC14 | Malformed JSON, wrong schema, conflicting identities, or oversized file leaves the library unchanged with actionable errors.                                                                 | BACKUP-03–05               |
-| AC15 | Cancel replacement or simulate a persistence failure: existing library remains. Empty-array deletion needs explicit confirmation.                                                            | BACKUP-04–05               |
+| AC15 | Cancel replacement or simulate a persistence failure: existing library remains. An empty entries array needs explicit confirmation.                                                          | BACKUP-04–05               |
 | AC16 | Two interfaces edit different entries: both persist. Same-entry conflict and stale import require deliberate resolution.                                                                     | DATA-03                    |
 | AC17 | Storage read fails: recovery state appears; existing bytes are not overwritten by an empty store.                                                                                            | DATA-04                    |
-| AC18 | Restart the MV3 worker during migration; recover staged, skipped, ambiguous, and failed entries without duplicates.                                                                          | MIG-01–05                  |
+| AC18 | Restore a current-format backup and restart the MV3 worker: acknowledged data remains intact without duplicates.                                                                             | BACKUP-05 , DATA-06        |
 | AC19 | Search returns no total: Next works from hasMore; Last/exact page count is absent. TV results obey TV filtering.                                                                             | API-01–03                  |
 | AC20 | Search fails or older response arrives late: error is distinct from empty results and newest query retains control.                                                                          | SEARCH-02, API-06          |
 | AC21 | Fresh browser languages choose ru/en correctly; explicit selection persists; plurals for 1/2/5/11/21 are correct.                                                                            | LANG-01–02                 |
 | AC22 | Switch en/ru for the same title online/offline: identity/user data stay stable; field fallback/provenance remain truthful.                                                                   | LANG-03–06                 |
-| AC23 | Load a legacy backup with provider-namespace collisions, nullable fields, and missing dates: retain data and flag unresolved values.                                                         | MODEL-03–07, MIG-04        |
+| AC23 | Restore nullable metadata and distinct provider namespaces; reject missing/invalid timestamps and old backup formats without changing the library.                                           | MODEL-02–07, BACKUP-02–03  |
 | AC24 | On the authenticated online website without extension APIs, search/add/edit/delete/export/import work against the account library; network failure preserves unsaved input and offers retry. | NAV-03, DATA-01            |
 | AC25 | Keyboard-only editing, 200% zoom, poster failure, and malicious imported text do not block core workflows or execute content.                                                                | PLAT-03, UX-01             |
 
 ### 12.1 Problems in the source and required resolutions
 
-| Source problem                                                          | Target resolution          |
-| ----------------------------------------------------------------------- | -------------------------- |
-| Cabinet Add event unconnected; no saved-state decoration                | SEARCH-04                  |
-| Generic-page Search lacks initialized context                           | NAV-04, PAGE-04, SEARCH-01 |
-| Kinopoisk parser ID mapped as internal ID                               | PAGE-02, MODEL-02          |
-| Internal/provider IDs collide during import/update/delete               | MODEL-01–02, MIG-04        |
-| Cabinet edits skip timestamp updates                                    | MODEL-07                   |
-| Hidden status does not hide entries                                     | LIB-04                     |
-| Pending save flag cleared before persistence                            | EDIT-02                    |
-| Unguarded import and legacy parsing; immediate replacement              | BACKUP-03–05, MIG-01       |
-| Failed/cancelled migration loses context; skipped records lack recovery | MIG-02–05                  |
-| Background migration depends on unavailable localStorage                | DATA-01, MIG-02            |
-| Genres and genre-click filters not wired                                | LIB-03                     |
-| Errors shown as empty results; stale requests can win                   | SEARCH-02, API-06          |
-| No rating reset or coherent progress rules                              | MODEL-05, EDIT-01          |
-| Backend pagination mismatches frontend                                  | API-01–02                  |
-| TV route does not enforce TV-only selection                             | API-03                     |
-| Provider identity namespaces overloaded                                 | MODEL-02, MIG-04, API-05   |
-| Catalog refresh leaves stale descriptive fields                         | API-05                     |
-| Single-language metadata/cache contradicts multilingual goal            | LANG-03–06                 |
-| Website parity and storage relationship unspecified                     | NAV-03, section 1.2        |
+| Source problem                                               | Target resolution          |
+| ------------------------------------------------------------ | -------------------------- |
+| Cabinet Add event unconnected; no saved-state decoration     | SEARCH-04                  |
+| Generic-page Search lacks initialized context                | NAV-04, PAGE-04, SEARCH-01 |
+| Kinopoisk parser ID mapped as internal ID                    | PAGE-02, MODEL-02          |
+| Internal/provider IDs collide during import/update/delete    | MODEL-01–02                |
+| Cabinet edits skip timestamp updates                         | MODEL-07                   |
+| Hidden status does not hide entries                          | LIB-04                     |
+| Pending save flag cleared before persistence                 | EDIT-02                    |
+| Unguarded backup restore; immediate replacement              | BACKUP-03–05               |
+| Genres and genre-click filters not wired                     | LIB-03                     |
+| Errors shown as empty results; stale requests can win        | SEARCH-02, API-06          |
+| No rating reset or coherent progress rules                   | MODEL-05, EDIT-01          |
+| Backend pagination mismatches frontend                       | API-01–02                  |
+| TV route does not enforce TV-only selection                  | API-03                     |
+| Provider identity namespaces overloaded                      | MODEL-02, API-05           |
+| Catalog refresh leaves stale descriptive fields              | API-05                     |
+| Single-language metadata/cache contradicts multilingual goal | LANG-03–06                 |
+| Website parity and storage relationship unspecified          | NAV-03, section 1.2        |
 
 ### 12.2 Delivery order
 
 1. Identity/model adapters, validation, safe storage, timestamps, backup recovery, and versioned API contracts.
 2. Manual/catalog add flows, functional cabinet Add, page fallback/matching, consistent editing, and error handling.
-3. Library filters/pagination, migration recovery, bilingual UI and metadata, and standalone website parity.
+3. Library filters/pagination, backup restore, bilingual UI and metadata, and standalone website parity.
 4. Execute AC01–AC25; document any provider-specific exclusions before release. Incomplete core requirements shall not be described as working features.
 
 ## 13. Suggested improvements after the baseline
@@ -280,7 +268,7 @@ These are recommendations, not implied requirements or existing features.
 | High     | Import merge mode with per-field conflict preview                | Avoid replacing the whole library for incremental transfers; retain replacement as a distinct action.                             |
 | High     | Viewing-source usability enhancements                            | Multiple links are already required by Backend; optional enhancements may improve their presentation.                             |
 | High     | Popup draft recovery                                             | Recover edits after accidental popup closure; drafts must be visibly distinct from saved entries.                                 |
-| Medium   | Versioned backup envelope                                        | Include settings, translations, and explicit schema versions while retaining legacy array import.                                 |
+| Medium   | Optional settings backup                                         | Extend the current versioned format with non-sensitive interface preferences.                                                     |
 | Medium   | Additional declarative parser coverage                           | Versioned configuration, validation, caching, and rollback are required by Backend; additional hosts are optional beyond PAGE-03. |
 | Medium   | Season/edition relationships and rewatch history                 | Avoid conflating a series, season, special, or remake; define identity and progress units before adding automation.               |
 | Medium   | User-triggered metadata refresh UI                               | Provider caching and freshness are required by Catalog and Backend; an additional manual refresh interface is optional.           |
@@ -289,8 +277,4 @@ These are recommendations, not implied requirements or existing features.
 
 ## 14. Evidence and implementation traceability
 
-The supplied description cites frontend areas under `apps/filecab`: extension manifest; popup/cabinet routes; popup page/parser/edit services; background library reducers and APIs; shared file-cab service; cabinet library/settings services; shared parser, models, filters, and UI components under `libs/filecab`.
-
-Its model/backend review cites model commit `63d2e26fe5ede855664d3a6d7e916beb2fdb9b8f` and backend HEAD `d354219a97223b5c379bc09f9fad6fce6846055e`. Referenced backend areas include anime/film controllers and provider adapters, catalog service/entities, genres, migration, and legacy user-library endpoints. These identifiers identify the inherited review snapshot and do not establish current deployment behavior.
-
-Implementation shall map affected code and verification results to the requirement IDs above. Provider support, live endpoint availability, exact DTO/database changes, performance budgets, and the new backup extension name remain implementation-validation tasks; none shall be inferred from an old route name or type annotation alone.
+Map current code and verification results to the requirement IDs above. Record fixture tests and live-provider evidence separately; neither old code nor route names establish implemented behavior.

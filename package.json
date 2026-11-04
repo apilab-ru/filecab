@@ -27,21 +27,28 @@
     "db:start": "brew services run postgresql@17",
     "db:stop": "brew services stop postgresql@17",
     "db:service-status": "brew services info postgresql@17",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "eslint . --fix && prettier --write .",
+    "format:check": "eslint . && prettier --check .",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^24.0.0",
+    "@typescript-eslint/parser": "^8.72.1",
+    "eslint": "^10.14.0",
     "husky": "9.1.7",
     "lint-staged": "^16.4.0",
     "nx": "24.0.3",
     "prettier": "3.9.10",
     "typescript": "~5.9.3",
-    "@types/node": "^24.0.0",
-    "vitest": "4.1.12",
-    "@playwright/test": "1.64.1"
+    "vitest": "4.1.12"
   },
   "lint-staged": {
-    "*": "prettier --write --ignore-unknown"
+    "*.{js,mjs,cjs,jsx,ts,tsx,mts,cts}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "!(*.{js,mjs,cjs,jsx,ts,tsx,mts,cts})": "prettier --write --ignore-unknown"
   }
 }

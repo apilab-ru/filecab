@@ -172,7 +172,7 @@ Tokens SHALL contain at least 128 bits of cryptographic entropy and SHALL be sto
 
 ### Requirement: Shared data projection
 
-The shared endpoint SHALL return only allowlisted media fields: title, category, available poster/year/format, status, rating, and progress. Hidden/deleted entries, private notes, viewing-site URLs, email/account identifiers, unresolved legacy payloads, sessions, and replication metadata SHALL be excluded.
+The shared endpoint SHALL return only allowlisted media fields: title, category, available poster/year/format, status, rating, and progress. Hidden/deleted entries, private notes, viewing-site URLs, email/account identifiers, sessions, and replication metadata SHALL be excluded.
 
 Shared filters, ordering, and counts SHALL operate only on the visible projection. Sharing tokens SHALL authorize no mutation, owner lookup, or synchronization access. The shared website SHALL use TanStack Query without a persistent offline library.
 
@@ -180,13 +180,13 @@ Shared filters, ordering, and counts SHALL operate only on the visible projectio
 
 Shared responses SHALL represent server-committed data only. Responses SHALL use `Cache-Control: no-store`, noindex directives, and restrictive referrer policy. Tokens SHALL be redacted from logs. Unknown/revoked links SHALL receive non-enumerating not-found responses.
 
-## Capability: Backup, import, and migration
+## Capability: Backup and restore
 
 ### Requirement: Export and import formats
 
-The system SHALL export library data with user fields, identities, links, snapshots, timestamps, and unresolved legacy information. It SHALL accept legacy flat entry arrays and grouped `data` shapes through explicit adapters. New extension fields SHALL NOT overload legacy meanings, especially catalog `item.id`. New exports SHALL use a versioned per-entry `_filecab` object retaining all sources and provenance.
+The system SHALL export `backup.json` as `{ schemaVersion: 1, entries: [...] }` containing active entry identities, user fields, ordered sources, snapshots/provenance and timestamps. Exclude per-entry schemaVersion, server versions, deletion state, credentials and account/settings data. Restore SHALL accept only this current format; old-data migration and compatibility adapters are out of scope.
 
-The importer SHALL validate JSON shape, categories, enums, bounds, dates, URL schemes, duplicate IDs, catalog duplicates, and source conflicts. The initial maximum import size SHALL be 10 MiB. Unknown legacy data SHALL be retained in bounded compatibility metadata where safe.
+The importer SHALL validate JSON shape, categories, enums, bounds, dates, URL schemes, duplicate IDs, catalog duplicates, and source conflicts. The initial maximum import size SHALL be 10 MiB. Missing or invalid timestamps and unknown fields SHALL be rejected without inference.
 
 ### Requirement: Preview and atomic replacement
 
@@ -198,7 +198,7 @@ Apply SHALL be atomic and publish all replication changes, including tombstones.
 
 ### Requirement: Locale-aware API
 
-Catalog search/detail and genre operations SHALL accept explicit `en` or `ru` locale. New clients SHALL always send it. Explicit legacy adapters MAY default omitted locale to Russian. Unsupported nonempty locale values SHALL be rejected.
+Catalog search/detail and genre operations SHALL accept explicit `en` or `ru` locale. New clients SHALL always send it. Missing or unsupported locale values SHALL be rejected.
 
 Metadata SHALL preserve actual field language and provenance, including unknown. Internal catalog and genre identities SHALL remain stable across locales. Original title SHALL be separate and SHALL NOT be assumed to be English.
 
@@ -244,7 +244,7 @@ Logs SHALL redact OAuth codes, credentials, sharing tokens, notes, and page cont
 
 ## Verification
 
-Implementation SHALL include contract and integration tests for ownership isolation, manual persistence, namespaced identity collisions, concurrent duplicates, source reassignment, optimistic concurrency, deletion/restore, checkpoint ordering, retry safety, conflict recovery, account switching, history reset, OAuth exchange replay, sharing revocation/projection, import atomicity, migration recovery, locale fallback, provider failure, and parser rollback.
+Implementation SHALL include contract and integration tests for ownership isolation, manual persistence, namespaced identity collisions, concurrent duplicates, source reassignment, optimistic concurrency, deletion/restore, checkpoint ordering, retry safety, conflict recovery, account switching, history reset, OAuth exchange replay, sharing revocation/projection, restore atomicity, locale fallback, provider failure, and parser rollback.
 
 Live provider tests SHALL supplement deterministic fixtures when credentials and service availability permit. A successful local fixture SHALL NOT be represented as proof that a live provider is available.
 

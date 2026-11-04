@@ -22,11 +22,11 @@ Generic normalization parses an absolute HTTP(S) URL, rejects embedded credentia
 
 Only fixture-verified host/path adapters may additionally normalize episode paths to title paths or remove specifically allowlisted tracking parameters. Preserve the original URL. Version the normalization policy; changing it must preview collisions and apply a migration rather than silently transferring ownership. Home/search URLs are optional viewing sources and do not prove media identity.
 
-## Backup extension
+## Current-format backup
 
-Export remains a flat array named `backup.json`. A per-entry `_filecab` object is required in new exports and optional in legacy imports. It contains `schemaVersion: 1`, immutable `entryId`, boolean `manual`, `sources` containing every original/normalized URL and normalization-policy version, `snapshot` containing available localized metadata/provenance, and `legacy` containing bounded unresolved/support data. `manual` is true exactly when no internal catalog association exists. Import validates agreement between extension and legacy fields instead of choosing a conflicting value silently.
+Export `backup.json` as `{ schemaVersion: 1, entries: [...] }`. Entries retain UUID, optional catalog ID, category, user fields, all ordered sources, metadata/provenance and valid creation/modification timestamps. Exclude per-entry schemaVersion, serverVersion, deletion state, credentials, account data and settings. CatalogId null identifies manual entries; no separate manual marker is needed.
 
-The legacy URL field projects the first source in stored order, or the legacy empty representation when there are no sources. Additional sources round-trip through `_filecab.sources`. Preserve source order. `dateAd` maps to `createdAt`, `dateChange` to `updatedAt`, and catalog-backed `item.id` retains its internal catalog meaning. Manual entries omit catalog `item` rather than invent an ID. Unsupported future extension versions produce an actionable validation error; no replacement occurs. Existing clients are not promised support for this extension or manual entries.
+Restore accepts only this format. Old arrays/grouped data, `_filecab`, timestamp inference, legacy payload retention and staged migration are out of scope. Unsupported versions or invalid data fail without replacement. Validate identities/source conflicts, preview and confirm against the current revision, then replace atomically. Reestablish server versions through the common mutation service; never trust backup versions. Database and RxDB schema migrations remain required.
 
 ## Mutation and clearing semantics
 
@@ -44,7 +44,7 @@ Clients serialize refresh per session; the backend atomically consumes and repla
 
 Authenticate and validate the entire bounded push batch before applying writes. Any structurally invalid/unauthorized row rejects the batch with indexed validation errors and commits no rows. Reject duplicate document IDs within a push batch. An ownership violation must not disclose another owner's document.
 
-For a valid batch, evaluate assumed-master-state comparisons under one transaction and owner serialization. Version conflicts leave their rows unchanged and return current owner-scoped server documents using the installed RxDB protocol. Non-conflicting rows commit atomically together with change tracking; a database failure rolls back all accepted rows. Retrying accepted rows must converge without additional semantic writes. Retain rejected local intent durably outside the server-master result so it remains reviewable. Wire shape and batch limit must be documented against the installed RxDB version during steps 3 and 9.
+For a valid batch, evaluate assumed-master-state comparisons under one transaction and owner serialization. Version conflicts leave their rows unchanged and return current owner-scoped server documents using the installed RxDB protocol. Non-conflicting rows commit atomically together with change tracking; a database failure rolls back all accepted rows. Retrying accepted rows must converge without additional semantic writes. Retain rejected local intent durably outside the server-master result so it remains reviewable. Step 3 defines the transport-neutral v1 models and initial 100-row batch limit in [Shared Domain Contract](../specs/domain-contract.md). RxDB is installed in step 8; step 9 must document and verify the native wire adaptation against that installed version before claiming protocol compatibility.
 
 ## Installment boundaries
 

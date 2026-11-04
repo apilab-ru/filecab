@@ -1,3 +1,2 @@
-export interface ScaffoldInfo {
-  readonly name: string;
-}
+export * from './models';
+export * from './rules';

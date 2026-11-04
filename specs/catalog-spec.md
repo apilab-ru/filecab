@@ -40,7 +40,7 @@ Internal `catalogId` SHALL be backend-owned and independent of raw provider IDs.
 
 The same verified provider record SHALL retain one internal identity across language changes and repeated searches. Cross-provider association SHALL require a trusted explicit reference or verified crosswalk. Numerical equality, one returned candidate, similar titles, or franchise relations SHALL NOT prove equivalence.
 
-When existing references disagree, the backend SHALL return a resolution conflict rather than silently combine records. Source attribution SHALL remain available for every verified mapping. Legacy ambiguous IDs SHALL be retained unresolved.
+When existing references disagree, the backend SHALL return a resolution conflict rather than silently combine records. Source attribution SHALL remain available for every verified mapping. Unverified references SHALL NOT establish catalog identity.
 
 ### Requirement: Details and safe enrichment
 

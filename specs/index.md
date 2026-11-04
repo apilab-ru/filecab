@@ -3,6 +3,7 @@
 - [Contributing](contributing.md)
 - [Functionality](functionality.md)
 - [Stack](stack.md)
+- [Shared Domain Contract](domain-contract.md)
 - [Backend](backend.md)
 - [Catalog](catalog-spec.md)
 - [User List Synchronization](user-list-sync-spec.md)
