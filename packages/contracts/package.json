@@ -14,5 +14,6 @@
   "devDependencies": {},
   "nx": {
     "name": "contracts"
-  }
+  },
+  "types": "./dist/index.d.ts"
 }

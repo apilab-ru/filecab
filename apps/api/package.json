@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "tsx watch src/main.ts",
+    "dev": "pnpm --filter @filecab/contracts build && tsx watch src/main.ts",
     "build": "prisma generate && tsc -p tsconfig.json",
-    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
+    "typecheck": "pnpm --filter @filecab/contracts build && prisma generate && tsc -p tsconfig.json --noEmit",
     "start": "node dist/main.js",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
@@ -24,7 +24,8 @@
     "dotenv": "^17.2.3",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "@filecab/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/pg": "^8.15.5",

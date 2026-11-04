@@ -1,3 +1,4 @@
+import type { Category, Status } from '@filecab/contracts';
 import { plainToInstance } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -50,7 +51,7 @@ class SourceUrlsConstraint implements ValidatorConstraintInterface {
 export class EntryPatchDto {
   @ValidateIf((_, value) => value !== undefined)
   @IsIn(['anime', 'films', 'tv'])
-  category?: 'anime' | 'films' | 'tv';
+  category?: Category;
 
   @ValidateIf((_, value) => value !== undefined)
   @IsString()
@@ -59,7 +60,7 @@ export class EntryPatchDto {
 
   @ValidateIf((_, value) => value !== undefined)
   @IsIn(['planned', 'process', 'complete', 'drop', 'hide', null])
-  status?: 'planned' | 'process' | 'complete' | 'drop' | 'hide' | null;
+  status?: Status | null;
 
   @ValidateIf((_, value) => value !== undefined)
   @IsInt()

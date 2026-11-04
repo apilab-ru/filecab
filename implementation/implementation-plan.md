@@ -1,6 +1,6 @@
 # Filecab — Implementation Plan
 
-Status: execution baseline, 2 November 2026. Steps 1–3 are complete; steps 4–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
+Status: execution baseline, 2 November 2026. Steps 1–4 are complete; steps 5–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
 
 ## Baseline and scope
 
@@ -49,13 +49,13 @@ Exit satisfied: plain TypeScript v1 models and domain helpers replace the placeh
 
 Depends on step 3. Covers Backend identity, sources, CRUD, and commit-safe tracking.
 
-- [ ] Model users, sessions, entries, source associations, catalog records/references/translations, genres/mappings, owner revisions, change history, and tombstones.
-- [ ] Enforce owner/catalog and owner/normalized-source uniqueness for active entries, namespace-aware catalog uniqueness, and concurrency-safe upserts.
-- [ ] Build one owner-scoped mutation service for create/update/delete/restore, source reassignment, merges, and later imports/replication.
-- [ ] Apply expected-version checks and atomic source changes; use server timestamps and preserve creation time. Define restore behavior under new uniqueness conflicts.
-- [ ] Publish changes in the same transaction using per-owner serialization/counters held through commit, or a demonstrated equivalent. Serialize cursor values safely across JavaScript boundaries.
+- [x] Model users, sessions, entries, source associations, catalog records/references/translations, genres/mappings, owner revisions, change history, and tombstones.
+- [x] Enforce owner/catalog and owner/normalized-source uniqueness for active entries, namespace-aware catalog uniqueness, and concurrency-safe upserts.
+- [x] Build one owner-scoped mutation service for create/update/delete/restore, source reassignment, merges, and later imports/replication.
+- [x] Apply expected-version checks and atomic source changes; use server timestamps and preserve creation time. Define restore behavior under new uniqueness conflicts.
+- [x] Publish changes in the same transaction using per-owner serialization/counters held through commit, or a demonstrated equivalent. Serialize cursor values safely across JavaScript boundaries.
 
-Exit: PostgreSQL integration tests prove ownership isolation, concurrent duplicates, lost-update protection, atomic reassignment, rollback, and commit-order safety.
+Exit satisfied: PostgreSQL 17 integration tests prove ownership isolation, concurrent catalog/source/UUID duplicates, lost-update protection, atomic reassignment, failed-merge and restore rollback, owner locking through commit, and exact bigint revisions. See [step 4 evidence](requirement-checklist.md#transactional-persistence-step-4). HTTP endpoints, authentication, replication transport and import orchestration remain in their later steps.
 
 ## 5. Implement API foundation and OpenAPI
 

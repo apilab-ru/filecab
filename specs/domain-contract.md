@@ -11,3 +11,5 @@
 - **Replication:** conflict reasons use the shared `ConflictReason` string enum with serialized values `VERSION`, `IDENTITY`, `SOURCE` and `CATEGORY`. Transport-neutral envelopes use cursor/entry-ID checkpoints, assumed/proposed documents and at most 100 rows. Reject duplicate/mismatched IDs and invalid batches. Pull includes tombstones; private snapshots include hidden entries but exclude tombstones. Preserve rejected intent separately. Verify native RxDB adaptation in step 9.
 
 Backups use `{ schemaVersion: 1, entries: [...] }` with active entry data, excluding per-entry schemaVersion, serverVersion and deletion state. Only this format is supported; reject missing timestamps, old formats and unknown fields. Requests require an explicit locale from the shared `Locale` string enum (`en`/`ru`). Restore UI and atomic replacement belong to step 17.
+
+Server consumers SHALL use the contracts package generated type declarations, building contracts before server compilation. Runtime request validation SHALL remain server-owned; tools that compile server DTO imports SHALL enable legacy TypeScript decorators consistently with NestJS.

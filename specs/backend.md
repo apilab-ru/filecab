@@ -272,3 +272,15 @@ with controllers and DTOs.
 Swagger SHALL be enabled for local development. In production, Swagger UI
 and OpenAPI JSON SHALL be disabled or protected by operator authentication
 by default.
+
+## Transactional persistence decisions (step 4)
+
+All library writes SHALL lock the owner's `UserLibrary` row through commit. The same transaction SHALL increment a bigint owner revision for each changed document and store its complete server document in change history. Versions and revisions SHALL cross the service boundary as decimal strings. No-op edits SHALL preserve timestamps and revision. Entry IDs SHALL remain globally reserved after deletion.
+
+Active catalog associations and normalized source claims SHALL have database uniqueness constraints scoped to the owner. Source claims SHALL index the SHA-256 digest of the normalized URL, checked against the stored URL by PostgreSQL, so accepted URLs up to 8192 characters do not exceed PostgreSQL index-key bounds. Deleted entries SHALL retain their complete document but release active claims; restore SHALL fail atomically if another entry claimed a catalog identity or source. Source reassignment and merges SHALL check both expected versions, preserve the selected survivor ID and publish each affected document. Merge callers SHALL explicitly select the surviving user fields; sources SHALL be combined in stable order. Any failure SHALL roll back documents, claims, history and revisions together.
+
+Catalog references SHALL be unique by namespace, entity and exact string ID. Catalog translations and genre mappings SHALL preserve language and provenance. Session storage SHALL reserve hashed refresh credentials; authentication policy and endpoint wiring remain steps 5–7.
+
+The Prisma schema SHALL document each persisted model, JSON payload shape, ownership relationship and ordering rule. SQL-only constraints SHALL be described beside the corresponding Prisma fields/models, with a reference to their migration; comments SHALL distinguish database enforcement from mutation-service guarantees.
+
+Account identity and sessions SHALL belong to `User`. Library coordination SHALL belong to a separate one-to-one `UserLibrary`, keyed by owner UUID, containing the revision and relations to entries and change history. Account creation SHALL create its library in the same transaction. Deleting an account SHALL cascade through its library to entries, sources and history. Existing account revisions SHALL be preserved when moving to the library table; entries remain individual rows.

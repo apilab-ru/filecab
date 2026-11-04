@@ -320,3 +320,22 @@ the `_filecab` extension and implicit request-locale defaults from contracts.
 state are excluded and timestamps remain required model fields.
 Current-format backup UI/application remains pending in step 17. Database/RxDB
 schema migrations and live external-list synchronization remain in scope.
+
+## Transactional persistence (step 4)
+
+Verified locally on 4 November 2026 against an isolated PostgreSQL 17 cluster on port 55434. No development or production database was changed. CI execution remains pending.
+
+- [Schema](../apps/api/prisma/schema.prisma) and [migration](../apps/api/prisma/migrations/20261104000000_library_transactions/migration.sql) add users, hashed-credential session storage, catalog identities/references/translations, genres/mappings, owner entries, ordered active source claims and retained change documents/tombstones. Active catalog uniqueness uses a partial SQL index. Source uniqueness uses a database-checked SHA-256 key to support long valid URLs without oversized index keys.
+- [Mutation service](../apps/api/src/library/mutation.service.ts) serializes owner writes with a library-row lock held through commit. Create/update/delete/restore, source reassignment and explicit merges use one transaction for documents, claims, bigint revisions and full change-feed documents. Global entry IDs cannot be reused or overwritten by another owner. No-op updates preserve version/time, and user edits retain creation time and nondecreasing modification time.
+- [Integration tests](../tests/integration/library-mutations.test.ts) cover owner isolation, no-op edits, same-entry update races, concurrent source/catalog/entry-ID duplicates, atomic source movement, restore conflicts, exact delete/restore data, explicit merge identity and tombstones, rollback after a tombstone was written, owner-lock blocking, cursor precision beyond 2^53 and long source URLs.
+- Shared server imports use generated contract declarations; Nx builds dependencies before typechecking. Server validation uses the shared enum types with class-validator/class-transformer. The tools compiler enables server decorators for integration-test imports.
+
+Verification: fresh migration deployment, Prisma schema validation/client generation, 38 unit tests, 12 contract tests, 10 PostgreSQL integration tests (including the baseline migration check), all workspace typecheck/build targets, ESLint/Prettier checks and one Chromium startup smoke test pass locally. The temporary PostgreSQL cluster was stopped after verification.
+
+This establishes the storage and internal mutation boundary only. Authentication/session lifecycle, controllers/OpenAPI, replication transport/retention cleanup, catalog provider operations, merge previews and import/backup orchestration remain in their planned steps. Create inputs are internal typed models; HTTP create/snapshot validation belongs with the later API endpoints. Broad product requirement rows remain unchecked until their complete workflows are delivered.
+
+### Account/library separation — 4 November 2026
+
+`User` owns account identity and sessions; its one-to-one `UserLibrary` owns the revision, entry relations and change history. Mutations lock and increment `UserLibrary` only. The additive [migration](../apps/api/prisma/migrations/20261104010000_separate_user_library/migration.sql) backfills libraries and preserves revisions before redirecting foreign keys and removing `User.revision`. Account creation uses nested library creation in one transaction.
+
+Verified an upgrade with existing entry/history data and a revision above 2^53, plus all 12 PostgreSQL integration tests. Regression coverage checks independent account/library locking and cascading account deletion. Existing duplicate, version, rollback and ordering tests now use the library row.

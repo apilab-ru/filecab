@@ -8,10 +8,160 @@ datasource db {
   provider = "postgresql"
 }
 
-// Infrastructure only. Domain tables are introduced in implementation step 4.
+/// Migration marker for the original workspace foundation; not application data.
 model WorkspaceState {
   id        String   @id
   createdAt DateTime @default(now()) @db.Timestamptz(3)
 
   @@map("workspace_state")
+}
+
+/// Account identity and authentication data, separate from library persistence.
+/// Deleting the account cascades through its library to entries, sources and history.
+model User {
+  id            String       @id @db.Uuid
+  /// Verified Google subject identifier; email is not the account identity.
+  googleSubject String       @unique
+  sessions      Session[]
+  /// Created with the account in the same transaction; optional only on the Prisma parent side.
+  library       UserLibrary?
+}
+
+/// One library per account; entries are stored as individual LibraryEntry rows.
+/// The mutation service locks this row through commit to serialize library writes.
+model UserLibrary {
+  ownerId  String         @id @db.Uuid
+  owner    User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Library change counter, serialized as a decimal string outside PostgreSQL.
+  /// UserLibrary_revision_nonnegative is a SQL CHECK in the separation migration.
+  revision BigInt         @default(0)
+  entries  LibraryEntry[]
+  changes  EntryChange[]
+}
+
+/// Account session storing only the hash of an opaque refresh credential.
+/// Authentication, rotation and replay-detection behavior are implemented separately.
+model Session {
+  id          String    @id @db.Uuid
+  ownerId     String    @db.Uuid
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Hash only; plaintext refresh credentials must never be persisted here.
+  refreshHash String    @unique
+  expiresAt   DateTime  @db.Timestamptz(3)
+  revokedAt   DateTime? @db.Timestamptz(3)
+}
+
+/// Shared catalog identity, independent of any owner library or provider ID.
+model CatalogItem {
+  id           String               @id @db.Uuid
+  category     String
+  /// Shared-contract Snapshot: localized metadata, references, genres and provider scores.
+  snapshot     Json
+  references   CatalogReference[]
+  translations CatalogTranslation[]
+  entries      LibraryEntry[]
+}
+
+/// Namespaced provider identity mapped to one internal catalog item.
+/// The composite key preserves entity scope and exact string IDs, including leading zeros.
+model CatalogReference {
+  namespace  String
+  entity     String
+  externalId String
+  catalogId  String      @db.Uuid
+  catalog    CatalogItem @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  /// Shared-contract Provenance: source, retrievedAt and verified.
+  provenance Json
+
+  @@id([namespace, entity, externalId])
+}
+
+/// Catalog text with its actual language, field name and source provenance.
+model CatalogTranslation {
+  id         String      @id @db.Uuid
+  catalogId  String      @db.Uuid
+  catalog    CatalogItem @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  /// Actual metadata language, including unknown; not the requested interface locale.
+  language   String
+  field      String
+  text       String
+  /// Shared-contract Provenance: source, retrievedAt and verified.
+  provenance Json
+}
+
+/// Stable internal genre identity with localized, attributed labels.
+model Genre {
+  id       String         @id @db.Uuid
+  key      String         @unique
+  /// Shared-contract LocalizedText[] with language and provenance per label.
+  labels   Json
+  mappings GenreMapping[]
+}
+
+/// Provider genre identity mapped explicitly to an internal genre.
+/// Equal labels alone do not establish a mapping.
+model GenreMapping {
+  namespace  String
+  externalId String
+  genreId    String @db.Uuid
+  genre      Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  /// Shared-contract Provenance: source, retrievedAt and verified.
+  provenance Json
+
+  @@id([namespace, externalId])
+}
+
+/// Owner library identity with its complete current server document, including tombstones.
+/// Active owner/catalog uniqueness is enforced by LibraryEntry_active_catalog_key
+/// in migration 20261104000000_library_transactions (a partial SQL index).
+model LibraryEntry {
+  id        String              @id @db.Uuid
+  ownerId   String              @db.Uuid
+  library   UserLibrary         @relation(fields: [ownerId], references: [ownerId], onDelete: Cascade)
+  catalogId String?             @db.Uuid
+  catalog   CatalogItem?        @relation(fields: [catalogId], references: [id])
+  /// Tombstones retain identity and full data while releasing active catalog/source claims.
+  deleted   Boolean             @default(false)
+  /// Complete shared-contract ServerEntry; the service keeps indexed columns in sync.
+  document  Json
+  sources   SourceAssociation[]
+
+  @@index([ownerId, deleted])
+}
+
+/// Ordered source claim for an active entry; deleted entries retain sources only in document JSON.
+/// The mutation service keeps ownerId aligned with the entry owner and releases claims on delete.
+/// The composite primary key prevents duplicate normalized source claims within one owner.
+model SourceAssociation {
+  /// Lowercase SHA-256 hex digest of normalizedUrl, keeping long URLs out of index keys.
+  /// SourceAssociation_hash_matches_url checks the digest in the step 4 SQL migration.
+  normalizedHash String
+  ownerId        String       @db.Uuid
+  normalizedUrl  String
+  entryId        String       @db.Uuid
+  entry          LibraryEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  /// Exact user input, preserved independently of URL normalization.
+  originalUrl    String
+  /// Zero-based source order within the entry, maintained by the mutation service.
+  position       Int
+
+  @@id([ownerId, normalizedHash])
+  @@unique([entryId, position])
+}
+
+/// Full server-document history ordered by owner revision, including deletion tombstones.
+/// The mutation service publishes history and current state in the same owner-locked transaction.
+/// No entry foreign key: retained history is independent of the current entry row.
+model EntryChange {
+  ownerId     String      @db.Uuid
+  library     UserLibrary @relation(fields: [ownerId], references: [ownerId], onDelete: Cascade)
+  /// Commit-safe per-owner ordering; serialized as a decimal string by the service.
+  revision    BigInt
+  entryId     String      @db.Uuid
+  /// Complete ServerEntry at this revision, not a patch.
+  document    Json
+  /// PostgreSQL transaction timestamp for retention; never used as the replication order.
+  committedAt DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@id([ownerId, revision])
 }

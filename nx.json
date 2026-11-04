@@ -20,7 +20,8 @@
     },
     "typecheck": {
       "cache": true,
-      "inputs": ["default", "^default"]
+      "inputs": ["default", "^default"],
+      "dependsOn": ["^build"]
     },
     "dev": {
       "cache": false,
