@@ -1,22 +1,18 @@
 import 'reflect-metadata';
-import { Logger } from '@nestjs/common';
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import { loadEnvironment } from './config/environment';
+import { createApiApplication } from './http/application';
 
-async function bootstrap() {
+/** Starts the loopback API after validating operator configuration. */
+async function bootstrap(): Promise<void> {
   const environment = loadEnvironment();
-  const app = await NestFactory.create(AppModule);
+  const app = await createApiApplication(environment);
+  app.enableShutdownHooks();
   await app.listen(environment.port, '127.0.0.1');
-  Logger.log(`API listening at ${await app.getUrl()}`, 'Bootstrap');
+  console.info('API started');
 }
 
-void bootstrap().catch((error: unknown) => {
-  // Configuration errors contain field names only, never submitted values.
-  Logger.error(
-    error instanceof Error ? error.message : 'API startup failed',
-    undefined,
-    'Bootstrap',
-  );
+void bootstrap().catch(() => {
+  // Do not log arbitrary exception messages: driver/startup errors can contain secrets.
+  console.error('API startup failed; verify server configuration and availability');
   process.exitCode = 1;
 });

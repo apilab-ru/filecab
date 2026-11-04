@@ -11,6 +11,8 @@ Separate function declarations from preceding code with a blank line (before the
 
 Require a blank line before function declarations (before attached JSDoc) and before `if` and `return` statements when another statement precedes them in the same block. Do not insert blank lines at the start of a block or between an unbraced `if` and its body. Enforce statement spacing with ESLint Stylistic alongside Prettier in format, format:check and the staged-file hook.
 
+Keep large static lookup tables, configuration objects and arrays at module scope, outside functions, when they do not depend on function arguments or local state.
+
 Prefer string enums over `as const` arrays with derived union types for named sets of values. Use `Object.values(EnumName)` when an array is needed for validation; preserve existing serialized values.
 
 Use Prettier for supported source, configuration and documentation files. Run `pnpm format` to format the repository and `pnpm format:check` to check it. Exclude generated files, build output, dependency lockfiles and local environment files. Install Git hooks through the root `prepare` script; the pre-commit hook must format staged files with lint-staged, preserving unstaged changes and blocking commits on formatting failures. CI must run the formatting check.

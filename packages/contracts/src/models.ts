@@ -199,6 +199,11 @@ export enum ApiErrorCode {
   Conflict = 'CONFLICT',
   RateLimited = 'RATE_LIMITED',
   SyncResetRequired = 'SYNC_RESET_REQUIRED',
+  Forbidden = 'FORBIDDEN',
+  PayloadTooLarge = 'PAYLOAD_TOO_LARGE',
+  UnsupportedMediaType = 'UNSUPPORTED_MEDIA_TYPE',
+  ServiceUnavailable = 'SERVICE_UNAVAILABLE',
+  InternalError = 'INTERNAL_ERROR',
 }
 
 /** Carries a structured service error and diagnostic correlation ID. */
@@ -207,6 +212,8 @@ export interface ApiError {
   code: ApiErrorCode;
   message: string;
   correlationId: string;
+  status: number;
+  retryable: boolean;
   issues?: ValidationIssue[];
   retryAfterSeconds?: number;
 }

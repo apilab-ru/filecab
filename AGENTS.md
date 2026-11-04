@@ -12,6 +12,10 @@ Separate function declarations from preceding code with a blank line (before the
 
 Require a blank line before function declarations (before attached JSDoc) and before `if` and `return` statements when another statement precedes them in the same block. Do not insert blank lines at the start of a block or between an unbraced `if` and its body. Enforce statement spacing with ESLint Stylistic alongside Prettier in format, format:check and the staged-file hook.
 
+# Constant declaration rules
+
+Keep large static lookup tables, configuration objects and arrays at module scope, outside functions, when they do not depend on function arguments or local state.
+
 # Style rules
 
 These rules apply to styles throughout the repository.

@@ -13,3 +13,5 @@
 Backups use `{ schemaVersion: 1, entries: [...] }` with active entry data, excluding per-entry schemaVersion, serverVersion and deletion state. Only this format is supported; reject missing timestamps, old formats and unknown fields. Requests require an explicit locale from the shared `Locale` string enum (`en`/`ru`). Restore UI and atomic replacement belong to step 17.
 
 Server consumers SHALL use the contracts package generated type declarations, building contracts before server compilation. Runtime request validation SHALL remain server-owned; tools that compile server DTO imports SHALL enable legacy TypeScript decorators consistently with NestJS.
+
+HTTP error envelopes SHALL include numeric `status` and boolean `retryable` alongside the stable code, safe message and correlation ID. Foundation error codes distinguish forbidden requests, oversized bodies, unsupported content types, unavailable service and unexpected internal failures. Validation issues SHALL omit submitted values.

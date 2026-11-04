@@ -14,9 +14,11 @@
     "db:status": "prisma migrate status"
   },
   "dependencies": {
+    "@filecab/contracts": "workspace:*",
     "@nestjs/common": "^12.3.2",
     "@nestjs/core": "^12.3.2",
     "@nestjs/platform-express": "^12.3.2",
+    "@nestjs/swagger": "^12.1.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "class-transformer": "^0.5.1",
@@ -24,10 +26,10 @@
     "dotenv": "^17.2.3",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2",
-    "@filecab/contracts": "workspace:*"
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/pg": "^8.15.5",
     "prisma": "7.10.1",
     "tsx": "^4.20.0"

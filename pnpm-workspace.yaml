@@ -8,6 +8,7 @@ strictPeerDependencies: true
 minimumReleaseAge: 0
 
 allowBuilds:
+  '@scarf/scarf': false
   '@parcel/watcher': false
   nx: true
   esbuild: true

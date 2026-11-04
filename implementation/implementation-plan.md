@@ -1,10 +1,10 @@
 # Filecab — Implementation Plan
 
-Status: execution baseline, 2 November 2026. Steps 1–4 are complete; steps 5–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
+Status: execution baseline, 2 November 2026. Steps 1–5 are complete; steps 6–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
 
 ## Baseline and scope
 
-The current workspace contains React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. The API module is empty; contracts, UI, and library packages contain placeholders. Authentication, persistence, catalog providers, replication, and external list synchronization must be implemented. Old-data migration and old route compatibility are out of scope.
+The initial workspace contained React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. Steps 1–5 now provide shared contracts, transactional PostgreSQL persistence and the documented API foundation. Authentication, client persistence/UI, catalog providers, replication, and external list synchronization remain to be implemented. Old-data migration and old route compatibility are out of scope.
 
 This plan covers required behavior in [Functionality](../specs/functionality.md), [Backend](../specs/backend.md), [Stack](../specs/stack.md), [Catalog](../specs/catalog-spec.md), [User List Synchronization](../specs/user-list-sync-spec.md), and all three integration specifications. [Plans](../specs/plans.md) is a separate future-feature backlog and is excluded from this implementation plan. Section 13 of Functionality contains recommendations rather than additional release requirements.
 
@@ -61,12 +61,12 @@ Exit satisfied: PostgreSQL 17 integration tests prove ownership isolation, concu
 
 Depends on steps 3–4.
 
-- [ ] Add versioned controllers, request bounds/allowlists, structured errors with correlation IDs, safe diagnostics, configured CORS, cookie CSRF controls, and production HTTPS configuration.
-- [ ] Add database readiness and provider-independent liveness; redact credentials, codes, notes, page content, and share tokens from logs.
-- [ ] Generate Swagger UI at `/api/docs` and JSON at `/api/docs-json`; document bearer authentication, cookies/CSRF, nullable fields, errors, and synthetic examples. Disable or operator-protect both in production.
-- [ ] Add OpenAPI coverage alongside each subsequent endpoint, including anonymous versus authenticated access.
+- [x] Add versioned controllers, request bounds/allowlists, structured errors with correlation IDs, safe diagnostics, configured CORS, cookie CSRF controls, and production HTTPS configuration.
+- [x] Add database readiness and provider-independent liveness; redact credentials, codes, notes, page content, and share tokens from logs.
+- [x] Generate Swagger UI at `/api/docs` and JSON at `/api/docs-json`; document bearer authentication, cookies/CSRF, nullable fields, errors, and synthetic examples. Disable or operator-protect both in production.
+- [x] Add OpenAPI coverage alongside each subsequent endpoint, including anonymous versus authenticated access.
 
-Exit: invalid requests fail predictably; generated schemas match runtime responses and expose no server secrets.
+Exit satisfied: HTTP tests verify body/DTO bounds, allowlists, correlation IDs, safe errors/diagnostics, CORS, cookie CSRF, production HTTPS and documentation exclusion. PostgreSQL integration and compiled-runtime smoke checks verify readiness and actual documented routes. See [step 5 evidence](requirement-checklist.md#api-foundation-and-openapi-step-5). New endpoint coverage remains an ongoing rule for later steps.
 
 ## 6. Implement Google authentication and account isolation
 
