@@ -57,6 +57,7 @@ function publicError(error: unknown): ApiException {
           : 'Request validation failed',
     );
   }
+
   const status =
     error instanceof HttpException
       ? error.getStatus()

@@ -141,6 +141,7 @@ export function validateEntryPatchDto(input: unknown): EntryPatchDto {
     throw new RequestValidationError(
       unknown.map((key) => ({ path: [key], message: 'Unknown field' })),
     );
+
   const dto = plainToInstance(EntryPatchDto, input, { enableImplicitConversion: false });
   const errors = validateSync(dto, {
     whitelist: true,

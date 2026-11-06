@@ -27,9 +27,11 @@ async function boundedGoogleFetch(...args: Parameters<typeof fetch>): ReturnType
     });
 
     if (response.status >= 500 || response.status === 429) throw new Error('Upstream unavailable');
+
     const reader = response.body?.getReader();
 
     if (!reader) throw new Error('Missing body');
+
     const chunks: Uint8Array[] = [];
     let size = 0;
     try {
@@ -37,9 +39,11 @@ async function boundedGoogleFetch(...args: Parameters<typeof fetch>): ReturnType
         const { done, value } = await reader.read();
 
         if (done) break;
+
         size += value.byteLength;
 
         if (size > 65536) throw new Error('Oversized response');
+
         chunks.push(value);
       }
     } finally {
@@ -141,10 +145,12 @@ export class GoogleOAuthProvider implements GoogleIdentityProvider {
 
       if (!response.ok)
         throw new ApiException(401, 'UNAUTHORIZED', 'Google authorization was rejected');
+
       const body: unknown = await response.json();
 
       if (typeof body !== 'object' || body === null || !('id_token' in body))
         throw new Error('Missing identity token');
+
       token = body.id_token;
     } catch (error) {
       if (error instanceof ApiException) throw error;

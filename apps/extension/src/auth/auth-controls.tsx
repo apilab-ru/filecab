@@ -14,6 +14,7 @@ export function AuthControls() {
       const reply = (await browser.runtime.sendMessage({ action })) as AuthReply | undefined;
 
       if (!reply) throw new Error('Missing worker response');
+
       setState(reply);
     } catch {
       const diagnostic = { stage: AuthStage.Messaging, code: AuthFailureCode.WorkerUnavailable };

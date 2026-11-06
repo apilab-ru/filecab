@@ -52,9 +52,11 @@ export class StrictValidationPipe extends ValidationPipe {
 
       if (depth > 32)
         throw new ApiException(400, 'VALIDATION_ERROR', 'Request nesting exceeds the limit');
+
       for (const [key, child] of Object.entries(item)) {
         if (['__proto__', 'prototype', 'constructor'].includes(key))
           throw new ApiException(400, 'VALIDATION_ERROR', 'Reserved property name');
+
         pending.push({ value: child, depth: depth + 1 });
       }
     }

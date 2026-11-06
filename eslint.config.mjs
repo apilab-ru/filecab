@@ -28,6 +28,7 @@ export default [
       '@stylistic/padding-line-between-statements': [
         'error',
         { blankLine: 'always', prev: '*', next: ['function', 'if', 'return'] },
+        { blankLine: 'always', prev: 'if', next: '*' },
         {
           blankLine: 'always',
           prev: '*',

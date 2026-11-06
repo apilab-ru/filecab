@@ -75,6 +75,7 @@ export class AuthService implements OnModuleDestroy {
         'VALIDATION_ERROR',
         'Invalid login destination or attempt binding',
       );
+
     const state = randomCredential();
     const binding = randomCredential();
     const nonce = randomCredential();
@@ -111,9 +112,11 @@ export class AuthService implements OnModuleDestroy {
     });
 
     if (consumed.count !== 1) throw unauthorized();
+
     const login = await this.database.loginAttempt.findUniqueOrThrow({ where: { stateHash } });
 
     if (denied || !code) throw unauthorized();
+
     const subject = await this.google.exchange(code, login.nonce, login.googleVerifier);
     // Nested account/library upserts can race on a new Google subject: re-read the winner.
     const owner = await this.database.user
@@ -143,6 +146,7 @@ export class AuthService implements OnModuleDestroy {
 
       return { client: AuthClient.Website, returnTo: login.returnTo, tokens };
     }
+
     const exchangeCode = randomCredential();
     await this.database.loginExchange.create({
       data: {
@@ -218,6 +222,7 @@ export class AuthService implements OnModuleDestroy {
         exchange.challenge !== verifierChallenge(verifier)
       )
         return null;
+
       await this.lockOwner(tx, exchange.ownerId);
       const consumed = await tx.loginExchange.updateMany({
         where: { codeHash, consumedAt: null, expiresAt: { gt: new Date() } },
@@ -261,6 +266,7 @@ export class AuthService implements OnModuleDestroy {
       });
 
       if (!credential || credential.session.client !== client) return null;
+
       await this.lockOwner(tx, credential.session.ownerId);
       const session = await tx.session.findUniqueOrThrow({ where: { id: credential.sessionId } });
       const current = await tx.refreshCredential.findUniqueOrThrow({
@@ -276,6 +282,7 @@ export class AuthService implements OnModuleDestroy {
 
       if (session.revokedAt || session.expiresAt <= now || session.idleExpiresAt <= now)
         return null;
+
       await tx.refreshCredential.update({
         where: { tokenHash: credential.tokenHash },
         data: { consumedAt: now },

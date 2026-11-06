@@ -194,6 +194,7 @@ test('catalog duplicates race safely, deleted claims release and restore conflic
     expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
 
     if (!winner || winner.status !== 'fulfilled') throw new Error('Expected a winner');
+
     const deleted = await service.setDeleted(
       owners[0],
       winner.value.entryId,

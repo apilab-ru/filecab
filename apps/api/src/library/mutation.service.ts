@@ -114,6 +114,7 @@ export class LibraryMutationService {
           position,
         })),
       });
+
     await tx.entryChange.create({
       data: { ownerId, revision: library.revision, entryId: entry.entryId, document: json(entry) },
     });
@@ -125,6 +126,7 @@ export class LibraryMutationService {
     return this.transaction(ownerId, async (tx) => {
       if (await tx.libraryEntry.findUnique({ where: { id: input.entryId } }))
         throw new MutationError('CONFLICT');
+
       await this.checkCatalog(tx, input.catalogId, input.category);
       const now = new Date().toISOString();
       const entry = patchDocument(
@@ -159,6 +161,7 @@ export class LibraryMutationService {
     category: string,
   ): Promise<void> {
     if (catalogId === null) return;
+
     const catalog = await tx.catalogItem.findUnique({ where: { id: catalogId } });
 
     if (!catalog || catalog.category !== category) throw new MutationError('VALIDATION_ERROR');
@@ -174,8 +177,10 @@ export class LibraryMutationService {
       const before = await this.load(tx, ownerId, entryId, expectedVersion);
 
       if (before.deleted) throw new MutationError('CONFLICT');
+
       const after = patchDocument(before, patch);
       await this.checkCatalog(tx, after.catalogId, after.category);
+      validateEntry(after);
 
       if (
         before.category === after.category &&

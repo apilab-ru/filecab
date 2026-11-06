@@ -31,6 +31,7 @@ export function validateEnvironment(env: Environment) {
   const mode = env.NODE_ENV ?? 'development';
 
   if (!['development', 'test', 'production'].includes(mode)) invalid.add('NODE_ENV');
+
   const portText = env.PORT ?? '3001';
   const port = Number(portText);
 
@@ -118,6 +119,7 @@ export function validateEnvironment(env: Environment) {
     invalid.add('SESSION_SECRET');
     invalid.add('PROVIDER_ENCRYPTION_KEY');
   }
+
   const integrationUrl = (key: string, fallback: string) => {
     const value = env[key] ?? fallback;
     const normalized = httpUrl(key, value, true);
@@ -147,6 +149,7 @@ export function validateEnvironment(env: Environment) {
     invalid.add('AUTH_IDLE_SECONDS');
 
   if (auth.exchangeSeconds > auth.loginSeconds) invalid.add('AUTH_EXCHANGE_SECONDS');
+
   const google = {
     enabled: googleEnabled,
     clientId: googleEnabled ? required('GOOGLE_CLIENT_ID') : undefined,
@@ -162,6 +165,7 @@ export function validateEnvironment(env: Environment) {
     if (callback.pathname !== '/api/v1/auth/google/callback' || callback.search || callback.hash)
       invalid.add('GOOGLE_CALLBACK_URL');
   }
+
   const shikimori = {
     enabled: shikimoriEnabled,
     origin: integrationUrl('SHIKIMORI_API_ORIGIN', 'https://shikimori.io'),
@@ -205,6 +209,7 @@ export function validateEnvironment(env: Environment) {
 export function startupFailureMessage(error: unknown): string {
   if (!(error instanceof EnvironmentValidationError))
     return 'API startup failed; verify server configuration and availability';
+
   const guidance = error.fields.includes('EXTENSION_ORIGINS')
     ? ' EXTENSION_ORIGINS must be empty or contain chrome-extension://<extension-id>; put website URLs in WEBSITE_ORIGINS.'
     : '';

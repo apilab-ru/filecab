@@ -45,6 +45,7 @@ afterAll(async () => {
     await auth.database.user.deleteMany({ where: { googleSubject: { startsWith: prefix } } });
     await auth.database.loginAttempt.deleteMany({ where: { stateHash: { in: stateHashes } } });
   }
+
   await app?.close();
 });
 
@@ -199,6 +200,7 @@ test('concurrent duplicate refresh has one successor and revokes that entire fam
   const winner = results.find((result) => result.status === 'fulfilled');
 
   if (winner?.status !== 'fulfilled') throw new Error('Expected one successor');
+
   await expect(
     auth.authenticate(winner.value.accessToken, AuthClient.Extension),
   ).rejects.toMatchObject({ httpStatus: 401 });

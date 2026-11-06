@@ -136,6 +136,7 @@ test('interactive login binds the callback attempt and never puts reusable token
       return new Response(
         JSON.stringify({ schemaVersion: 1, googleEnabled: true, extensionAllowed: true }),
       );
+
     const body = JSON.parse(String(init?.body)) as {
       code: string;
       verifier: string;

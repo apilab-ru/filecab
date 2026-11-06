@@ -78,6 +78,7 @@ export function titleFor(
   userTitle = '',
 ): DisplayText {
   if (userTitle.trim()) return ownText(userTitle, locale, 'user');
+
   const value = preferred(snapshot.titles, locale) ?? snapshot.originalTitle ?? snapshot.titles[0];
 
   return value ? localized(value, locale) : ownText(unavailableLabel, locale, 'fallback');

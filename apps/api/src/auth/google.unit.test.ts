@@ -114,6 +114,7 @@ test('code exchange verifies a signed ID token using bounded Google key retrieva
     vi.fn(async (url: unknown, init?: RequestInit) => {
       if (String(url).includes('/certs'))
         return new Response(JSON.stringify({ keys: [publicJwk] }));
+
       const body = init?.body as URLSearchParams;
       expect(body.get('code_verifier')).toBe('fixture-verifier');
       expect(body.get('redirect_uri')).toBe(environment.google.callbackUrl);

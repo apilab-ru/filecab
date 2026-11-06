@@ -64,6 +64,7 @@ export function configureApiApplication(
       if (!request.secure)
         return sendApiError(new ApiException(403, 'FORBIDDEN', 'HTTPS required'), response);
     }
+
     const origin = request.get('origin');
 
     if (origin && !origins.has(origin))
@@ -93,6 +94,7 @@ export function configureApiApplication(
         new ApiException(415, 'UNSUPPORTED_MEDIA_TYPE', 'JSON content type required'),
         response,
       );
+
     next();
   });
   app.enableCors({
@@ -136,8 +138,10 @@ export function configureApiApplication(
         const operation = path?.[method];
 
         if (!operation) continue;
+
         for (const response of Object.values(operation.responses)) {
           if (!response || '$ref' in response) continue;
+
           response.headers = {
             ...response.headers,
             'X-Correlation-ID': {

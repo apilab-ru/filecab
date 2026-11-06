@@ -28,6 +28,7 @@ export async function clearAccountCache(broadcast = true): Promise<void> {
 if (authEvents)
   authEvents.onmessage = (event: MessageEvent<{ ownerId: string | null }>) => {
     if (event.data.ownerId === knownOwner) return;
+
     knownOwner = event.data.ownerId;
     void clearAccountCache(false)
       .then(() =>
@@ -51,6 +52,7 @@ export async function currentAccount(signal?: AbortSignal): Promise<AccountInfo 
         const current = await fetch(`${API_ORIGIN}/api/v1/auth/me`, { credentials: 'include' });
 
         if (current.status !== 401) return;
+
         await fetch(`${API_ORIGIN}/api/v1/auth/refresh`, {
           method: 'POST',
           credentials: 'include',
@@ -65,6 +67,7 @@ export async function currentAccount(signal?: AbortSignal): Promise<AccountInfo 
         refresh = null;
       });
     }
+
     await refresh;
     response = await request();
   }
@@ -84,6 +87,7 @@ export async function currentAccount(signal?: AbortSignal): Promise<AccountInfo 
       queryClient.removeQueries({ predicate: (query) => query.queryKey[0] !== 'account' });
       queryClient.getMutationCache().clear();
     }
+
     authEvents?.postMessage({ ownerId });
   }
 
@@ -114,5 +118,6 @@ export async function logout(all = false): Promise<void> {
 
     if (!response.ok) throw new Error('Sign out failed; please retry');
   }
+
   await clearAccountCache();
 }

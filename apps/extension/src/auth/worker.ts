@@ -139,10 +139,12 @@ async function accessCredential(): Promise<StoredAccess | null> {
     StoredAccess | undefined;
 
   if (current && Date.parse(current.accessExpiresAt) > Date.now() + 5000) return current;
+
   const refresh = (await browser.storage.local.get(REFRESH_KEY))[REFRESH_KEY] as
     StoredRefresh | undefined;
 
   if (!refresh) return null;
+
   await clearCredentials();
   const response = await authFetch(
     AuthStage.Refresh,
@@ -159,9 +161,11 @@ async function accessCredential(): Promise<StoredAccess | null> {
   if (response.status === 401) return null;
 
   if (!response.ok) throw new Error('Authentication unavailable');
+
   const session = (await response.json()) as ExtensionSession;
 
   if (session.ownerId !== refresh.ownerId) throw new Error('Account changed during refresh');
+
   await storeSession(session);
 
   return session;
@@ -172,6 +176,7 @@ async function accountState(): Promise<AccountInfo | null> {
   let access = await accessCredential();
 
   if (!access) return null;
+
   const request = (token: string) =>
     authFetch(
       AuthStage.Account,
@@ -189,6 +194,7 @@ async function accountState(): Promise<AccountInfo | null> {
     access = await accessCredential();
 
     if (!access) return null;
+
     response = await request(access.accessToken);
   }
 
@@ -247,6 +253,7 @@ async function login(): Promise<AccountInfo> {
         stage: AuthStage.BrowserLogin,
         code: AuthFailureCode.LoginCancelled,
       });
+
     const callback = new URL(returned);
     const expected = new URL(returnTo);
     const stored = (await browser.storage.session.get(LOGIN_KEY))[LOGIN_KEY] as
@@ -259,6 +266,7 @@ async function login(): Promise<AccountInfo> {
       stored?.attempt !== attempt
     )
       throw new AuthFailure({ stage: AuthStage.Callback, code: AuthFailureCode.CallbackMismatch });
+
     const response = await authFetch(AuthStage.Exchange, 'exchange', {
       method: 'POST',
       credentials: 'omit',
@@ -271,6 +279,7 @@ async function login(): Promise<AccountInfo> {
     });
 
     if (!response.ok) throw new Error('Login failed');
+
     const session = (await response.json()) as ExtensionSession;
     await storeSession(session);
 
@@ -286,6 +295,7 @@ async function logout(all: boolean): Promise<void> {
     const access = await accessCredential();
 
     if (!access) return;
+
     const response = await authFetch(
       AuthStage.Logout,
       all ? 'logout-all' : 'logout',
@@ -306,6 +316,7 @@ async function logout(all: boolean): Promise<void> {
 /** Allows the extension UI pages, including query/fragment variants used during debugging. */
 function trustedPage(sender: { id?: string; url?: string }): boolean {
   if (sender.id !== browser.runtime.id || !sender.url) return false;
+
   try {
     const page = new URL(sender.url);
     const extension = new URL(browser.runtime.getURL('/'));
@@ -334,6 +345,7 @@ export function registerAuthWorker(): void {
       !('action' in message)
     )
       return;
+
     const action = message.action;
 
     if (
@@ -342,6 +354,7 @@ export function registerAuthWorker(): void {
       )
     )
       return;
+
     const stage =
       action === 'auth.login'
         ? AuthStage.BrowserLogin

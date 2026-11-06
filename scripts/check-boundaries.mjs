@@ -9,6 +9,7 @@ const ignored = new Set(['node_modules', 'dist', '.wxt', '.output', 'generated']
 function files(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     if (ignored.has(entry.name)) return [];
+
     const path = join(directory, entry.name);
 
     return entry.isDirectory() ? files(path) : [path];
@@ -52,6 +53,7 @@ function imports(source) {
         argument && ts.isStringLiteralLike(argument) ? argument.text : '<dynamic-module>',
       );
     }
+
     ts.forEachChild(node, visit);
   }
   visit(source);
@@ -131,6 +133,7 @@ export function checkBoundaries(root) {
       const config = ts.readConfigFile(configPath, ts.sys.readFile);
       options = ts.parseJsonConfigFileContent(config.config, ts.sys, dirname(configPath)).options;
     }
+
     for (const path of files(project.path).filter((path) => /\.[cm]?[jt]sx?$/.test(path))) {
       const text = readFileSync(path, 'utf8');
       const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
@@ -139,6 +142,7 @@ export function checkBoundaries(root) {
           fail(path, 'non-literal module loading cannot be checked');
           continue;
         }
+
         const resolved = ts.resolveModuleName(name, path, options, ts.sys).resolvedModule
           ?.resolvedFileName;
         const targetPath =
@@ -217,6 +221,7 @@ export function checkBoundaries(root) {
             node.expression.text === 'process'
           )
             fail(path, 'server process environment in client source');
+
           ts.forEachChild(node, inspect);
         }
         inspect(source);
