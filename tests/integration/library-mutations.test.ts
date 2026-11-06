@@ -212,7 +212,7 @@ test('catalog duplicates race safely, deleted claims release and restore conflic
   }
 });
 
-test('failed merge rolls back an already published tombstone and change counter', async () => {
+test('invalid merge preserves both documents and the change counter', async () => {
   const first = await create();
   const second = await create();
   const owner = await database.userLibrary.findUniqueOrThrow({ where: { ownerId: owners[0] } });
@@ -246,7 +246,7 @@ test('same UUID across owners cannot overwrite either owner and bigint cursors r
     category: Category.Anime,
     catalogId: null,
     snapshot: emptySnapshot(),
-    fields: {},
+    fields: { userTitle: 'Race fixture' },
   };
   const results = await Promise.allSettled(owners.map((owner) => service.create(owner, input)));
   expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);

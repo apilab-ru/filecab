@@ -1,3 +1,6 @@
+import { LibraryController, LibraryInputGuard } from './library/library.controller';
+import { LibraryMutationService } from './library/mutation.service';
+import { LibraryPreviewSigner } from './library/preview';
 import { Module, type DynamicModule } from '@nestjs/common';
 import type { ApiEnvironment } from './config/environment';
 import { AuthController } from './auth/auth.controller';
@@ -17,7 +20,7 @@ export class AppModule {
   ): DynamicModule {
     return {
       module: AppModule,
-      controllers: [HealthController, AuthController],
+      controllers: [HealthController, AuthController, LibraryController],
       providers: [
         { provide: AUTH_ENVIRONMENT, useValue: environment },
         {
@@ -26,6 +29,16 @@ export class AppModule {
         },
         AuthService,
         AuthGuard,
+        LibraryInputGuard,
+        {
+          provide: LibraryMutationService,
+          inject: [AuthService],
+          useFactory: (auth: AuthService) =>
+            new LibraryMutationService(
+              auth.database,
+              new LibraryPreviewSigner(environment.sessionSecret),
+            ),
+        },
         {
           provide: DATABASE_READINESS,
           useFactory: () => readiness ?? new PostgresReadiness(environment.databaseUrl),

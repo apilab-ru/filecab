@@ -46,6 +46,7 @@ export class AuthGuard implements CanActivate {
 
     if ((header && (!bearer || cookie || refresh)) || (!bearer && !cookie))
       throw new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+
     request[AUTH_CONTEXT] = await this.auth.authenticate(
       bearer ?? cookie!,
       bearer ? AuthClient.Extension : AuthClient.Website,

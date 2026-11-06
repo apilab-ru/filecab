@@ -1,13 +1,26 @@
 import { createHash } from 'node:crypto';
-import type { EntryPatch, ServerEntry, Snapshot, Category } from '@filecab/contracts';
+import type {
+  EntryPatch,
+  ServerEntry,
+  Snapshot,
+  Category,
+  OwnerSnapshot,
+  MergeEntriesRequest,
+  ReassignSourceRequest,
+  LibraryMutationPreview,
+} from '@filecab/contracts';
 import type { PrismaClient, Prisma } from '../generated/prisma/client';
-import { validateEntryPatchDto } from '../contracts/entry-patch.dto';
 
-export class MutationError extends Error {
-  constructor(readonly code: 'NOT_FOUND' | 'CONFLICT' | 'VALIDATION_ERROR') {
-    super(code);
-  }
-}
+import {
+  MutationError,
+  patchDocument,
+  validateEntry,
+  proposeMerge,
+  proposeReassignment,
+} from './proposals';
+import { LibraryPreviewSigner } from './preview';
+
+export { MutationError } from './proposals';
 
 /** Carries a new entry without accepting client ownership or server timestamps. */
 export interface CreateEntry {
@@ -23,27 +36,12 @@ function json(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
-/** Applies validated user fields and computes authoritative normalized source claims. */
-function patchDocument(entry: ServerEntry, patch: EntryPatch): ServerEntry {
-  const { sourceUrls, ...fields } = validateEntryPatchDto(patch);
-
-  return {
-    ...entry,
-    ...Object.fromEntries(Object.entries(fields).filter(([, value]) => value !== undefined)),
-    sources:
-      sourceUrls === undefined
-        ? entry.sources
-        : sourceUrls.map((originalUrl) => ({
-            originalUrl,
-            normalizedUrl: new URL(originalUrl).href,
-            policyVersion: 'generic-v1',
-          })),
-  };
-}
-
 /** Serializes every mutation for one owner until its documents and change feed commit. */
 export class LibraryMutationService {
-  constructor(private readonly database: PrismaClient) {}
+  constructor(
+    private readonly database: PrismaClient,
+    private readonly previews?: LibraryPreviewSigner,
+  ) {}
 
   private async transaction<T>(
     ownerId: string,
@@ -76,6 +74,7 @@ export class LibraryMutationService {
     const row = await tx.libraryEntry.findFirst({ where: { id: entryId, ownerId } });
 
     if (!row) throw new MutationError('NOT_FOUND');
+
     const entry = row.document as unknown as ServerEntry;
 
     if (entry.serverVersion !== expectedVersion) throw new MutationError('CONFLICT');
@@ -150,6 +149,7 @@ export class LibraryMutationService {
         input.fields,
       );
       await this.checkCatalog(tx, entry.catalogId, entry.category);
+      validateEntry(entry);
 
       return this.publish(tx, ownerId, entry, true);
     });
@@ -232,6 +232,66 @@ export class LibraryMutationService {
     });
   }
 
+  async snapshot(ownerId: string): Promise<OwnerSnapshot> {
+    return this.database.$transaction(
+      async (tx) => {
+        const library = await tx.userLibrary.findUnique({ where: { ownerId } });
+
+        if (!library) throw new MutationError('NOT_FOUND');
+
+        const rows = await tx.libraryEntry.findMany({
+          where: { ownerId, deleted: false },
+          orderBy: { id: 'asc' },
+        });
+
+        return {
+          schemaVersion: 1,
+          revision: library.revision.toString(),
+          entries: rows.map((row) => row.document as unknown as ServerEntry),
+        };
+      },
+      { isolationLevel: 'RepeatableRead' },
+    );
+  }
+
+  async get(ownerId: string, entryId: string): Promise<ServerEntry> {
+    const entry = await this.database.libraryEntry.findFirst({
+      where: { id: entryId, ownerId, deleted: false },
+    });
+
+    if (!entry) throw new MutationError('NOT_FOUND');
+
+    return entry.document as unknown as ServerEntry;
+  }
+
+  async previewMerge(ownerId: string, input: MergeEntriesRequest): Promise<LibraryMutationPreview> {
+    return this.transaction(ownerId, async (tx) => {
+      const survivor = await this.load(tx, ownerId, input.survivorId, input.survivorVersion);
+      const removed = await this.load(tx, ownerId, input.removedId, input.removedVersion);
+      const proposed = proposeMerge(survivor, removed, input.fields);
+      await this.checkCatalog(tx, proposed[0].catalogId, proposed[0].category);
+
+      if (!this.previews) throw new MutationError('CONFLICT');
+
+      return this.previews.create(ownerId, 'merge', input, [survivor, removed], proposed);
+    });
+  }
+
+  async previewReassignment(
+    ownerId: string,
+    input: ReassignSourceRequest,
+  ): Promise<LibraryMutationPreview> {
+    return this.transaction(ownerId, async (tx) => {
+      const from = await this.load(tx, ownerId, input.fromId, input.fromVersion);
+      const to = await this.load(tx, ownerId, input.toId, input.toVersion);
+      const proposed = proposeReassignment(from, to, input.normalizedUrl);
+
+      if (!this.previews) throw new MutationError('CONFLICT');
+
+      return this.previews.create(ownerId, 'reassign-source', input, [from, to], proposed);
+    });
+  }
+
   async reassignSource(
     ownerId: string,
     fromId: string,
@@ -239,27 +299,30 @@ export class LibraryMutationService {
     toId: string,
     toVersion: string,
     normalizedUrl: string,
+    previewToken?: string,
   ): Promise<ServerEntry[]> {
     return this.transaction(ownerId, async (tx) => {
       const from = await this.load(tx, ownerId, fromId, fromVersion);
       const to = await this.load(tx, ownerId, toId, toVersion);
-      const source = from.sources.find((value) => value.normalizedUrl === normalizedUrl);
+      const proposed = proposeReassignment(from, to, normalizedUrl);
 
-      if (fromId === toId || from.deleted || to.deleted || !source)
-        throw new MutationError('CONFLICT');
+      if (previewToken !== undefined) {
+        if (!this.previews) throw new MutationError('CONFLICT');
+
+        this.previews.verify(
+          previewToken,
+          ownerId,
+          'reassign-source',
+          { fromId, fromVersion, toId, toVersion, normalizedUrl },
+          [from, to],
+        );
+      }
+
       const updatedAt = new Date(
         Math.max(Date.now(), Date.parse(from.updatedAt), Date.parse(to.updatedAt)),
       ).toISOString();
-      const first = await this.publish(tx, ownerId, {
-        ...from,
-        updatedAt,
-        sources: from.sources.filter((value) => value !== source),
-      });
-      const second = await this.publish(tx, ownerId, {
-        ...to,
-        updatedAt,
-        sources: [...to.sources, source],
-      });
+      const first = await this.publish(tx, ownerId, { ...proposed[0], updatedAt });
+      const second = await this.publish(tx, ownerId, { ...proposed[1], updatedAt });
 
       return [first, second];
     });
@@ -272,34 +335,30 @@ export class LibraryMutationService {
     removedId: string,
     removedVersion: string,
     fields: EntryPatch,
+    previewToken?: string,
   ): Promise<ServerEntry[]> {
     return this.transaction(ownerId, async (tx) => {
       const survivor = await this.load(tx, ownerId, survivorId, survivorVersion);
       const removed = await this.load(tx, ownerId, removedId, removedVersion);
+      const [merged, removedEntry] = proposeMerge(survivor, removed, fields);
+      await this.checkCatalog(tx, merged.catalogId, merged.category);
 
-      if (
-        survivorId === removedId ||
-        survivor.deleted ||
-        removed.deleted ||
-        survivor.category !== removed.category ||
-        (survivor.catalogId && removed.catalogId && survivor.catalogId !== removed.catalogId) ||
-        fields.sourceUrls !== undefined
-      )
-        throw new MutationError('CONFLICT');
+      if (previewToken !== undefined) {
+        if (!this.previews) throw new MutationError('CONFLICT');
+
+        this.previews.verify(
+          previewToken,
+          ownerId,
+          'merge',
+          { survivorId, survivorVersion, removedId, removedVersion, fields },
+          [survivor, removed],
+        );
+      }
+
       const updatedAt = new Date(
         Math.max(Date.now(), Date.parse(survivor.updatedAt), Date.parse(removed.updatedAt)),
       ).toISOString();
-      const tombstone = await this.publish(tx, ownerId, { ...removed, deleted: true, updatedAt });
-      const merged = patchDocument(survivor, fields);
-      merged.catalogId = survivor.catalogId ?? removed.catalogId;
-
-      if (!survivor.catalogId && removed.catalogId) merged.snapshot = removed.snapshot;
-      merged.sources = [
-        ...new Map(
-          [...survivor.sources, ...removed.sources].map((source) => [source.normalizedUrl, source]),
-        ).values(),
-      ];
-      await this.checkCatalog(tx, merged.catalogId, merged.category);
+      const tombstone = await this.publish(tx, ownerId, { ...removedEntry, updatedAt });
       const saved = await this.publish(tx, ownerId, { ...merged, updatedAt });
 
       return [saved, tombstone];

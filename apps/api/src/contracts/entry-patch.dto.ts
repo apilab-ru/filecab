@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import type { Category, Status } from '@filecab/contracts';
 import { plainToInstance } from 'class-transformer';
 import {
@@ -17,13 +18,25 @@ import {
   type ValidationError,
 } from 'class-validator';
 
+const EDITABLE_FIELDS = [
+  'category',
+  'userTitle',
+  'status',
+  'rating',
+  'progress',
+  'comment',
+  'sourceUrls',
+];
+
 @ValidatorConstraint({ name: 'sourceUrls', async: false })
 class SourceUrlsConstraint implements ValidatorConstraintInterface {
   validate(value: unknown): boolean {
     if (!Array.isArray(value)) return false;
+
     const normalized = new Set<string>();
     for (const original of value) {
       if (typeof original !== 'string' || original.length > 8192) return false;
+
       try {
         const url = new URL(original);
 
@@ -34,6 +47,7 @@ class SourceUrlsConstraint implements ValidatorConstraintInterface {
           normalized.has(url.href)
         )
           return false;
+
         normalized.add(url.href);
       } catch {
         return false;
@@ -51,38 +65,68 @@ class SourceUrlsConstraint implements ValidatorConstraintInterface {
 export class EntryPatchDto {
   @ValidateIf((_, value) => value !== undefined)
   @IsIn(['anime', 'films', 'tv'])
+  @ApiPropertyOptional({ type: String, enum: ['anime', 'films', 'tv'] })
   category?: Category;
 
   @ValidateIf((_, value) => value !== undefined)
   @IsString()
   @MaxLength(10000)
+  @ApiPropertyOptional({
+    type: String,
+    maxLength: 10000,
+    description: 'Exact user text. Must remain nonblank for manual entries.',
+  })
   userTitle?: string;
 
   @ValidateIf((_, value) => value !== undefined)
   @IsIn(['planned', 'process', 'complete', 'drop', 'hide', null])
+  @ApiPropertyOptional({
+    type: String,
+    enum: ['planned', 'process', 'complete', 'drop', 'hide', null],
+    nullable: true,
+    description: 'Explicit null clears status.',
+  })
   status?: Status | null;
 
   @ValidateIf((_, value) => value !== undefined)
   @IsInt()
   @Min(0)
   @Max(10)
+  @ApiPropertyOptional({
+    type: 'integer',
+    minimum: 0,
+    maximum: 10,
+    description: 'Zero means unrated.',
+  })
   rating?: number;
 
   @ValidateIf((_, value) => value !== undefined)
   @IsInt()
   @Min(0)
   @Max(Number.MAX_SAFE_INTEGER)
+  @ApiPropertyOptional({ type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER })
   progress?: number;
 
   @ValidateIf((_, value) => value !== undefined)
   @IsString()
   @MaxLength(100000)
+  @ApiPropertyOptional({
+    type: String,
+    maxLength: 100000,
+    description: 'Empty string clears notes.',
+  })
   comment?: string;
 
   @ValidateIf((_, value) => value !== undefined)
   @IsArray()
   @ArrayMaxSize(100)
   @Validate(SourceUrlsConstraint)
+  @ApiPropertyOptional({
+    type: [String],
+    maxItems: 100,
+    description:
+      'Unique absolute HTTP(S) URLs, each at most 8192 characters. Empty array clears all sources.',
+  })
   sourceUrls?: string[];
 }
 
@@ -124,18 +168,10 @@ export function validateEntryPatchDto(input: unknown): EntryPatchDto {
     Object.getPrototypeOf(input) !== Object.prototype
   )
     throw new RequestValidationError([{ path: [], message: 'Expected request object' }]);
+
   // Transform only after checking the original allowlist: class-transformer deliberately
   // discards some dangerous property names rather than reporting them as unknown.
-  const allowed = [
-    'category',
-    'userTitle',
-    'status',
-    'rating',
-    'progress',
-    'comment',
-    'sourceUrls',
-  ];
-  const unknown = Object.keys(input).filter((key) => !allowed.includes(key));
+  const unknown = Object.keys(input).filter((key) => !EDITABLE_FIELDS.includes(key));
 
   if (unknown.length)
     throw new RequestValidationError(

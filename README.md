@@ -41,7 +41,7 @@ Nx also accepts individual targets: `pnpm exec nx build web`, `pnpm exec nx buil
 
 - `apps/web`: minimal React page with Vite.
 - `apps/extension`: WXT popup, full page (`full-page.html`), background, and content script. The empty content script matches only `https://example.com/*`.
-- `apps/api`: NestJS bootstrap with validated server configuration and backend-only Prisma client factory. Health, Google login and session endpoints live under `/api/v1`; `/` returns 404. Override the port in `apps/api/.env`.
+- `apps/api`: NestJS bootstrap with validated server configuration and backend-only Prisma client factory. Health, Google login, session and owner-library endpoints live under `/api/v1`; `/` returns 404. Override the port in `apps/api/.env`.
 - `packages/ui`: shared React panel.
 - `packages/library`: shared React placeholder composed from UI and contract types.
 - `packages/contracts`: framework-independent TypeScript types.
@@ -145,7 +145,7 @@ Run `pnpm dev:api` after configuring `apps/api/.env`. The listener binds to
 - `GET /api/v1/health/ready`: bounded PostgreSQL readiness probe; 503 on failure.
 - `/api/docs` and `/api/docs-json`: Swagger UI and OpenAPI, outside production only.
 
-Health endpoints are anonymous and accept no query parameters. Google authentication and session endpoints are described below; owner-library endpoints follow in step 7. Every response has an
+Health endpoints are anonymous and accept no query parameters. Google authentication, session and owner-library endpoints are described below. Every response has an
 `X-Correlation-ID`; errors include a stable code, HTTP status, safe message,
 correlation ID and retryability. The JSON body limit is initially 1 MiB.
 
@@ -224,3 +224,59 @@ require a separate manual check; reaching Google's sign-in screen does not prove
 a completed code exchange.
 
 For extension login failures, see the [extension debugging guide](apps/extension/README.md#debugging-sign-in). It explains worker versus popup DevTools, safe stage diagnostics, exact origin setup and the real Chromium extension regression test.
+
+## Owner library API
+
+The authenticated routes below are relative to `/api/v1` and use the owner from
+the access cookie or extension bearer token. No route accepts a submitted owner or client snapshot.
+Catalog providers can be disabled while creating and editing manual entries.
+
+| Method and path                              | Request / result                                                                             |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `GET /library`                               | Complete active private library and revision; includes hidden entries, excludes tombstones.  |
+| `GET /library/entries/:entryId`              | Active owned document; deleted or foreign entries return 404.                                |
+| `POST /library/entries`                      | Editable fields and required category; optional UUID/catalogId. Returns the server document. |
+| `PATCH /library/entries/:entryId`            | `expectedVersion` plus editable fields.                                                      |
+| `DELETE /library/entries/:entryId`           | `expectedVersion`; returns the deletion tombstone.                                           |
+| `POST /library/entries/:entryId/restore`     | Tombstone `expectedVersion`; restores unless identity/source claims conflict.                |
+| `POST /library/merges/preview`               | Survivor/removed IDs and versions, plus `fields` choices.                                    |
+| `POST /library/merges/apply`                 | The same choices plus `previewToken`.                                                        |
+| `POST /library/sources/reassignment/preview` | From/to IDs and versions, plus the saved `normalizedUrl`.                                    |
+| `POST /library/sources/reassignment/apply`   | The same source movement plus `previewToken`.                                                |
+
+Request/response schemas and synthetic examples are available in `/api/docs`
+outside production.
+
+A manual creation body can be as small as:
+
+```json
+{ "category": "anime", "userTitle": "My manual entry" }
+```
+
+The server generates the UUID and timestamps. An existing internal `catalogId`
+loads metadata from the server; a caller cannot submit a snapshot. Manual titles
+must remain nonblank. User text is preserved exactly. Ordinary PATCH cannot
+change catalog identity, creation time or snapshot metadata.
+
+Versions are canonical positive decimal **strings**. Updating a document with
+its current version and unchanged fields is a no-op. Status null clears status;
+rating/progress zero, an empty comment and an empty source list are explicit
+clearing operations. Progress above a known total is retained without an
+automatic status change; UI warnings/editing controls follow in step 11.
+
+Snapshot revision and entries come from one RepeatableRead transaction. Display
+search, filters, sort and pagination stay client-side; query parameters on owner
+routes are rejected. The stable transport order by UUID is not a display sort.
+
+Previews return current/proposed documents with null `serverVersion` on unsaved
+proposals. Their HMAC confirmation expires after five minutes and binds the owner,
+operation, versions, source order and choices. Apply revalidates everything under
+the same library lock used to publish all affected changes. A stale, altered or
+expired preview returns 409 without partial writes. Merges preserve the selected
+survivor identity and tombstone the removed identity; source lists are combined
+without truncation. A result above 100 sources is rejected until sources are
+reduced explicitly. Website cookie mutations also require the existing Origin
+and `X-Filecab-Request: 1` protections.
+
+This is the API delivery; library screens, offline persistence, replication and
+Undo dialogs remain in their planned later steps.

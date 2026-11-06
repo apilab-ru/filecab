@@ -1,3 +1,4 @@
+import { RequestDtoPipe } from '../http/validation';
 import {
   Body,
   Controller,
@@ -26,7 +27,6 @@ import {
   AccountDto,
   ExtensionConfigQueryDto,
   ExtensionLoginConfigDto,
-  AuthDtoPipe,
   ExchangeDto,
   ExtensionTokensDto,
   GoogleCallbackDto,
@@ -97,7 +97,7 @@ export class AuthController {
   @ApiQuery({ type: ExtensionConfigQueryDto })
   @ApiResponse({ status: 200, type: ExtensionLoginConfigDto })
   extensionConfig(
-    @Query(new AuthDtoPipe(ExtensionConfigQueryDto)) input: ExtensionConfigQueryDto,
+    @Query(new RequestDtoPipe(ExtensionConfigQueryDto)) input: ExtensionConfigQueryDto,
   ): ExtensionLoginConfigDto {
     return {
       schemaVersion: 1,
@@ -116,7 +116,7 @@ export class AuthController {
     description: 'Redirect to Google; sets an HttpOnly login-binding cookie',
   })
   async start(
-    @Query(new AuthDtoPipe(LoginStartDto)) input: LoginStartDto,
+    @Query(new RequestDtoPipe(LoginStartDto)) input: LoginStartDto,
     @Res() response: Response,
   ): Promise<void> {
     const result = await this.auth.start(
@@ -146,7 +146,7 @@ export class AuthController {
     @Req() request: Request,
     @Res() response: Response,
   ): Promise<void> {
-    const input = (await new AuthDtoPipe(GoogleCallbackDto).transform(
+    const input = (await new RequestDtoPipe(GoogleCallbackDto).transform(
       Object.fromEntries(
         ['state', 'code', 'error']
           .filter((key) => query[key] !== undefined)
@@ -158,6 +158,7 @@ export class AuthController {
     response.clearCookie(this.names.login, this.cookieOptions());
 
     if (!binding) throw new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+
     const result = await this.auth.callback(
       input.state,
       binding,
@@ -166,6 +167,7 @@ export class AuthController {
     );
 
     if (result.tokens) this.writeTokens(response, result.tokens);
+
     response.redirect(result.returnTo);
   }
 
@@ -174,7 +176,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Redeem extension login code', security: [] })
   @ApiBody({ type: ExchangeDto })
   @ApiResponse({ status: 200, type: ExtensionTokensDto })
-  async exchange(@Body(new AuthDtoPipe(ExchangeDto)) input: ExchangeDto): Promise<SessionTokens> {
+  async exchange(
+    @Body(new RequestDtoPipe(ExchangeDto)) input: ExchangeDto,
+  ): Promise<SessionTokens> {
     return this.auth.exchange(input.code, input.attempt, input.verifier);
   }
 
@@ -194,7 +198,7 @@ export class AuthController {
     },
   })
   async refresh(
-    @Body(new AuthDtoPipe(RefreshDto)) input: RefreshDto,
+    @Body(new RequestDtoPipe(RefreshDto)) input: RefreshDto,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AccountDto | SessionTokens> {
@@ -202,9 +206,11 @@ export class AuthController {
 
     if ((cookie && input.refreshToken) || request.get('authorization'))
       throw new ApiException(400, 'VALIDATION_ERROR', 'Ambiguous refresh credentials');
+
     const token = cookie ?? input.refreshToken;
 
     if (!token) throw new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+
     try {
       const tokens = await this.auth.refresh(
         token,
@@ -212,6 +218,7 @@ export class AuthController {
       );
 
       if (!cookie) return tokens;
+
       this.writeTokens(response, tokens);
 
       return { schemaVersion: 1, ownerId: tokens.ownerId };

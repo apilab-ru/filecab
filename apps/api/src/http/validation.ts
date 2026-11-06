@@ -1,4 +1,4 @@
-import { ValidationPipe, type ArgumentMetadata } from '@nestjs/common';
+import { ValidationPipe, type Type, type ArgumentMetadata } from '@nestjs/common';
 import type { ValidationError } from 'class-validator';
 import type { ValidationIssue } from '@filecab/contracts';
 import { ApiException } from './api-error';
@@ -62,5 +62,16 @@ export class StrictValidationPipe extends ValidationPipe {
     }
 
     return super.transform(value, metadata);
+  }
+}
+
+/** Selects an explicit DTO type without requiring emitted decorator metadata. */
+export class RequestDtoPipe extends StrictValidationPipe {
+  constructor(private readonly dto: Type<object>) {
+    super();
+  }
+
+  override transform(value: unknown, metadata: ArgumentMetadata): Promise<unknown> {
+    return super.transform(value, { ...metadata, metatype: this.dto });
   }
 }

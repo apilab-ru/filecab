@@ -1,10 +1,10 @@
 # Filecab — Implementation Plan
 
-Status: execution baseline, 2 November 2026. Steps 1–5 are complete. Step 6 implementation and automated verification are delivered; live Google/Chrome sign-in verification remains pending. Steps 7–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
+Status: execution baseline, 2 November 2026. Steps 1–7 are delivered. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Steps 8–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
 
 ## Baseline and scope
 
-The initial workspace contained React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. Steps 1–5 now provide shared contracts, transactional PostgreSQL persistence and the documented API foundation. Google authentication and session clients are implemented with manual live verification pending; client library persistence/UI, catalog providers, replication, and external list synchronization remain to be implemented. Old-data migration and old route compatibility are out of scope.
+The initial workspace contained React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. Steps 1–5 now provide shared contracts, transactional PostgreSQL persistence and the documented API foundation. Google authentication, session clients and the owner-library API are implemented. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Client library persistence/UI, catalog providers, replication, and external list synchronization remain to be implemented. Old-data migration and old route compatibility are out of scope.
 
 This plan covers required behavior in [Functionality](../specs/functionality.md), [Backend](../specs/backend.md), [Stack](../specs/stack.md), [Catalog](../specs/catalog-spec.md), [User List Synchronization](../specs/user-list-sync-spec.md), and all three integration specifications. [Plans](../specs/plans.md) is a separate future-feature backlog and is excluded from this implementation plan. Section 13 of Functionality contains recommendations rather than additional release requirements.
 
@@ -77,18 +77,18 @@ Depends on steps 4–5.
 - [x] Add account lookup, access expiry, serialized refresh/rotation, opaque refresh-token hashes, replay detection, logout, and all-session revocation.
 - [x] Define privileged extension credential storage and clear website account caches on logout/account switch.
 
-Automated exit satisfied: signed-token, HTTP/PostgreSQL, client and Chromium tests cover invalid issuer/audience/state/nonce/expiry, exchange replay, concurrent refresh, revoked sessions, CSRF, cross-account access and cross-tab cache clearing. The compiled API has database readiness and reaches Google’s sign-in screen using the configured OAuth client. See [step 6 evidence](requirement-checklist.md#google-authentication-and-account-isolation-step-6). Completing real Google consent/code exchange and the Chrome identity-window flow remains a manual verification item; it is not claimed from fixtures or the authorization screen alone.
+Automated exit satisfied: signed-token, HTTP/PostgreSQL, client and Chromium tests cover invalid issuer/audience/state/nonce/expiry, exchange replay, concurrent refresh, revoked sessions, CSRF, cross-account access and cross-tab cache clearing. The compiled API has database readiness and reaches Google’s sign-in screen using the configured OAuth client. See [step 6 evidence](requirement-checklist.md#google-authentication-and-account-isolation-step-6). The user subsequently confirmed successful extension sign-in after origin configuration was corrected. Separate live website consent and session-control verification remains pending; automated fixtures are recorded separately.
 
 ## 7. Deliver owner-library API and complete snapshots
 
 Depends on steps 4–6.
 
-- [ ] Expose create/read/update/delete/restore and complete owner-library retrieval through the common mutation service.
-- [ ] Return hidden entries in the private snapshot; exclude tombstones there and deliver them through replication.
-- [ ] Keep display search/filter/sort/pagination out of the owner snapshot API; expose revision information for safe bulk replacement.
-- [ ] Implement version-checked explicit merge and source-reassignment previews, preserving the selected surviving identity and publishing removed identities as tombstones.
+- [x] Expose create/read/update/delete/restore and complete owner-library retrieval through the common mutation service.
+- [x] Return hidden entries in the private snapshot; exclude tombstones there and deliver them through replication.
+- [x] Keep display search/filter/sort/pagination out of the owner snapshot API; expose revision information for safe bulk replacement.
+- [x] Implement version-checked explicit merge and source-reassignment previews, preserving the selected surviving identity and publishing removed identities as tombstones.
 
-Exit: manual entries work with providers disabled, and every mutation path obeys the same ownership/version rules.
+Exit satisfied: authenticated manual CRUD works with catalog providers disabled. Complete snapshots are consistent under concurrent writes and include hidden entries while excluding tombstones. Version-bound merge/source previews apply atomically through the common owner-scoped service. See [step 7 evidence](requirement-checklist.md#owner-library-api-and-complete-snapshots-step-7). Replication delivery of tombstones remains step 9; editing interfaces remain step 11.
 
 ## 8. Build extension offline persistence
 

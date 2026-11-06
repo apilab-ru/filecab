@@ -1,19 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
-import { type ArgumentMetadata, type Type } from '@nestjs/common';
-import { StrictValidationPipe } from '../http/validation';
 import { AuthClient } from './credentials';
-
-/** Validates explicit DTO types even in runtimes without emitted decorator type metadata. */
-export class AuthDtoPipe extends StrictValidationPipe {
-  constructor(private readonly dto: Type<object>) {
-    super();
-  }
-
-  override transform(value: unknown, metadata: ArgumentMetadata): Promise<unknown> {
-    return super.transform(value, { ...metadata, metatype: this.dto });
-  }
-}
 
 /** Bounds the login destination and extension attempt binding before issuing state. */
 export class LoginStartDto {

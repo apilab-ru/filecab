@@ -314,3 +314,53 @@ export interface ExtensionLoginConfig {
   googleEnabled: boolean;
   extensionAllowed: boolean;
 }
+
+/** Creates an owner entry while leaving catalog snapshots and server state authoritative. */
+export interface CreateLibraryEntry extends EntryPatch {
+  entryId?: string;
+  catalogId?: string | null;
+  category: Category;
+}
+
+/** Applies editable fields only when the current server version still matches. */
+export interface UpdateLibraryEntry extends EntryPatch {
+  expectedVersion: string;
+}
+
+/** Selects the surviving identity and editable field choices for an explicit merge. */
+export interface MergeEntriesRequest {
+  survivorId: string;
+  survivorVersion: string;
+  removedId: string;
+  removedVersion: string;
+  fields: EntryPatch;
+}
+
+/** Selects one source movement and both documents' assumed versions. */
+export interface ReassignSourceRequest {
+  fromId: string;
+  fromVersion: string;
+  toId: string;
+  toVersion: string;
+  normalizedUrl: string;
+}
+
+/** Shows a current server document alongside unsaved proposed intent. */
+export interface LibraryPreviewChange {
+  before: ServerEntry;
+  proposed: Entry;
+}
+
+/** Binds an owner-visible preview to its exact choices and current document state. */
+export interface LibraryMutationPreview {
+  schemaVersion: 1;
+  previewToken: string;
+  expiresAt: string;
+  changes: LibraryPreviewChange[];
+}
+
+/** Returns all committed documents affected by a merge or source reassignment. */
+export interface LibraryMutationResult {
+  schemaVersion: 1;
+  entries: ServerEntry[];
+}
