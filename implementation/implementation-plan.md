@@ -1,10 +1,10 @@
 # Filecab — Implementation Plan
 
-Status: execution baseline, 2 November 2026. Steps 1–5 are complete; steps 6–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
+Status: execution baseline, 2 November 2026. Steps 1–5 are complete. Step 6 implementation and automated verification are delivered; live Google/Chrome sign-in verification remains pending. Steps 7–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
 
 ## Baseline and scope
 
-The initial workspace contained React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. Steps 1–5 now provide shared contracts, transactional PostgreSQL persistence and the documented API foundation. Authentication, client persistence/UI, catalog providers, replication, and external list synchronization remain to be implemented. Old-data migration and old route compatibility are out of scope.
+The initial workspace contained React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. Steps 1–5 now provide shared contracts, transactional PostgreSQL persistence and the documented API foundation. Google authentication and session clients are implemented with manual live verification pending; client library persistence/UI, catalog providers, replication, and external list synchronization remain to be implemented. Old-data migration and old route compatibility are out of scope.
 
 This plan covers required behavior in [Functionality](../specs/functionality.md), [Backend](../specs/backend.md), [Stack](../specs/stack.md), [Catalog](../specs/catalog-spec.md), [User List Synchronization](../specs/user-list-sync-spec.md), and all three integration specifications. [Plans](../specs/plans.md) is a separate future-feature backlog and is excluded from this implementation plan. Section 13 of Functionality contains recommendations rather than additional release requirements.
 
@@ -72,12 +72,12 @@ Exit satisfied: HTTP tests verify body/DTO bounds, allowlists, correlation IDs, 
 
 Depends on steps 4–5.
 
-- [ ] Implement Google authorization-code validation, subject-based identity, state/nonce handling, allowlisted callbacks, and website secure HttpOnly sessions.
-- [ ] Implement extension `identity.launchWebAuthFlow` with a short-lived, single-use, attempt-bound exchange code; keep reusable credentials out of redirect URLs and content scripts.
-- [ ] Add account lookup, access expiry, serialized refresh/rotation, opaque refresh-token hashes, replay detection, logout, and all-session revocation.
-- [ ] Define privileged extension credential storage and clear website account caches on logout/account switch.
+- [x] Implement Google authorization-code validation, subject-based identity, state/nonce handling, allowlisted callbacks, and website secure HttpOnly sessions.
+- [x] Implement extension `identity.launchWebAuthFlow` with a short-lived, single-use, attempt-bound exchange code; keep reusable credentials out of redirect URLs and content scripts.
+- [x] Add account lookup, access expiry, serialized refresh/rotation, opaque refresh-token hashes, replay detection, logout, and all-session revocation.
+- [x] Define privileged extension credential storage and clear website account caches on logout/account switch.
 
-Exit: tests cover invalid issuer/audience/state/nonce/expiry, exchange replay, concurrent refresh, revoked sessions, CSRF, and cross-account access.
+Automated exit satisfied: signed-token, HTTP/PostgreSQL, client and Chromium tests cover invalid issuer/audience/state/nonce/expiry, exchange replay, concurrent refresh, revoked sessions, CSRF, cross-account access and cross-tab cache clearing. The compiled API has database readiness and reaches Google’s sign-in screen using the configured OAuth client. See [step 6 evidence](requirement-checklist.md#google-authentication-and-account-isolation-step-6). Completing real Google consent/code exchange and the Chrome identity-window flow remains a manual verification item; it is not claimed from fixtures or the authorization screen alone.
 
 ## 7. Deliver owner-library API and complete snapshots
 

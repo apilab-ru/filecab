@@ -293,3 +293,24 @@ export interface RejectedIntent {
   conflict: Conflict;
   recordedAt: string;
 }
+
+/** Identifies the authenticated Filecab account without exposing Google identity or credentials. */
+export interface AccountInfo {
+  schemaVersion: 1;
+  ownerId: string;
+}
+
+/** Carries Filecab credentials only between the backend and privileged extension worker. */
+export interface ExtensionSession extends AccountInfo {
+  accessToken: string;
+  refreshToken: string;
+  accessExpiresAt: string;
+  sessionExpiresAt: string;
+}
+
+/** Reports public Google-login readiness for one submitted Chrome extension ID. */
+export interface ExtensionLoginConfig {
+  schemaVersion: 1;
+  googleEnabled: boolean;
+  extensionAllowed: boolean;
+}

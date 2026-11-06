@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { parseEnv } from 'node:util';
 import { describe, expect, it } from 'vitest';
-import { validateEnvironment } from '../../apps/api/src/config/environment';
+import { startupFailureMessage, validateEnvironment } from '../../apps/api/src/config/environment';
 
 const development = {
   DATABASE_URL: 'postgresql://local:synthetic@127.0.0.1:5432/filecab_dev',
@@ -107,4 +109,68 @@ describe('startup configuration', () => {
     expect((failure as Error).message).toContain('DATABASE_URL');
     expect((failure as Error).message).not.toContain('sensitive-input-secret');
   });
+});
+
+it('startup diagnostics explain invalid extension origins without printing submitted values', () => {
+  let failure: unknown;
+  try {
+    validateEnvironment({
+      ...development,
+      EXTENSION_ORIGINS: 'https://sensitive-input-secret.example',
+    });
+  } catch (error) {
+    failure = error;
+  }
+  const message = startupFailureMessage(failure);
+  expect(message).toContain('Invalid configuration fields: EXTENSION_ORIGINS');
+  expect(message).toContain('WEBSITE_ORIGINS');
+  expect(message).toContain('chrome-extension://<extension-id>');
+  expect(message).not.toContain('sensitive-input-secret');
+});
+
+it('startup diagnostics suppress arbitrary exception details, including configuration lookalikes', () => {
+  for (const failure of [
+    new Error('database password=sensitive-input-secret'),
+    new Error('Invalid configuration fields: sensitive-input-secret'),
+    { message: 'sensitive-input-secret' },
+  ]) {
+    expect(startupFailureMessage(failure)).toBe(
+      'API startup failed; verify server configuration and availability',
+    );
+  }
+});
+
+it('validates authentication lifetimes and the exact Google callback route', () => {
+  for (const fields of [
+    { AUTH_ACCESS_SECONDS: '0' },
+    { AUTH_SESSION_SECONDS: 'NaN' },
+    { AUTH_ACCESS_SECONDS: '901' },
+    { AUTH_SESSION_SECONDS: '60' },
+    { AUTH_LOGIN_SECONDS: '10' },
+  ])
+    expect(() => validateEnvironment({ ...development, ...fields })).toThrow();
+  const google = {
+    ...development,
+    GOOGLE_ENABLED: 'true',
+    GOOGLE_CLIENT_ID: 'fixture.apps.googleusercontent.com',
+    GOOGLE_CLIENT_SECRET: 'fixture-secret',
+    SESSION_SECRET: keyA,
+  };
+  expect(() =>
+    validateEnvironment({
+      ...google,
+      GOOGLE_CALLBACK_URL: 'http://127.0.0.1:3001/api/auth-callback',
+    }),
+  ).toThrow('GOOGLE_CALLBACK_URL');
+  expect(() =>
+    validateEnvironment({
+      ...google,
+      GOOGLE_CALLBACK_URL: 'http://127.0.0.1:3001/api/v1/auth/google/callback',
+    }),
+  ).not.toThrow();
+});
+
+it('the committed API environment example validates before adding any integration credentials', () => {
+  const example = readFileSync(new URL('../../apps/api/.env.example', import.meta.url), 'utf8');
+  expect(() => validateEnvironment(parseEnv(example))).not.toThrow();
 });

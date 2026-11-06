@@ -9,16 +9,16 @@ Requires a supported Node.js 22.12+ release (CI uses Node 24), pnpm 12.16.1, and
 ```sh
 npm install -g pnpm@12.16.1
 pnpm install
-cp apps/api/.env.example apps/api/.env
+cp -n apps/api/.env.example apps/api/.env
 ```
 
 ## Development
 
 ```sh
-pnpm dev:web        # React + Vite, http://localhost:5173
+pnpm dev:web        # React + Vite, http://127.0.0.1:5173
 pnpm dev:extension  # WXT + React (Chrome)
-pnpm dev:api        # NestJS, http://localhost:3001
-pnpm dev            # Extension + API
+pnpm dev:api        # NestJS, http://127.0.0.1:3001
+pnpm dev            # Website + API
 ```
 
 See the [extension README](apps/extension/README.md) for loading the extension in Chrome and debugging it.
@@ -41,7 +41,7 @@ Nx also accepts individual targets: `pnpm exec nx build web`, `pnpm exec nx buil
 
 - `apps/web`: minimal React page with Vite.
 - `apps/extension`: WXT popup, full page (`full-page.html`), background, and content script. The empty content script matches only `https://example.com/*`.
-- `apps/api`: NestJS bootstrap with validated server configuration and backend-only Prisma client factory. No application routes; `/` returns 404. Override the port in `apps/api/.env`.
+- `apps/api`: NestJS bootstrap with validated server configuration and backend-only Prisma client factory. Health, Google login and session endpoints live under `/api/v1`; `/` returns 404. Override the port in `apps/api/.env`.
 - `packages/ui`: shared React panel.
 - `packages/library`: shared React placeholder composed from UI and contract types.
 - `packages/contracts`: framework-independent TypeScript types.
@@ -52,8 +52,7 @@ Edit `apps/api/.env` with local credentials before starting the API. It loads th
 file independently of the working directory; existing environment variables take
 precedence. Startup fails with field names only if configuration is invalid.
 Integrations default to disabled and require no real Google/provider credentials.
-Enabling an integration validates its credentials but does not implement or
-activate its application workflows yet.
+Google login is available when its OAuth credentials are configured. Catalog and external-list provider workflows remain in their planned implementation steps.
 
 Use separate database names ending in `_dev` and `_test` for development and test;
 production must use neither suffix. Production requires HTTPS web/callback
@@ -62,8 +61,7 @@ each key locally with `openssl rand -base64 32`; never reuse example credentials
 
 Optional client examples are in `apps/web/.env.example` and
 `apps/extension/.env.example`. Only public API origins belong there. Never put
-server credentials in `VITE_` or `WXT_PUBLIC_` variables. The clients will consume
-these origins when API adapters are implemented.
+server credentials in `VITE_` or `WXT_PUBLIC_` variables. Authentication clients consume these origins; keep local website/API hosts consistent (use `127.0.0.1` for both).
 
 ## PostgreSQL and migrations (macOS)
 
@@ -147,8 +145,7 @@ Run `pnpm dev:api` after configuring `apps/api/.env`. The listener binds to
 - `GET /api/v1/health/ready`: bounded PostgreSQL readiness probe; 503 on failure.
 - `/api/docs` and `/api/docs-json`: Swagger UI and OpenAPI, outside production only.
 
-Health endpoints are anonymous and accept no query parameters. Authentication
-and owner-library endpoints follow in later steps. Every response has an
+Health endpoints are anonymous and accept no query parameters. Google authentication and session endpoints are described below; owner-library endpoints follow in step 7. Every response has an
 `X-Correlation-ID`; errors include a stable code, HTTP status, safe message,
 correlation ID and retryability. The JSON body limit is initially 1 MiB.
 
@@ -156,7 +153,7 @@ Set exact `WEBSITE_ORIGINS` and `EXTENSION_ORIGINS` allowlists; leave extension
 origins empty until the extension ID is known. Unsafe cookie requests require
 an allowlisted `Origin` and `X-Filecab-Request: 1`. A bearer header does not bypass
 this check when cookies are also present. Request DTOs reject unknown fields
-and implicit coercion. OpenAPI describes actual routes and the future auth schemes.
+and implicit coercion. OpenAPI describes actual routes and their bearer/cookie schemes.
 
 Production requires a local HTTPS-terminating proxy forwarding to the loopback
 listener. Replace incoming `X-Forwarded-Proto` with the proxy's actual scheme;
@@ -165,9 +162,65 @@ Send readiness/liveness probes through that HTTPS proxy. Swagger UI, JSON and
 YAML routes are unavailable in production. Restrict access to the internal listener.
 Configure proxy access logs to omit URLs/query strings, cookies, authorization,
 request bodies and upstream error payloads. The API logs only request IDs,
-methods, statuses and durations, and uses generic startup-failure diagnostics.
+methods, statuses and durations, and reports invalid configuration field names without their values; unexpected startup failures use a generic message.
 
 New endpoints must add explicit request DTO validation and OpenAPI response
 schemas together, including field bounds, nullable/clearing semantics, errors
 and anonymous versus authenticated access. Keep synthetic documentation examples
 free of account data and secrets.
+
+## Google login and sessions
+
+Create a Google **Web application** OAuth client and add this exact authorized
+redirect URI for local development:
+
+```text
+http://127.0.0.1:3001/api/v1/auth/google/callback
+```
+
+Set `GOOGLE_ENABLED=true`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and
+`GOOGLE_CALLBACK_URL` in the private API environment file. For local storage
+outside the repository, use `~/.config/filecab/api.env` with permissions `600`
+and link `apps/api/.env` to it. Existing environment variables take precedence.
+Use a separate production Google callback URL and register it exactly in Google
+Cloud. Do not copy Google client secrets to either browser application's environment.
+
+Apply migrations with `pnpm db:deploy`, run `pnpm dev`, then open
+`http://127.0.0.1:5173/` and choose **Sign in with Google**. Complete Google's
+consent screen yourself. The website receives only HttpOnly cookies; no reusable
+credentials appear in its redirect URL or JavaScript storage. Production cookies
+use `__Host-` names and Secure, Path=/, SameSite=Lax, with no Domain attribute.
+HTTP development uses unprefixed names and HttpOnly/SameSite=Lax/Path=/.
+
+| Route under `/api/v1/auth` | Access and purpose                                        |
+| -------------------------- | --------------------------------------------------------- |
+| `GET /google/start`        | Anonymous, allowlisted return URL and browser-bound login |
+| `GET /google/callback`     | Google state/nonce/code validation and safe redirect      |
+| `GET /extension/config`    | Anonymous Google/extension-origin readiness check         |
+| `POST /exchange`           | Extension one-use code plus verifier/attempt              |
+| `GET /me`                  | Website access cookie or extension bearer access token    |
+| `POST /refresh`            | Website refresh cookie or extension JSON refresh token    |
+| `POST /logout`             | Revoke current authenticated session                      |
+| `POST /logout-all`         | Revoke all sessions for the authenticated owner           |
+
+Access lasts 15 minutes by default; refresh families have a 30-day absolute and
+7-day idle limit. Validated `AUTH_*_SECONDS` settings may shorten these lifetimes.
+Refresh rotates tokens atomically, retains consumed hashes and revokes a family
+if a consumed credential is reused. A lost refresh response may require login.
+Clients serialize refresh; the website coordinates tabs with Web Locks and clears
+private query/mutation caches on account changes. Sign-out updates other open tabs.
+
+The extension uses `identity.launchWebAuthFlow`; add its exact
+`chrome-extension://<32-character-id>` to API `EXTENSION_ORIGINS` before login.
+Its callback is `https://<id>.chromiumapp.org/filecab`; Google still returns first
+to the API's configured Google callback URL. Refresh credentials are restricted
+to trusted extension local storage; access tokens and login attempts use trusted
+session storage. Popup/full-page messages receive account state only. Guest
+library adoption, offline library storage and replication remain later steps.
+
+Automated signed-token, HTTP/PostgreSQL, client and cross-tab browser tests cover
+the authentication rules. Live Google consent and Chrome identity-window login
+require a separate manual check; reaching Google's sign-in screen does not prove
+a completed code exchange.
+
+For extension login failures, see the [extension debugging guide](apps/extension/README.md#debugging-sign-in). It explains worker versus popup DevTools, safe stage diagnostics, exact origin setup and the real Chromium extension regression test.

@@ -3,6 +3,15 @@ import { resolve } from 'node:path';
 
 type Environment = Readonly<Record<string, string | undefined>>;
 
+/** Identifies invalid configuration fields without retaining their submitted values. */
+export class EnvironmentValidationError extends Error {
+  constructor(readonly fields: string[]) {
+    super(`Invalid configuration fields: ${fields.join(', ')}`);
+    this.name = 'EnvironmentValidationError';
+  }
+}
+
+/** Validates server configuration without exposing secret values in failures. */
 export function validateEnvironment(env: Environment) {
   const invalid = new Set<string>();
   const required = (key: string) => {
@@ -117,6 +126,27 @@ export function validateEnvironment(env: Environment) {
 
     return normalized;
   };
+  const duration = (key: string, fallback: number, maximum: number) => {
+    const text = env[key] ?? String(fallback);
+    const value = Number(text);
+
+    if (!/^\d+$/.test(text) || !Number.isSafeInteger(value) || value < 1 || value > maximum)
+      invalid.add(key);
+
+    return value;
+  };
+  const auth = {
+    accessSeconds: duration('AUTH_ACCESS_SECONDS', 900, 900),
+    sessionSeconds: duration('AUTH_SESSION_SECONDS', 2592000, 2592000),
+    idleSeconds: duration('AUTH_IDLE_SECONDS', 604800, 604800),
+    loginSeconds: duration('AUTH_LOGIN_SECONDS', 600, 600),
+    exchangeSeconds: duration('AUTH_EXCHANGE_SECONDS', 60, 60),
+  };
+
+  if (auth.accessSeconds > auth.idleSeconds || auth.idleSeconds > auth.sessionSeconds)
+    invalid.add('AUTH_IDLE_SECONDS');
+
+  if (auth.exchangeSeconds > auth.loginSeconds) invalid.add('AUTH_EXCHANGE_SECONDS');
   const google = {
     enabled: googleEnabled,
     clientId: googleEnabled ? required('GOOGLE_CLIENT_ID') : undefined,
@@ -125,6 +155,13 @@ export function validateEnvironment(env: Environment) {
       ? httpUrl('GOOGLE_CALLBACK_URL', required('GOOGLE_CALLBACK_URL'))
       : undefined,
   };
+
+  if (google.callbackUrl) {
+    const callback = new URL(google.callbackUrl);
+
+    if (callback.pathname !== '/api/v1/auth/google/callback' || callback.search || callback.hash)
+      invalid.add('GOOGLE_CALLBACK_URL');
+  }
   const shikimori = {
     enabled: shikimoriEnabled,
     origin: integrationUrl('SHIKIMORI_API_ORIGIN', 'https://shikimori.io'),
@@ -148,8 +185,7 @@ export function validateEnvironment(env: Environment) {
     shikimori,
   };
 
-  if (invalid.size)
-    throw new Error(`Invalid configuration fields: ${[...invalid].sort().join(', ')}`);
+  if (invalid.size) throw new EnvironmentValidationError([...invalid].sort());
 
   return {
     mode,
@@ -160,12 +196,27 @@ export function validateEnvironment(env: Environment) {
     sessionSecret,
     encryptionKey,
     google,
+    auth,
     providers,
   };
 }
 
+/** Formats trusted configuration failures while suppressing arbitrary startup exception details. */
+export function startupFailureMessage(error: unknown): string {
+  if (!(error instanceof EnvironmentValidationError))
+    return 'API startup failed; verify server configuration and availability';
+  const guidance = error.fields.includes('EXTENSION_ORIGINS')
+    ? ' EXTENSION_ORIGINS must be empty or contain chrome-extension://<extension-id>; put website URLs in WEBSITE_ORIGINS.'
+    : '';
+
+  return `API startup failed: ${error.message}. Check apps/api/.env.${guidance}`;
+}
+
+/** Loads the local environment file before validating effective process configuration. */
 export function loadEnvironment() {
   config({ path: resolve(__dirname, '../../.env'), quiet: true });
 
   return validateEnvironment(process.env);
 }
+
+export type ApiEnvironment = ReturnType<typeof validateEnvironment>;

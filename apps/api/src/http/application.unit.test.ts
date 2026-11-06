@@ -50,7 +50,7 @@ class FixtureController {
 Reflect.defineMetadata('design:paramtypes', [ExampleDto], FixtureController.prototype, 'update');
 
 @Module({
-  imports: [AppModule.configure(environment.databaseUrl, { check })],
+  imports: [AppModule.configure(environment, { check })],
   controllers: [FixtureController],
 })
 class FixtureModule {}
@@ -307,4 +307,37 @@ test('primitive query parameters are not implicitly coerced by Nest validation',
   expect(await pipe.transform('false', { type: 'query', metatype: Boolean, data: 'enabled' })).toBe(
     'false',
   );
+});
+
+test('disabled Google login fails explicitly before opening a database connection', async () => {
+  const response = await fetch(
+    `${base}/api/v1/auth/google/start?${new URLSearchParams({ client: 'website', returnTo: `${origin}/` })}`,
+    { redirect: 'manual' },
+  );
+  expect(response.status).toBe(503);
+  expect(await response.json()).toMatchObject({
+    code: 'SERVICE_UNAVAILABLE',
+    message: 'Google login is disabled',
+    retryable: false,
+  });
+});
+
+test('anonymous extension configuration is bounded, public and independent of database availability', async () => {
+  const response = await fetch(
+    `${base}/api/v1/auth/extension/config?extensionId=${'a'.repeat(32)}`,
+  );
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({
+    schemaVersion: 1,
+    googleEnabled: false,
+    extensionAllowed: true,
+  });
+  const denied = await fetch(`${base}/api/v1/auth/extension/config?extensionId=${'b'.repeat(32)}`);
+  expect(await denied.json()).toEqual({
+    schemaVersion: 1,
+    googleEnabled: false,
+    extensionAllowed: false,
+  });
+  const malformed = await fetch(`${base}/api/v1/auth/extension/config?extensionId=not-a-chrome-id`);
+  expect(malformed.status).toBe(400);
 });

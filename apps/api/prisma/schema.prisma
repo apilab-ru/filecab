@@ -19,10 +19,11 @@ model WorkspaceState {
 /// Account identity and authentication data, separate from library persistence.
 /// Deleting the account cascades through its library to entries, sources and history.
 model User {
-  id            String       @id @db.Uuid
+  id            String          @id @db.Uuid
   /// Verified Google subject identifier; email is not the account identity.
-  googleSubject String       @unique
+  googleSubject String          @unique
   sessions      Session[]
+  exchanges     LoginExchange[]
   /// Created with the account in the same transaction; optional only on the Prisma parent side.
   library       UserLibrary?
 }
@@ -42,13 +43,20 @@ model UserLibrary {
 /// Account session storing only the hash of an opaque refresh credential.
 /// Authentication, rotation and replay-detection behavior are implemented separately.
 model Session {
-  id          String    @id @db.Uuid
-  ownerId     String    @db.Uuid
-  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id              String              @id @db.Uuid
+  ownerId         String              @db.Uuid
+  owner           User                @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   /// Hash only; plaintext refresh credentials must never be persisted here.
-  refreshHash String    @unique
-  expiresAt   DateTime  @db.Timestamptz(3)
-  revokedAt   DateTime? @db.Timestamptz(3)
+  refreshHash     String              @unique
+  expiresAt       DateTime            @db.Timestamptz(3)
+  revokedAt       DateTime?           @db.Timestamptz(3)
+  /// Distinguishes website-cookie and privileged extension credentials.
+  client          String              @default("website")
+  /// Only the current short-lived access-token hash is retained.
+  accessHash      String?             @unique
+  accessExpiresAt DateTime            @default(now()) @db.Timestamptz(3)
+  idleExpiresAt   DateTime            @default(now()) @db.Timestamptz(3)
+  credentials     RefreshCredential[]
 }
 
 /// Shared catalog identity, independent of any owner library or provider ID.
@@ -164,4 +172,39 @@ model EntryChange {
   committedAt DateTime    @default(now()) @db.Timestamptz(3)
 
   @@id([ownerId, revision])
+}
+
+/// Short-lived browser-bound Google login attempt; consumption precedes the Google exchange.
+model LoginAttempt {
+  stateHash      String    @id
+  bindingHash    String
+  nonce          String
+  googleVerifier String
+  client         String
+  returnTo       String
+  attempt        String?
+  challenge      String?
+  expiresAt      DateTime  @db.Timestamptz(3)
+  consumedAt     DateTime? @db.Timestamptz(3)
+}
+
+/// Extension-only code bound to its initiating S256 challenge and attempt.
+model LoginExchange {
+  codeHash   String    @id
+  ownerId    String    @db.Uuid
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  challenge  String
+  attempt    String
+  expiresAt  DateTime  @db.Timestamptz(3)
+  consumedAt DateTime? @db.Timestamptz(3)
+}
+
+/// Retains consumed refresh hashes until family expiry to detect replay after rotation.
+model RefreshCredential {
+  tokenHash  String    @id
+  sessionId  String    @db.Uuid
+  session    Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  consumedAt DateTime? @db.Timestamptz(3)
+
+  @@index([sessionId])
 }

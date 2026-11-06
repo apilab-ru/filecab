@@ -7,7 +7,7 @@
   },
   "scripts": {
     "code": "codex --ask-for-approval never --sandbox danger-full-access",
-    "dev": "nx run-many -t dev --projects=extension,api --parallel=3",
+    "dev": "nx run-many -t dev --projects=web,api,extension --parallel=3",
     "dev:web": "nx dev web",
     "dev:extension": "nx dev extension",
     "dev:api": "nx dev api",
@@ -17,7 +17,7 @@
     "test": "vitest run --project unit",
     "test:contracts": "vitest run --project contracts",
     "test:integration": "pnpm --filter @filecab/api db:generate && vitest run --project integration",
-    "test:e2e": "playwright test",
+    "test:e2e": "nx build extension && playwright test",
     "typecheck:tools": "tsc -p tsconfig.tools.json --noEmit",
     "db:generate": "pnpm --filter @filecab/api db:generate",
     "db:validate": "pnpm --filter @filecab/api db:validate",

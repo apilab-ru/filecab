@@ -5,7 +5,9 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { Request, Response, NextFunction } from 'express';
 import { AppModule } from '../app.module';
-import type { validateEnvironment } from '../config/environment';
+import type { ApiEnvironment } from '../config/environment';
+import { COOKIE_NAMES } from '../auth/credentials';
+import type { GoogleIdentityProvider } from '../auth/google';
 import type { DatabaseReadiness } from '../health/readiness';
 import {
   ApiException,
@@ -16,11 +18,10 @@ import {
 } from './api-error';
 import { StrictValidationPipe } from './validation';
 
-type ApiEnvironment = ReturnType<typeof validateEnvironment>;
-
 /** Supplies controlled test dependencies without changing production routing. */
 export interface ApiOptions {
   readiness?: DatabaseReadiness;
+  google?: GoogleIdentityProvider;
   diagnostic?: (record: RequestDiagnostic) => void;
 }
 
@@ -112,19 +113,22 @@ export function configureApiApplication(
       .setTitle('Filecab API')
       .setVersion('1')
       .setDescription(
-        'Versioned API. Health endpoints are anonymous. Future owner endpoints require a bearer access token or an HttpOnly session cookie. Unsafe cookie requests also require an exact allowlisted Origin and X-Filecab-Request: 1; Authorization does not bypass cookie CSRF checks. Explicit null clears only fields documented as nullable; omitted fields retain their value. All errors use the common envelope and all responses carry a server-generated X-Correlation-ID. Authentication and library routes are delivered in later steps.',
+        'Versioned API. Health endpoints are anonymous. Owner endpoints require a bearer access token or an HttpOnly session cookie. Unsafe cookie requests also require an exact allowlisted Origin and X-Filecab-Request: 1; Authorization does not bypass cookie CSRF checks. Explicit null clears only fields documented as nullable; omitted fields retain their value. All errors use the common envelope and all responses carry a server-generated X-Correlation-ID. Google login and session endpoints are available; library routes follow in the next step.',
       )
       .addBearerAuth({
         type: 'http',
         scheme: 'bearer',
-        description: 'Filecab access token; authentication endpoints are not implemented yet.',
+        description: 'Opaque Filecab extension access token.',
       })
-      .addCookieAuth('__Host-filecab-session', {
-        type: 'apiKey',
-        in: 'cookie',
-        description:
-          'Production Secure HttpOnly session cookie. Unsafe requests require trusted Origin and X-Filecab-Request: 1.',
-      })
+      .addCookieAuth(
+        COOKIE_NAMES[environment.mode === 'production' ? 'production' : 'development'].access,
+        {
+          type: 'apiKey',
+          in: 'cookie',
+          description:
+            'Production Secure HttpOnly session cookie. Unsafe requests require trusted Origin and X-Filecab-Request: 1.',
+        },
+      )
       .build();
     const document = SwaggerModule.createDocument(app, config);
     for (const path of Object.values(document.paths)) {
@@ -159,7 +163,7 @@ export async function createApiApplication(
   options: ApiOptions = {},
 ): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(
-    AppModule.configure(environment.databaseUrl, options.readiness),
+    AppModule.configure(environment, options.readiness, options.google),
     { logger: false, bodyParser: false, abortOnError: false },
   );
   configureApiApplication(
