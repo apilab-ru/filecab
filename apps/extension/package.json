@@ -4,21 +4,25 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wxt",
-    "build": "wxt build",
-    "prepare": "wxt prepare",
-    "typecheck": "wxt prepare && tsc --noEmit"
+    "dev": "pnpm storage:generate && wxt",
+    "build": "pnpm storage:generate && wxt build",
+    "prepare": "pnpm storage:generate && wxt prepare",
+    "typecheck": "pnpm storage:generate && wxt prepare && tsc --noEmit",
+    "storage:generate": "node scripts/build-storage-validators.mjs"
   },
   "dependencies": {
     "@filecab/contracts": "workspace:*",
     "@filecab/library": "workspace:*",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "rxdb": "17.6.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@wxt-dev/module-react": "1.2.2",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "sass": "^1.93.0",
     "vite": "^7.3.7",
     "wxt": "0.21.5"

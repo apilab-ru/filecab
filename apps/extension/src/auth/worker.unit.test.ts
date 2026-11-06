@@ -5,7 +5,9 @@ const mocks = vi.hoisted(() => {
   const session: Record<string, unknown> = {};
   const area = (data: Record<string, unknown>) => ({
     setAccessLevel: vi.fn(async () => {}),
-    get: vi.fn(async (key: string) => ({ [key]: data[key] })),
+    get: vi.fn(async (keys: string | string[]) =>
+      Object.fromEntries((Array.isArray(keys) ? keys : [keys]).map((key) => [key, data[key]])),
+    ),
     set: vi.fn(async (value: object) => {
       Object.assign(data, value);
     }),

@@ -12,6 +12,7 @@ export default [
       '**/.idea/**',
       '**/.husky/**',
       'apps/api/src/generated/**',
+      'apps/extension/src/library/generated-*',
       '**/coverage/**',
       '**/playwright-report/**',
       '**/test-results/**',

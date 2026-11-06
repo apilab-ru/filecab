@@ -6,7 +6,7 @@ These decisions complete implementation-plan step 1 and are normative alongside 
 
 Required delivery includes Google accounts, extension replication, sharing, server-managed parser configuration, provider metadata caching, and optional owner-connected Shikimori personal-list synchronization. Connecting an account is optional for an extension guest; delivering these capabilities is required. `plans.md` and the remaining recommendations in Functionality section 13 are excluded from this delivery.
 
-The extension uses durable RxDB/Dexie storage and supports offline library operations. The authenticated website uses online API operations and an in-memory TanStack Query cache; it has no persistent library or offline mutation queue. Network failures preserve unsaved form input and offer retry. Interface preferences may persist independently and are not replicated with the library.
+The extension uses one fixed-name, device-local RxDB/Dexie database and supports offline library operations. Sign-in/sign-out keep the same library and editor visible; future account replication requires explicit linking and account-bound synchronization metadata. The authenticated website uses online API operations and an in-memory TanStack Query cache; it has no persistent library or offline mutation queue. Network failures preserve unsaved form input and offer retry. Interface preferences may persist independently and are not replicated with the library.
 
 ## Progress and provider roles
 

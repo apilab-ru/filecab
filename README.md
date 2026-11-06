@@ -280,3 +280,13 @@ and `X-Filecab-Request: 1` protections.
 
 This is the API delivery; library screens, offline persistence, replication and
 Undo dialogs remain in their planned later steps.
+
+## Extension offline storage
+
+The extension popup and full page now save manual library entries locally with
+RxDB/Dexie in the fixed `filecab-local` database, revision checks and ten-second
+Undo. The same entries and editor remain visible after sign-in/sign-out; local
+reads/writes work without the API or a running service worker.
+Failed reads show recovery with retry/raw export; failed writes retain editor
+input. See [local storage details](apps/extension/README.md#local-library-storage).
+Account replication and explicit guest adoption are the next implementation step.

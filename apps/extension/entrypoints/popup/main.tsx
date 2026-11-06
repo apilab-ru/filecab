@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { browser } from 'wxt/browser';
 import { createRoot } from 'react-dom/client';
-import { Library } from '@filecab/library';
+import { LocalLibrary } from '../../src/library/local-library';
 import { AuthControls } from '../../src/auth/auth-controls';
 import '../../styles.scss';
 
@@ -17,7 +17,7 @@ createRoot(document.getElementById('root')!).render(
         Open full page
       </a>
       <AuthControls />
-      <Library name="Filecabz" />
+      <LocalLibrary name="Filecabz" />
     </main>
   </StrictMode>,
 );

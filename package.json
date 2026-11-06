@@ -28,6 +28,7 @@
     "db:stop": "brew services stop postgresql@17",
     "db:service-status": "brew services info postgresql@17",
     "format": "eslint . --fix && prettier --write .",
+    "format:affected": "lint-staged --diff=HEAD",
     "format:check": "eslint . && prettier --check .",
     "prepare": "husky"
   },

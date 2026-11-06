@@ -113,3 +113,46 @@ report, copy the stage/code/status/request ID and public Connection details.
 message bridge, trusted storage and UI with Google/API I/O mocked. This catches
 extension-only failures without requiring a Google account; it does not prove
 that a real Google consent flow completed.
+
+## Local library storage
+
+The popup and full page now support local manual create/edit/delete and ten-second
+Undo. Saves finish only after an IndexedDB write. Open both surfaces to see
+updates immediately; close/reopen the popup or browser to keep working offline.
+A stale edit keeps its input and offers **Reload entry**. A failed save keeps the
+editor open rather than reporting success.
+
+The extension uses one fixed RxDB database named `filecab-local`. Signing in,
+signing out or changing accounts keeps the same local entries, preferences and
+open editor visible. Authentication does not select another database or upload
+local data. Account synchronization requires explicit linking/adoption in step 9;
+these saves currently stay on this device.
+
+If storage cannot be opened or its records fail the storage schema check, the UI
+shows recovery instead of an empty library. Use **Retry local storage** or **Export
+recoverable raw data**. The recovery JSON includes readable raw IndexedDB records
+and store read failures; it is a diagnostic export, not a `backup.json` import
+format. The app never automatically resets a failed store. Keep the extension ID
+and browser profile stable when testing persistence, because changing either
+selects a different Chrome storage origin.
+
+Implementation lives in `src/library`: version-zero schemas, the shared connection
+manager, revision-checked repository and recovery reader. Interface preferences
+are stored separately by category and Library/Catalog mode; their controls belong
+to the later shared UI steps. Local revisions/Undo state live in each entry row so
+one write commits them together. Web Locks serialize cross-surface operations;
+reads inside the lock bypass asynchronous query caches. Tombstones are retained.
+No local library operation needs a running service worker.
+
+Build/dev/typecheck commands generate AJV standalone validators before WXT runs.
+Only generated validators and their small runtime helpers are bundled; the AJV
+compiler does not run under Chrome's CSP. When a storage schema changes, increase
+its version, add a preserving migration and test the old persisted shape; do not
+change the schema in place or delete the database to make an upgrade work.
+
+`pnpm test:e2e` builds the real extension and tests offline CRUD, concurrent surfaces,
+failed writes, stale edits, worker/browser lifecycle, authentication continuity, preferences,
+Undo expiry/conflicts and raw recovery in isolated Chromium profiles. The storage
+test helper is bundled only during the tests and removed afterward; it is not a
+production entrypoint. No live API or Google credentials are needed for these
+storage tests.

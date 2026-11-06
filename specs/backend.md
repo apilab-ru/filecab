@@ -154,13 +154,13 @@ For a stale assumed server version, automatic conflict resolution SHALL retain t
 
 ### Requirement: Sync lifecycle and retention
 
-Synchronization SHALL run on opening, local changes, reconnecting, and manual refresh when authenticated. Live transport is not required. Replication state SHALL be scoped by account and compatible document schema. Account switching SHALL NOT submit one account's pending changes under another account.
+Synchronization SHALL run on opening, local changes, reconnecting, and manual refresh when authenticated and the device library is explicitly linked to that account. Live transport is not required. Replication state SHALL be scoped by account and compatible document schema. Account switching SHALL NOT submit one account's pending changes under another account.
 
 Tombstones and change history SHALL initially be retained for at least 90 days. If a checkpoint is older than available history, the server SHALL return `SYNC_RESET_REQUIRED`. Reset SHALL reconcile a fresh snapshot while preserving pending intent and preventing deleted entries from being resurrected.
 
 ### Requirement: Guest adoption
 
-An unsigned extension user SHALL be able to retain a local library. Login SHALL NOT silently replace it. Importing guest entries into an account SHALL require a preview and explicit confirmation, apply identity/source conflict rules, and be retry-safe.
+The extension SHALL retain one device-local library in a fixed-name database. Sign-in, sign-out and account changes SHALL leave that library visible and SHALL NOT silently replace it or change unsaved input. Linking it to an account for synchronization SHALL require explicit confirmation. Importing guest entries into an account SHALL require a preview and explicit confirmation, apply identity/source conflict rules, and be retry-safe.
 
 ## Capability: Unlisted read-only sharing
 

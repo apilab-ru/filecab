@@ -1,10 +1,10 @@
 # Filecab — Implementation Plan
 
-Status: execution baseline, 2 November 2026. Steps 1–7 are delivered. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Steps 8–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
+Status: execution baseline, 2 November 2026. Steps 1–8 are delivered. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Steps 9–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
 
 ## Baseline and scope
 
-The initial workspace contained React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. Steps 1–5 now provide shared contracts, transactional PostgreSQL persistence and the documented API foundation. Google authentication, session clients and the owner-library API are implemented. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Client library persistence/UI, catalog providers, replication, and external list synchronization remain to be implemented. Old-data migration and old route compatibility are out of scope.
+The initial workspace contained React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. Steps 1–5 now provide shared contracts, transactional PostgreSQL persistence and the documented API foundation. Google authentication, session clients and the owner-library API are implemented. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Extension local persistence and a basic manual editor are delivered; shared library UI, catalog providers, replication, and external list synchronization remain to be implemented. Old-data migration and old route compatibility are out of scope.
 
 This plan covers required behavior in [Functionality](../specs/functionality.md), [Backend](../specs/backend.md), [Stack](../specs/stack.md), [Catalog](../specs/catalog-spec.md), [User List Synchronization](../specs/user-list-sync-spec.md), and all three integration specifications. [Plans](../specs/plans.md) is a separate future-feature backlog and is excluded from this implementation plan. Section 13 of Functionality contains recommendations rather than additional release requirements.
 
@@ -94,12 +94,12 @@ Exit satisfied: authenticated manual CRUD works with catalog providers disabled.
 
 Depends on steps 2–3. Can proceed alongside steps 4–7 after contracts stabilize.
 
-- [ ] Add RxDB with the free Dexie adapter, schema validation/migrations, guest and account-scoped databases, and reactive local repositories.
-- [ ] Validate multi-instance access from popup/full page and the chosen worker coordination approach under MV3 suspension. Do not depend on an always-running worker or worker localStorage.
-- [ ] Support durable manual CRUD, sources, snapshots, settings, local revisions, tombstones, and 10-second Undo. Report success only after durable persistence.
-- [ ] Preserve raw recoverable data after read/corruption failures; distinguish a missing database from a failed read.
+- [x] Add RxDB with the free Dexie adapter, schema validation/migrations, one fixed-name device-local database, and reactive local repositories.
+- [x] Validate multi-instance access from popup/full page and the chosen worker coordination approach under MV3 suspension. Do not depend on an always-running worker or worker localStorage.
+- [x] Support durable manual CRUD, sources, snapshots, settings, local revisions, tombstones, and 10-second Undo. Report success only after durable persistence.
+- [x] Preserve raw recoverable data after read/corruption failures; distinguish a missing database from a failed read.
 
-Exit: offline CRUD survives popup closure, worker suspension, browser restart, and concurrent surfaces; recovery never replaces unreadable data with an empty store.
+Exit satisfied: real unpacked Chromium tests verify offline CRUD across popup/full-page surfaces, worker termination (Chrome reports STOPPED before and after local writes), browser restart, revision conflicts, ten-second Undo and recovery without resetting damaged records. The device library and category/mode preferences remain durable across authentication changes. See [step 8 evidence](requirement-checklist.md#extension-offline-persistence-step-8). Replication/guest adoption remain step 9; shared library navigation, filtering and full editing interfaces remain steps 10–11.
 
 ## 9. Implement extension-to-Filecab replication
 
@@ -110,7 +110,7 @@ Depends on steps 6–8.
 - [ ] Keep the server document on stale-version conflicts while durably retaining rejected local intent for visible, deliberate reapplication.
 - [ ] Trigger synchronization on opening, edits, reconnect, and manual refresh; isolate account/schema state and show pending/failure/conflict status.
 - [ ] Retain tombstones/history for at least 90 days; implement `SYNC_RESET_REQUIRED` recovery that preserves pending intent and prevents resurrection.
-- [ ] Add explicit guest-adoption preview/confirmation with retry-safe imports; never silently replace or upload a guest library.
+- [ ] Add explicit device-library linking/adoption preview and confirmation with retry-safe imports. Keep the local library visible on login/logout; never silently upload it, replace it or send one account’s pending changes to another account.
 
 Exit: integration tests exercise concurrent commits, retry/restart, delete/restore, mixed batches, account switching, guest adoption, stale checkpoints, and conflict recovery.
 

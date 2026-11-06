@@ -64,10 +64,22 @@ test('extension worker reports preflight failures and completes a mocked login t
         return new Response(JSON.stringify({ schemaVersion: 1, ownerId: 'fixture-owner' }));
       };
     });
+    await page.getByRole('button', { name: 'Add manual entry' }).click();
+    await page.getByLabel('Title', { exact: true }).fill('Guest remains local');
+    await page.getByRole('button', { name: 'Save locally' }).click();
+    await expect(page.locator('.local-library__entry-title')).toHaveText('Guest remains local');
     await page.getByRole('button', { name: 'Sign in with Google' }).click();
     await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+    await expect(page.locator('.local-library__scope')).toHaveText('Library on this device');
+    await expect(page.locator('.local-library__entry-title')).toHaveText('Guest remains local');
+    await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    await page.getByLabel('Comment').fill('Unsaved while signing out');
     await expect(page.locator('body')).not.toContainText('fixture-refresh-credential');
     await expect(page.locator('body')).not.toContainText('fixture-access-credential');
+    await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+    await expect(page.locator('.local-library__scope')).toHaveText('Library on this device');
+    await expect(page.locator('.local-library__entry-title')).toHaveText('Guest remains local');
+    await expect(page.getByLabel('Comment')).toHaveValue('Unsaved while signing out');
   } finally {
     await context.close();
   }

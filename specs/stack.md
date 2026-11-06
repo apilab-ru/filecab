@@ -97,7 +97,7 @@ Keep shared colors, spacing, and typography in CSS variables. Prefix reusable bl
 
 ## Data ownership and database usage
 
-Offline support is required only for the extension. PostgreSQL is the authoritative server database for authenticated libraries and shared views. RxDB stores the extension's local working copy and guest library. Neither the website nor the extension connects directly to PostgreSQL.
+Offline support is required only for the extension. PostgreSQL is the authoritative server database for authenticated libraries and shared views. RxDB stores one device-local extension library; account synchronization is explicitly linked separately. Neither the website nor the extension connects directly to PostgreSQL.
 
 | Client                   | Data access                                                     | Offline behavior                                                 |
 | ------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -115,7 +115,7 @@ Offline support is required only for the extension. PostgreSQL is the authoritat
 - Define deterministic conflict resolution and return conflicting server documents through the replication protocol.
 - Resume replication on opening, reconnecting, and manual refresh. Live notifications are deferred.
 - Validate the chosen storage and multi-instance behavior across popup, full page, and MV3 worker. Do not rely on an always-running worker.
-- Keep guest data and each account's data isolated. Import guest entries only through an explicit user action; never synchronize one account's pending changes into another account.
+- Use one device-local extension library with a fixed database name. Authentication does not switch, clear or copy local entries. Future account replication must require explicit linking/import confirmation and must never send pending changes to a different account automatically.
 - A guest library can remain local without authentication. Account synchronization requires login and connectivity.
 
 ### Website server state
@@ -256,3 +256,49 @@ Clients SHALL use typed models directly without shared runtime parsers.
 NestJS DTOs SHALL use class-validator/class-transformer with
 unknown-field rejection and no implicit coercion. Server DTO dependencies SHALL
 remain backend-only. Later client adapters and services SHALL call these rules.
+
+### Local persistence decisions (step 8)
+
+The popup and full page SHALL open the same RxDB/Dexie database directly with
+multi-instance notifications. No library write SHALL depend on the MV3 worker
+remaining alive. Web Locks SHALL serialize repository reads/writes across these
+surfaces; missing Web Locks or failed storage access SHALL enter recovery, never
+fall back to volatile storage. The extension SHALL use the fixed RxDB name `filecab-local` and one device-local
+library. Sign-in, sign-out and account changes SHALL leave the same entries,
+settings and unsaved editor visible; authentication SHALL NOT select storage.
+Account credentials remain separate. Future synchronization requires explicit
+account linking/import confirmation and account-bound replication metadata;
+signing in alone SHALL NOT upload or replace local data. The preceding scoped
+preview storage was never used and requires no compatibility or relocation code.
+Future migrations of supported storage versions remain required.
+
+Persist one document per entry, including snapshots, sources, tombstones and local
+revision metadata. Each single-entry write SHALL atomically store its next local
+revision and millisecond update time in that document. The library revision is
+the maximum revision over all documents, including retained tombstones; do not
+physically remove them. This avoids a separate counter write or mutation queue.
+Expected local revisions SHALL prevent stale edits. Active catalog/source claims
+SHALL be checked under the same scope lock. Semantic no-ops SHALL preserve time
+and revision. Local revisions SHALL remain safe integers and fail on exhaustion.
+
+Deletion SHALL persist the previous entry and a ten-second Undo deadline alongside
+the tombstone. Undo SHALL check that exact deletion revision and deadline, restore
+the previous entry data/timestamps, and allocate a new local revision. Conflicting
+active source/catalog claims SHALL block restoration without changing data.
+Settings SHALL live in a separate collection, keyed by category and Library/Catalog
+mode, using expected revisions; credentials SHALL never enter either collection.
+
+Storage schema version zero is the first supported format. Register RxDB's schema
+migration plugin and an explicit empty version-zero strategy map; future schema
+changes must increase the version and supply preservation-tested migrations.
+Use build-time AJV standalone validators for storage writes, compatible with the
+extension CSP; these are extension-private persistence schemas, not shared request
+parsers or client DTO validation. Reads SHALL check persisted records against the
+same storage schemas before exposing data. A failure SHALL preserve all bytes,
+show Retry and allow best-effort raw IndexedDB export, including unreadable-store
+errors. Never remove/recreate a failed database automatically.
+
+Verify real unpacked Chromium popup/full-page concurrency, restart durability,
+worker suspension, account isolation, stale edits, no-op/clearing, Undo expiry and
+recovery. Editing/filtering interfaces, replication, backup replacement and
+retention cleanup remain their subsequent implementation steps.
