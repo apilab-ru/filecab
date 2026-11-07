@@ -106,47 +106,47 @@ Delivery steps refer to [Implementation Plan](implementation-plan.md). Baseline 
 
 ## Backend
 
-| Done | Requirement                                                                                                                               | Step     | Planned code area                             | Status  | Code / verification evidence | Blocker |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------- | ------- | ---------------------------- | ------- |
-| [ ]  | [Google authentication](../specs/backend.md#requirement-google-authentication)                                                            | 6        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Website and extension login](../specs/backend.md#requirement-website-and-extension-login)                                                | 6        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Session lifecycle](../specs/backend.md#requirement-session-lifecycle)                                                                    | 6        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Independent entry identity](../specs/backend.md#requirement-independent-entry-identity)                                                  | 3        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Library fields](../specs/backend.md#requirement-library-fields)                                                                          | 3        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Ownership and duplicate protection](../specs/backend.md#requirement-ownership-and-duplicate-protection)                                  | 4        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Multiple viewing links](../specs/backend.md#requirement-multiple-viewing-links)                                                          | 4        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Create, read, update, and delete](../specs/backend.md#requirement-create-read-update-and-delete)                                         | 7        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Delete and undo](../specs/backend.md#requirement-delete-and-undo)                                                                        | 7        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Retrieve the complete owner library](../specs/backend.md#requirement-retrieve-the-complete-owner-library)                                | 7        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Client-side search, filters, sorting, and pagination](../specs/backend.md#requirement-client-side-search-filters-sorting-and-pagination) | 11       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Provider adapters](../specs/backend.md#requirement-provider-adapters)                                                                    | 12       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Search contract](../specs/backend.md#requirement-search-contract)                                                                        | 12       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Catalog identity and metadata refresh](../specs/backend.md#requirement-catalog-identity-and-metadata-refresh)                            | 12       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Genres](../specs/backend.md#requirement-genres)                                                                                          | 12       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Candidate identification](../specs/backend.md#requirement-candidate-identification)                                                      | 16       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Manual entry reconciliation](../specs/backend.md#requirement-manual-entry-reconciliation)                                                | 15       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Durable local extension state](../specs/backend.md#requirement-durable-local-extension-state)                                            | 8        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [RxDB pull and push](../specs/backend.md#requirement-rxdb-pull-and-push)                                                                  | 9        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Commit-safe change tracking](../specs/backend.md#requirement-commit-safe-change-tracking)                                                | 4        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Conflict recovery](../specs/backend.md#requirement-conflict-recovery)                                                                    | 9        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Sync lifecycle and retention](../specs/backend.md#requirement-sync-lifecycle-and-retention)                                              | 9        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Guest adoption](../specs/backend.md#requirement-guest-adoption)                                                                          | 9        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Sharing controls](../specs/backend.md#requirement-sharing-controls)                                                                      | 18       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Shared data projection](../specs/backend.md#requirement-shared-data-projection)                                                          | 18       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Shared freshness and privacy](../specs/backend.md#requirement-shared-freshness-and-privacy)                                              | 18       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Export and import formats](../specs/backend.md#requirement-export-and-import-formats)                                                    | 17       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Preview and atomic replacement](../specs/backend.md#requirement-preview-and-atomic-replacement)                                          | 17       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Locale-aware API](../specs/backend.md#requirement-locale-aware-api)                                                                      | 12       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Preserve user text](../specs/backend.md#requirement-preserve-user-text)                                                                  | 3        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Declarative extraction configuration](../specs/backend.md#requirement-declarative-extraction-configuration)                              | 16       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Configuration compatibility and rollback](../specs/backend.md#requirement-configuration-compatibility-and-rollback)                      | 16       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Page data minimization](../specs/backend.md#requirement-page-data-minimization)                                                          | 16       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Validated, versioned contracts](../specs/backend.md#requirement-validated-versioned-contracts)                                           | 5        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Actionable errors](../specs/backend.md#requirement-actionable-errors)                                                                    | 5        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Provider resilience and cache](../specs/backend.md#requirement-provider-resilience-and-cache)                                            | 12       | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Secure operations](../specs/backend.md#requirement-secure-operations)                                                                    | 2, 5, 21 | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Swagger API documentation](../specs/backend.md#requirement-swagger-api-documentation)                                                    | 5        | apps/api; packages/contracts; client adapters | Pending | —                            | —       |
-| [ ]  | [Cross-cutting verification](../specs/backend.md#verification)                                                                            | 21       | All applications                              | Pending | —                            | —       |
+| Done | Requirement                                                                                                                               | Step     | Planned code area                             | Status    | Code / verification evidence                                | Blocker |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------- | --------- | ----------------------------------------------------------- | ------- |
+| [ ]  | [Google authentication](../specs/backend.md#requirement-google-authentication)                                                            | 6        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Website and extension login](../specs/backend.md#requirement-website-and-extension-login)                                                | 6        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Session lifecycle](../specs/backend.md#requirement-session-lifecycle)                                                                    | 6        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Independent entry identity](../specs/backend.md#requirement-independent-entry-identity)                                                  | 3        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Library fields](../specs/backend.md#requirement-library-fields)                                                                          | 3        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Ownership and duplicate protection](../specs/backend.md#requirement-ownership-and-duplicate-protection)                                  | 4        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Multiple viewing links](../specs/backend.md#requirement-multiple-viewing-links)                                                          | 4        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Create, read, update, and delete](../specs/backend.md#requirement-create-read-update-and-delete)                                         | 7        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Delete and undo](../specs/backend.md#requirement-delete-and-undo)                                                                        | 7        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Retrieve the complete owner library](../specs/backend.md#requirement-retrieve-the-complete-owner-library)                                | 7        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Client-side search, filters, sorting, and pagination](../specs/backend.md#requirement-client-side-search-filters-sorting-and-pagination) | 11       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Provider adapters](../specs/backend.md#requirement-provider-adapters)                                                                    | 12       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Search contract](../specs/backend.md#requirement-search-contract)                                                                        | 12       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Catalog identity and metadata refresh](../specs/backend.md#requirement-catalog-identity-and-metadata-refresh)                            | 12       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Genres](../specs/backend.md#requirement-genres)                                                                                          | 12       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Candidate identification](../specs/backend.md#requirement-candidate-identification)                                                      | 16       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Manual entry reconciliation](../specs/backend.md#requirement-manual-entry-reconciliation)                                                | 15       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Durable local extension state](../specs/backend.md#requirement-durable-local-extension-state)                                            | 8        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [x]  | [RxDB pull and push](../specs/backend.md#requirement-rxdb-pull-and-push)                                                                  | 9        | apps/api; packages/contracts; client adapters | Delivered | [Step 9 evidence](#extension-to-filecab-replication-step-9) | —       |
+| [ ]  | [Commit-safe change tracking](../specs/backend.md#requirement-commit-safe-change-tracking)                                                | 4        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [x]  | [Conflict recovery](../specs/backend.md#requirement-conflict-recovery)                                                                    | 9        | apps/api; packages/contracts; client adapters | Delivered | [Step 9 evidence](#extension-to-filecab-replication-step-9) | —       |
+| [x]  | [Sync lifecycle and retention](../specs/backend.md#requirement-sync-lifecycle-and-retention)                                              | 9        | apps/api; packages/contracts; client adapters | Delivered | [Step 9 evidence](#extension-to-filecab-replication-step-9) | —       |
+| [x]  | [Guest adoption](../specs/backend.md#requirement-guest-adoption)                                                                          | 9        | apps/api; packages/contracts; client adapters | Delivered | [Step 9 evidence](#extension-to-filecab-replication-step-9) | —       |
+| [ ]  | [Sharing controls](../specs/backend.md#requirement-sharing-controls)                                                                      | 18       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Shared data projection](../specs/backend.md#requirement-shared-data-projection)                                                          | 18       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Shared freshness and privacy](../specs/backend.md#requirement-shared-freshness-and-privacy)                                              | 18       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Export and import formats](../specs/backend.md#requirement-export-and-import-formats)                                                    | 17       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Preview and atomic replacement](../specs/backend.md#requirement-preview-and-atomic-replacement)                                          | 17       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Locale-aware API](../specs/backend.md#requirement-locale-aware-api)                                                                      | 12       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Preserve user text](../specs/backend.md#requirement-preserve-user-text)                                                                  | 3        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Declarative extraction configuration](../specs/backend.md#requirement-declarative-extraction-configuration)                              | 16       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Configuration compatibility and rollback](../specs/backend.md#requirement-configuration-compatibility-and-rollback)                      | 16       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Page data minimization](../specs/backend.md#requirement-page-data-minimization)                                                          | 16       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Validated, versioned contracts](../specs/backend.md#requirement-validated-versioned-contracts)                                           | 5        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Actionable errors](../specs/backend.md#requirement-actionable-errors)                                                                    | 5        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Provider resilience and cache](../specs/backend.md#requirement-provider-resilience-and-cache)                                            | 12       | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Secure operations](../specs/backend.md#requirement-secure-operations)                                                                    | 2, 5, 21 | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Swagger API documentation](../specs/backend.md#requirement-swagger-api-documentation)                                                    | 5        | apps/api; packages/contracts; client adapters | Pending   | —                                                           | —       |
+| [ ]  | [Cross-cutting verification](../specs/backend.md#verification)                                                                            | 21       | All applications                              | Pending   | —                                                           | —       |
 
 ## Catalog
 
@@ -234,23 +234,23 @@ Delivery steps refer to [Implementation Plan](implementation-plan.md). Baseline 
 
 Each row covers the complete linked section, including its table rows, bullets, and normative paragraphs. Optional Brewfile inclusion and optional injected UI remain conditional; their stated constraints apply if introduced.
 
-| Done | Constraint group                                                                                       | Steps      | Planned code area      | Status  | Code / verification evidence | Blocker |
-| ---- | ------------------------------------------------------------------------------------------------------ | ---------- | ---------------------- | ------- | ---------------------------- | ------- |
-| [ ]  | [Scope](../specs/stack.md#scope)                                                                       | 1, 3       | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Core stack](../specs/stack.md#core-stack)                                                             | 2–10       | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Repository structure](../specs/stack.md#repository-structure)                                         | 2          | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Shared UI components](../specs/stack.md#shared-ui-components)                                         | 10         | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Styling convention](../specs/stack.md#styling-convention)                                             | 10         | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Extension surfaces](../specs/stack.md#extension-surfaces)                                             | 8, 10, 16  | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Data ownership and database usage](../specs/stack.md#data-ownership-and-database-usage)               | 4, 7–9, 11 | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Extension persistence and replication](../specs/stack.md#extension-persistence-and-replication)       | 8–9        | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Website server state](../specs/stack.md#website-server-state)                                         | 6, 11      | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Read-only sharing through unlisted links](../specs/stack.md#read-only-sharing-through-unlisted-links) | 18         | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Temporary UI state and shared packages](../specs/stack.md#temporary-ui-state-and-shared-packages)     | 3, 10–11   | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Identity and catalog integration](../specs/stack.md#identity-and-catalog-integration)                 | 3, 12–15   | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Parser configuration](../specs/stack.md#parser-configuration)                                         | 16         | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Google authentication](../specs/stack.md#google-authentication)                                       | 6          | Relevant apps/packages | Pending | —                            | —       |
-| [ ]  | [Local development on macOS](../specs/stack.md#local-development-on-macos)                             | 2          | Relevant apps/packages | Pending | —                            | —       |
+| Done | Constraint group                                                                                       | Steps      | Planned code area      | Status    | Code / verification evidence                                | Blocker |
+| ---- | ------------------------------------------------------------------------------------------------------ | ---------- | ---------------------- | --------- | ----------------------------------------------------------- | ------- |
+| [ ]  | [Scope](../specs/stack.md#scope)                                                                       | 1, 3       | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Core stack](../specs/stack.md#core-stack)                                                             | 2–10       | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Repository structure](../specs/stack.md#repository-structure)                                         | 2          | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Shared UI components](../specs/stack.md#shared-ui-components)                                         | 10         | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Styling convention](../specs/stack.md#styling-convention)                                             | 10         | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Extension surfaces](../specs/stack.md#extension-surfaces)                                             | 8, 10, 16  | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Data ownership and database usage](../specs/stack.md#data-ownership-and-database-usage)               | 4, 7–9, 11 | Relevant apps/packages | Pending   | —                                                           | —       |
+| [x]  | [Extension persistence and replication](../specs/stack.md#extension-persistence-and-replication)       | 8–9        | Relevant apps/packages | Delivered | [Step 9 evidence](#extension-to-filecab-replication-step-9) | —       |
+| [ ]  | [Website server state](../specs/stack.md#website-server-state)                                         | 6, 11      | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Read-only sharing through unlisted links](../specs/stack.md#read-only-sharing-through-unlisted-links) | 18         | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Temporary UI state and shared packages](../specs/stack.md#temporary-ui-state-and-shared-packages)     | 3, 10–11   | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Identity and catalog integration](../specs/stack.md#identity-and-catalog-integration)                 | 3, 12–15   | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Parser configuration](../specs/stack.md#parser-configuration)                                         | 16         | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Google authentication](../specs/stack.md#google-authentication)                                       | 6          | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Local development on macOS](../specs/stack.md#local-development-on-macos)                             | 2          | Relevant apps/packages | Pending   | —                                                           | —       |
 
 ## Baseline decision constraints
 
@@ -425,3 +425,84 @@ This delivers extension-local persistence and a basic manual editor. Server repl
 At the user's request, extension authentication no longer changes local libraries. The repository has one fixed `filecab-local` database and no account parameter; its entries, revisions, category/mode preferences and unsaved editor remain visible across login/logout. Replication/linking remains a separate explicit action in step 9, with account-bound state to prevent accidental cross-account submission.
 
 The preceding scoped preview storage was never used, as confirmed by the user. Compatibility copying, its completion marker, old-name recovery scanning and its migration-only regression test were removed. The auth Chromium test verifies entries remain visible after sign-in and unsaved comment input remains intact on sign-out. Supported storage schema migrations remain required for future versions.
+
+## Replication server foundation (step 9, initial delivery)
+
+Initial server delivery on 6 November 2026. Client completion and final verification are recorded below.
+
+- [Replication controller](../apps/api/src/library/replication.controller.ts) exposes authenticated, owner-scoped `/api/v1/replication/pull` and `/api/v1/replication/push`. [Request DTOs](../apps/api/src/library/replication.dto.ts) use class-validator/class-transformer, bound batch sizes and reject unknown transport fields and duplicate row IDs. OpenAPI documents request/result models, authentication, partial commits, conflicts and reset errors.
+- [Common mutation service](../apps/api/src/library/mutation.service.ts) serializes each replicated write through the existing owner lock and source/catalog constraints, publishes its complete document to the same transactional feed, and assigns server versions/timestamps. Equivalent retries are no-ops. Stale assumed versions retain the current document; foreign UUID collisions return a conflict without exposing foreign data. Metadata must match authoritative snapshots and sources must match the server normalization policy.
+- Pull reads revision/history in a RepeatableRead snapshot, consumes contiguous bigint revisions in order, collapses repeated entry IDs within a batch, includes tombstones and reports `hasMore`. Future checkpoints or missing history return `SYNC_RESET_REQUIRED`. History and tombstones are retained indefinitely; no pruning job was introduced.
+- Five new [HTTP integration tests](../apps/api/src/library/library.integration.test.ts) cover retry-safe create/update/delete, restore, stale intent, cross-account UUID collisions, metadata injection, source claims, deterministic pull pages and duplicate collapse, missing history, mixed-row validation/commits, concurrent writes and generated OpenAPI routes.
+
+Verification: all 82 unit tests, 12 contract tests and 38 PostgreSQL integration tests passed. API typecheck/build, boundary checks and repository ESLint/Prettier checks passed. Integration tests used a newly initialized PostgreSQL 17 cluster on port 55439 with all four migrations applied; it was stopped after verification. No production or development data was modified.
+
+At the server-only delivery, the following remained pending: the installed RxDB client adapter and metadata, durable rejected-intent recovery/reapplication, synchronization triggers/status, explicit account-bound linking/adoption previews, account switching and pending-intent isolation, and fresh-snapshot reset reconciliation that prevents resurrection. No extension synchronization is enabled by this server-only delivery; no browser replication verification is claimed.
+
+## Extension-to-Filecab replication (step 9)
+
+Delivered and verified locally on 6 November 2026. No production or development
+database was modified; Google consent verification remains the separate step 6
+record. The preceding server-only status is superseded by this delivery.
+
+- [Native adapter](../apps/extension/src/library/replication.ts) replicates the existing entry wrappers using RxDB 17.6.0's native checkpoints/assumed master metadata. Only typed entry data crosses transport. It consumes collapsed server pages until RxDB's batch contract is satisfied, maps retained application tombstones, skips uncommitted local tombstones and checks the persisted pull position before each upload. Replication identity includes API origin, owner, schema and generation. No second mutation queue was added.
+- [Worker bridge](../apps/extension/src/auth/worker.ts) allows only fixed snapshot/pull/push operations from trusted UI pages, serializes them with login/refresh/logout and checks captured owner identity against the current credential. It returns safe errors/data without credentials. Unit and real Chrome tests verify sender restrictions, prototype-name route rejection, account mismatch and logout handling.
+- [Link/reset session](../apps/extension/src/library/sync-session.ts) binds confirmation to owner, local content digest and current server revision. Cancellation makes no writes. The fixed device library remains bound to one account across logout/switches, preventing another account from receiving pending changes. A shared Web Lock drains in-flight replication before reset; all local intent is durably recorded before entry replacement. Interrupted/quota-failed recovery remains paused. Missing server entries become uncommitted local tombstones, and a new generation resumes from the fresh snapshot's revision.
+- [Conflict handler/recovery log](../apps/extension/src/library/sync-recovery.ts) durably preserves differing editable/deletion intent before selecting master state. Absent-master source/identity conflicts produce retained local tombstones with the original proposal saved. Content-derived issue IDs deduplicate retries. [Repository reapplication](../apps/extension/src/library/repository.ts) checks current local revision, binding and identity/claims before deliberately applying saved user fields. A failed log write prevents overwrite. Server-assigned creation/version metadata is preserved during Undo.
+- [Controls](../apps/extension/src/library/sync-controls.tsx) provide preview/confirmation/cancel, truthful active/failure/suspended states, cross-surface manual refresh, durable conflict review/reapply/dismiss and explicit history recovery. One Web Lock selects a syncing surface; open/edit/reconnect and a 30-second open-surface timer trigger synchronization. Authentication changes do not remount or clear the local editor. New binding/issue collections use standalone CSP-compatible validators; existing entry/settings schemas remain version zero without destructive migration.
+- [Chromium protocol tests](../tests/e2e/extension-storage.spec.ts) prove explicit/stale-preview adoption, native metadata/browser restart, lost-response retry safety, delete/Undo, server-wins recovery and deliberate reapplication, gap reset before uploads, quota failure before replacement, restartable reset, collapsed feed continuation and missing-master conflict recovery. [Production UI tests](../tests/e2e/extension-auth.spec.ts) verify cancellation/confirmation, multi-surface visibility, preserved drafts and account-switch suspension through the actual worker bridge with HTTP fixtures.
+- [Full-stack test](../tests/replication/extension.test.ts), run with `pnpm test:replication`, loads the production unpacked extension and uses real Chrome worker messaging, credential checks, HTTP guards/DTOs, mutation transactions, PostgreSQL and native RxDB replication. It verifies adoption, offline/server concurrent edits, durable rejection/reapplication and replicated delete/Undo. Only Google identity is synthetic, and the worker's API port is redirected to an isolated test application. CI runs this check after installing Chromium.
+
+Verification: 83 unit tests, 12 contract tests, 38 PostgreSQL integration tests,
+10 Chromium E2E tests and one real-extension/API/PostgreSQL replication test pass.
+All ten workspace typecheck targets, all six build targets, boundary checks,
+ESLint/Prettier and diff-whitespace checks pass. PostgreSQL used the isolated test
+cluster on port 55439; it was stopped after verification. GitHub CI execution
+remains pending.
+
+Operational bounds: synchronization requires an open library surface; MV3 worker
+suspension does not discard native pending state. History/tombstones are retained
+indefinitely (exceeding 90 days); no pruning job is enabled. The device library has
+one durable owner binding and no detach/rebind UI. Shared bilingual UI/navigation,
+full catalog interfaces, backup/import and external provider synchronization
+remain in steps 10–20. Broad product checklist rows remain open where later
+workflows are still required.
+
+### Sync failure reporting correction — 6 November 2026
+
+A user reported the generic synchronization failure message. The running local
+API's liveness/readiness endpoints and both replication routes were verified;
+the underlying error in the user's Chrome session has not yet been identified.
+The adapter was overwriting specific transport failures with a generic failure
+when RxDB emitted its wrapped error event. Worker HTTP error responses also lost
+their status when they contained non-JSON bodies.
+
+The extension now preserves allowlisted code/operation/status/request UUID through
+RxDB's error serialization using a bounded safe diagnostic envelope, displays the
+specific cause, and logs only safe metadata. Messaging, forbidden origin, missing
+API routes, invalid documents, body limits, server availability and malformed JSON
+responses remain distinct. Raw native errors, payloads and credentials are never
+logged. The rebuilt extension needs to be reloaded to obtain the actual diagnostic
+for the reported session; no claim of fixing that unknown underlying cause is made.
+
+Verification: 94 unit tests, extension build/typecheck, tools typecheck and
+ESLint/Prettier pass. Two production Chrome worker/UI tests pass; the replication
+test injects an HTTP 403 text response and verifies that `FORBIDDEN`, HTTP status,
+request UUID and specific explanation survive the real native RxDB error event,
+while private response text never reaches the UI.
+
+### Shared enum organization — 7 November 2026
+
+Shared domain enums now each have a dedicated contracts module and remain
+re-exported through the existing package entry point. `ApiErrorCode` owns API
+failures including `SYNC_RESET_REQUIRED`; `SyncErrorCode` owns client-specific
+synchronization failures and `SyncOperation` owns bridge operation names.
+`SyncDiagnostic` is a shared typed model. Server exceptions/DTO metadata, worker
+responses, replication handling and UI message keys reference enum members.
+Diagnostic allowlists derive from enum values. All wire values are preserved;
+no storage schema, request parser, dependency or database migration was added.
+
+Verification: 94 unit tests, 12 contract tests, 38 PostgreSQL integration tests and
+10 Chromium E2E tests pass, as do all builds/typechecks, boundary checks and
+ESLint/Prettier. Existing wire-format assertions verify unchanged serialized
+codes. PostgreSQL verification uses only the isolated test cluster on port 55439.

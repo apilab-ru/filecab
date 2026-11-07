@@ -5,6 +5,16 @@ export default defineConfig({
     projects: [
       {
         test: {
+          name: 'replication',
+          environment: 'node',
+          include: ['tests/replication/**/*.test.ts'],
+          testTimeout: 30000,
+          hookTimeout: 15000,
+          fileParallelism: false,
+        },
+      },
+      {
+        test: {
           name: 'unit',
           environment: 'node',
           include: [

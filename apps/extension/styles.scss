@@ -134,3 +134,24 @@ body {
     font: inherit;
   }
 }
+
+.library-sync {
+  margin-block: 16px;
+
+  &__preview,
+  &__recovery,
+  &__issue {
+    margin-block: 12px;
+  }
+
+  &__summary {
+    cursor: pointer;
+  }
+
+  &__intent {
+    max-height: 240px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}

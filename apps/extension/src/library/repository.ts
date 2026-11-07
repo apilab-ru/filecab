@@ -75,7 +75,7 @@ export class LocalLibraryRepository {
   private closed = false;
   private constructor(
     readonly name: string,
-    private readonly database: LocalDatabase,
+    readonly database: LocalDatabase,
   ) {}
 
   static async open(): Promise<LocalLibraryRepository> {
@@ -253,7 +253,59 @@ export class LocalLibraryRepository {
       )
         throw new LocalLibraryError('UNDO_EXPIRED');
 
-      return before.undoBefore;
+      return {
+        ...before.undoBefore,
+        createdAt: before.entry.createdAt,
+        serverVersion: before.entry.serverVersion,
+        snapshot: before.entry.snapshot,
+      };
+    });
+  }
+
+  /** Reapplies reviewed user fields against the current local revision and server identity. */
+  async reapplyIssue(id: string, ownerId: string, expectedRevision: number): Promise<void> {
+    await this.locked(async () => {
+      const issue = await this.database.issues.findOne(id).exec();
+      const binding = await this.database.binding.findOne('device').exec();
+
+      if (
+        !issue ||
+        issue.ownerId !== ownerId ||
+        binding?.ownerId !== ownerId ||
+        binding.phase !== 'linked'
+      )
+        throw new LocalLibraryError('CONFLICT');
+
+      const rows = await this.rows();
+      const current = rows.find((row) => row.entryId === issue.proposed.entryId);
+
+      if (
+        !current ||
+        current.localRevision !== expectedRevision ||
+        current.entry.catalogId !== issue.proposed.catalogId
+      )
+        throw new LocalLibraryError('CONFLICT');
+
+      const proposed = issue.proposed;
+      await this.save(
+        {
+          ...previewEntryPatch(current.entry, {
+            category: proposed.category,
+            userTitle: proposed.userTitle,
+            status: proposed.status,
+            rating: proposed.rating,
+            progress: proposed.progress,
+            comment: proposed.comment,
+            sourceUrls: proposed.sources.map((source) => source.originalUrl),
+          }),
+          deleted: proposed.deleted,
+          updatedAt: new Date(
+            Math.max(Date.now(), Date.parse(current.entry.updatedAt)),
+          ).toISOString(),
+        },
+        rows,
+      );
+      await issue.remove();
     });
   }
 

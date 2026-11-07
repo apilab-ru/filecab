@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { browser } from 'wxt/browser';
 
 export const API_ORIGIN = import.meta.env.WXT_PUBLIC_API_ORIGIN ?? 'http://127.0.0.1:3001';

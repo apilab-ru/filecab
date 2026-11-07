@@ -8,7 +8,7 @@ const directory = new URL('../src/library/', import.meta.url);
 const imports = [];
 const entries = [];
 
-for (const [index, name] of ['entry', 'settings'].entries()) {
+for (const [index, name] of ['entry', 'settings', 'binding', 'issue'].entries()) {
   const schema = JSON.parse(readFileSync(new URL(`${name}.schema.json`, directory), 'utf8'));
   const jsonSchema = createRxSchema(schema).jsonSchema;
   const ajv = getAjv();

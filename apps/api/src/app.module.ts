@@ -1,3 +1,4 @@
+import { ReplicationController } from './library/replication.controller';
 import { LibraryController, LibraryInputGuard } from './library/library.controller';
 import { LibraryMutationService } from './library/mutation.service';
 import { LibraryPreviewSigner } from './library/preview';
@@ -20,7 +21,7 @@ export class AppModule {
   ): DynamicModule {
     return {
       module: AppModule,
-      controllers: [HealthController, AuthController, LibraryController],
+      controllers: [HealthController, AuthController, LibraryController, ReplicationController],
       providers: [
         { provide: AUTH_ENVIRONMENT, useValue: environment },
         {

@@ -1,10 +1,10 @@
-import { Granularity } from './models';
+import { Granularity } from './granularity';
+import type { Locale } from './locale';
 import type {
   Entry,
   EntryPatch,
   Genre,
   LocalizedText,
-  Locale,
   ProviderReference,
   Snapshot,
   Provenance,
@@ -93,11 +93,11 @@ export function descriptionFor(
 ): DisplayText {
   const value = preferred(snapshot.descriptions, locale) ?? snapshot.descriptions[0];
 
-  return value
-    ? localized(value, locale)
-    : comment.trim()
-      ? ownText(comment, locale, 'user')
-      : ownText(emptyLabel, locale, 'fallback');
+  if (value) return localized(value, locale);
+
+  return comment.trim()
+    ? ownText(comment, locale, 'user')
+    : ownText(emptyLabel, locale, 'fallback');
 }
 
 /** Selects a localized genre label with a stable key fallback. */
@@ -193,10 +193,15 @@ export function matchEntry(
   )
     return { kind: 'conflict', entryIds: [matched.entryId] };
 
+  let matchedBy: 'catalog' | 'reference' | 'source' = 'source';
+
+  if (catalog.length) matchedBy = 'catalog';
+  else if (reference.length) matchedBy = 'reference';
+
   return {
     kind: 'match',
     entryId: matched.entryId,
-    matchedBy: catalog.length ? 'catalog' : reference.length ? 'reference' : 'source',
+    matchedBy,
     categoryConflict: matched.category !== candidate.category,
   };
 }

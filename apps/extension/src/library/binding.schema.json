@@ -1,0 +1,58 @@
+{
+  "title": "Device account binding",
+  "version": 0,
+  "primaryKey": "key",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "enum": ["device"],
+      "maxLength": 6
+    },
+    "ownerId": {
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "generation": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["linked", "reset-required", "resetting"]
+    },
+    "initialCheckpoint": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "cursor": {
+              "type": "string"
+            },
+            "entryId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 36,
+                  "maxLength": 36
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": ["cursor", "entryId"],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": ["key", "ownerId", "generation", "phase", "initialCheckpoint"],
+  "additionalProperties": false
+}

@@ -125,8 +125,8 @@ editor open rather than reporting success.
 The extension uses one fixed RxDB database named `filecab-local`. Signing in,
 signing out or changing accounts keeps the same local entries, preferences and
 open editor visible. Authentication does not select another database or upload
-local data. Account synchronization requires explicit linking/adoption in step 9;
-these saves currently stay on this device.
+local data. Account synchronization starts only after the explicit linking
+preview and confirmation described below.
 
 If storage cannot be opened or its records fail the storage schema check, the UI
 shows recovery instead of an empty library. Use **Retry local storage** or **Export
@@ -136,7 +136,7 @@ format. The app never automatically resets a failed store. Keep the extension ID
 and browser profile stable when testing persistence, because changing either
 selects a different Chrome storage origin.
 
-Implementation lives in `src/library`: version-zero schemas, the shared connection
+Implementation lives in `src/library`: version-zero entry/settings schemas, the shared connection
 manager, revision-checked repository and recovery reader. Interface preferences
 are stored separately by category and Library/Catalog mode; their controls belong
 to the later shared UI steps. Local revisions/Undo state live in each entry row so
@@ -156,3 +156,57 @@ Undo expiry/conflicts and raw recovery in isolated Chromium profiles. The storag
 test helper is bundled only during the tests and removed afterward; it is not a
 production entrypoint. No live API or Google credentials are needed for these
 storage tests.
+
+## Account synchronization
+
+Sign in, choose **Preview account link**, review the device/account counts and
+identity/source overlaps, then choose **Confirm link and synchronize**. Canceling
+uploads nothing. Confirmation rechecks both revisions; changes require a fresh
+preview. Account entries download and active device entries upload through the
+same server rules as manual edits. Conflicts keep the server version and retain
+the local proposal in **saved edits need review**. Expand a saved edit to inspect
+its values, deliberately reapply it against the current version, or dismiss it.
+A later server change can require another review.
+
+The library stays bound to the selected account. Signing out or signing in to a
+different account pauses synchronization while keeping local entries and drafts
+visible. Pending data is never rebound to the other account. Sign back into the
+linked account to resume. There is no detach/rebind control in this delivery.
+
+Keep a popup or full page open to synchronize. Local edits trigger native RxDB
+pushes; reconnect, opening, a 30-second open-surface timer and **Refresh account
+library** trigger pulls. A Web Lock selects one syncing surface; refresh from a
+second surface reaches it through a local broadcast. Closing surfaces or browser
+restart preserves native replication metadata and durable local changes. The
+worker refreshes credentials for each account-bound request without exposing them
+to pages. Local editing still works when the API/worker is unavailable.
+
+If the server reports unavailable history, uploads pause. **Preserve local intent
+and recover** first saves every local document for review, then reconciles a fresh
+server snapshot. Absent entries remain deleted; they are not automatically
+uploaded again. A failed/interrupted recovery remains paused and can be retried.
+The recovery log survives restart until you deliberately reapply or dismiss it.
+Existing bytes and unsaved editor input are preserved on storage failure. Server
+history and tombstones currently remain retained indefinitely.
+
+The device binding and review log are separate version-zero RxDB collections.
+Existing entry/settings schemas were not changed. Native RxDB metadata owns
+checkpoints and assumed master state; the review log is not a mutation outbox.
+`pnpm test:replication` requires an explicit disposable `DATABASE_URL` and installed
+Chromium and verifies the production extension against real API/PostgreSQL state.
+The ordinary E2E suite additionally covers restart, lost responses, collapsed
+pull pages, absent-master conflicts, reset/quota recovery and account isolation.
+
+### Diagnosing synchronization failures
+
+A failed sync displays a specific **Code**, operation, HTTP status, safe request
+UUID and RxDB wrapper code when available. Worker/native error wrapping preserves
+these details. Reload the extension after rebuilding, reopen its full page and
+choose **Refresh account library** to retry. Share only those diagnostic fields;
+local entries, private notes, raw responses and tokens are excluded from them.
+The library surface's console logs the same safe metadata under `[Filecab sync]`. It never logs native error objects or saved documents.
+
+`FORBIDDEN` points to API origin/CSRF policy, `API_OUTDATED` to missing replication
+routes, `ACCOUNT_CHANGED` to session/account mismatch, `VALIDATION_ERROR` to a
+rejected document, and `NETWORK_ERROR` to an unreachable API. Non-JSON HTTP error
+responses retain their status; they are not mislabeled as network failures.

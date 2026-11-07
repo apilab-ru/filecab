@@ -1,46 +1,13 @@
+import type { ApiErrorCode } from './api-error-code';
+import type { Category } from './category';
+import type { ConflictReason } from './conflict-reason';
+import type { Format } from './format';
+import type { Granularity } from './granularity';
+import type { Locale } from './locale';
+import type { Status } from './status';
+
 /** JSON-compatible contract v1. IDs, timestamps, versions and cursors use plain strings. */
 export const CONTRACT_VERSION = 1 as const;
-
-export enum Category {
-  Anime = 'anime',
-  Films = 'films',
-  Tv = 'tv',
-}
-
-export enum Status {
-  Planned = 'planned',
-  Process = 'process',
-  Complete = 'complete',
-  Drop = 'drop',
-  Hide = 'hide',
-}
-
-export enum Format {
-  Movie = 'movie',
-  Tv = 'tv',
-  Special = 'special',
-  Ova = 'ova',
-  Ona = 'ona',
-  Music = 'music',
-  Cartoon = 'cartoon',
-  TvSeries = 'tv-series',
-  AnimatedSeries = 'animated-series',
-  Unknown = 'unknown',
-}
-
-export enum Granularity {
-  Series = 'series',
-  Season = 'season',
-  Film = 'film',
-  Special = 'special',
-  Edition = 'edition',
-  Unknown = 'unknown',
-}
-
-export enum Locale {
-  En = 'en',
-  Ru = 'ru',
-}
 
 /** Records where metadata came from and whether it was verified. */
 export interface Provenance {
@@ -189,23 +156,6 @@ export interface ValidationIssue {
   message: string;
 }
 
-export enum ApiErrorCode {
-  ValidationError = 'VALIDATION_ERROR',
-  TransportError = 'TRANSPORT_ERROR',
-  InvalidResponse = 'INVALID_RESPONSE',
-  ProviderUnavailable = 'PROVIDER_UNAVAILABLE',
-  NotFound = 'NOT_FOUND',
-  Unauthorized = 'UNAUTHORIZED',
-  Conflict = 'CONFLICT',
-  RateLimited = 'RATE_LIMITED',
-  SyncResetRequired = 'SYNC_RESET_REQUIRED',
-  Forbidden = 'FORBIDDEN',
-  PayloadTooLarge = 'PAYLOAD_TOO_LARGE',
-  UnsupportedMediaType = 'UNSUPPORTED_MEDIA_TYPE',
-  ServiceUnavailable = 'SERVICE_UNAVAILABLE',
-  InternalError = 'INTERNAL_ERROR',
-}
-
 /** Carries a structured service error and diagnostic correlation ID. */
 export interface ApiError {
   schemaVersion: 1;
@@ -249,13 +199,6 @@ export interface ReplicationRow {
 export interface ReplicationPush {
   schemaVersion: 1;
   rows: ReplicationRow[];
-}
-
-export enum ConflictReason {
-  Version = 'VERSION',
-  Identity = 'IDENTITY',
-  Source = 'SOURCE',
-  Category = 'CATEGORY',
 }
 
 /** Reports a rejected change and the current server document when available. */

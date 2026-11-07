@@ -512,3 +512,235 @@ test('catalog association uses server metadata and merge preserves manual identi
   expect(progressResponse.status).toBe(200);
   expect(await progressResponse.json()).toMatchObject({ progress: 15, status: null });
 });
+
+/** Exercises replication through real authentication, DTOs and owner transactions. */
+function replicate(operation: 'pull' | 'push', body: unknown, owner = first) {
+  return fetch(base.replace(/library$/, `replication/${operation}`), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${owner.accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+test('replication retries, stale intent, tombstones and account collisions preserve server state', async () => {
+  const original = await create({ userTitle: 'Replication original' });
+  const proposed = { ...original, comment: 'offline intent', progress: 5 };
+  const batch = { schemaVersion: 1, rows: [{ assumedMaster: original, proposed }] };
+  expect(await (await replicate('push', batch)).json()).toEqual({
+    schemaVersion: 1,
+    conflicts: [],
+  });
+  const current = await app.get(LibraryMutationService).get(first.ownerId, original.entryId);
+  expect(current).toMatchObject({
+    comment: 'offline intent',
+    progress: 5,
+    createdAt: original.createdAt,
+  });
+  expect(current.serverVersion).not.toBe(original.serverVersion);
+  expect(await (await replicate('push', batch)).json()).toEqual({
+    schemaVersion: 1,
+    conflicts: [],
+  });
+  expect(await app.get(LibraryMutationService).get(first.ownerId, original.entryId)).toEqual(
+    current,
+  );
+  const conflict = await replicate('push', {
+    schemaVersion: 1,
+    rows: [{ assumedMaster: original, proposed: { ...original, comment: 'stale intent' } }],
+  });
+  expect(await conflict.json()).toMatchObject({
+    conflicts: [{ reason: 'VERSION', serverDocument: current }],
+  });
+  const collision = await replicate(
+    'push',
+    { schemaVersion: 1, rows: [{ assumedMaster: null, proposed }] },
+    other,
+  );
+  expect(await collision.json()).toMatchObject({
+    conflicts: [{ reason: 'IDENTITY', serverDocument: null }],
+  });
+
+  const deletion = {
+    schemaVersion: 1,
+    rows: [{ assumedMaster: current, proposed: { ...current, deleted: true } }],
+  };
+  expect((await replicate('push', deletion)).status).toBe(200);
+  const deletedRow = await auth.database.libraryEntry.findUniqueOrThrow({
+    where: { id: current.entryId },
+  });
+  const deleted = deletedRow.document as unknown as ServerEntry;
+  expect(deleted.deleted).toBe(true);
+  expect((await replicate('push', deletion)).status).toBe(200);
+  const pull = await replicate('pull', {
+    schemaVersion: 1,
+    checkpoint: { cursor: current.serverVersion, entryId: current.entryId },
+    limit: 100,
+  });
+  expect(await pull.json()).toMatchObject({ documents: expect.arrayContaining([deleted]) });
+  const restoration = await replicate('push', {
+    schemaVersion: 1,
+    rows: [{ assumedMaster: deleted, proposed: { ...deleted, deleted: false } }],
+  });
+  expect(await restoration.json()).toEqual({ schemaVersion: 1, conflicts: [] });
+});
+
+test('replication creates are retry safe and cannot inject metadata or duplicate source claims', async () => {
+  const template = await create({ sourceUrls: ['https://example.com/replication-source'] });
+  const proposed = { ...template, entryId: randomUUID(), serverVersion: null, sources: [] };
+  const batch = { schemaVersion: 1, rows: [{ assumedMaster: null, proposed }] };
+  expect(await (await replicate('push', batch)).json()).toEqual({
+    schemaVersion: 1,
+    conflicts: [],
+  });
+  const current = await app.get(LibraryMutationService).get(first.ownerId, proposed.entryId);
+  expect(await (await replicate('push', batch)).json()).toEqual({
+    schemaVersion: 1,
+    conflicts: [],
+  });
+  expect(await app.get(LibraryMutationService).get(first.ownerId, proposed.entryId)).toEqual(
+    current,
+  );
+  const invalid = await replicate('push', {
+    schemaVersion: 1,
+    rows: [
+      {
+        assumedMaster: current,
+        proposed: { ...current, snapshot: { ...current.snapshot, year: 2020 } },
+      },
+    ],
+  });
+  expect(invalid.status).toBe(400);
+  const sourceConflict = await replicate('push', {
+    schemaVersion: 1,
+    rows: [{ assumedMaster: current, proposed: { ...current, sources: template.sources } }],
+  });
+  expect(await sourceConflict.json()).toMatchObject({
+    conflicts: [{ reason: 'SOURCE', serverDocument: current }],
+  });
+  expect(await app.get(LibraryMutationService).get(first.ownerId, proposed.entryId)).toEqual(
+    current,
+  );
+});
+
+test('pull batches follow committed revisions and detect unavailable history without leaking other owners', async () => {
+  const owner = await login('pull-isolation');
+  const one = await create({ userTitle: 'One' }, owner);
+  const two = await create({ userTitle: 'Two' }, owner);
+  const mutations = app.get(LibraryMutationService);
+  const changed = await mutations.update(owner.ownerId, one.entryId, one.serverVersion, {
+    progress: 7,
+  });
+  const firstPage = await replicate(
+    'pull',
+    { schemaVersion: 1, checkpoint: null, limit: 2 },
+    owner,
+  );
+  expect(await firstPage.json()).toEqual({
+    schemaVersion: 1,
+    documents: [one, two],
+    checkpoint: { cursor: two.serverVersion, entryId: two.entryId },
+    hasMore: true,
+  });
+  const secondPage = await replicate(
+    'pull',
+    { schemaVersion: 1, checkpoint: { cursor: two.serverVersion, entryId: two.entryId }, limit: 2 },
+    owner,
+  );
+  expect(await secondPage.json()).toMatchObject({ documents: [changed], hasMore: false });
+  const reset = await replicate(
+    'pull',
+    { schemaVersion: 1, checkpoint: { cursor: '9223372036854775807', entryId: null }, limit: 2 },
+    owner,
+  );
+  expect(reset.status).toBe(409);
+  expect(await reset.json()).toMatchObject({ code: 'SYNC_RESET_REQUIRED' });
+  await auth.database.entryChange.delete({
+    where: { ownerId_revision: { ownerId: owner.ownerId, revision: 2n } },
+  });
+  const gap = await replicate(
+    'pull',
+    { schemaVersion: 1, checkpoint: { cursor: '1', entryId: null }, limit: 2 },
+    owner,
+  );
+  expect(await gap.json()).toMatchObject({ code: 'SYNC_RESET_REQUIRED' });
+});
+
+test('push validates all request shapes first and documents independent mixed-row commits', async () => {
+  const firstEntry = await create();
+  const secondEntry = await create();
+  const firstRow = {
+    assumedMaster: firstEntry,
+    proposed: { ...firstEntry, comment: 'mixed valid' },
+  };
+  const stale = { assumedMaster: secondEntry, proposed: { ...secondEntry, progress: 10 } };
+  const current = await app
+    .get(LibraryMutationService)
+    .update(first.ownerId, secondEntry.entryId, secondEntry.serverVersion, { progress: 3 });
+  const mixed = await replicate('push', { schemaVersion: 1, rows: [firstRow, stale] });
+  expect(await mixed.json()).toMatchObject({
+    conflicts: [{ entryId: secondEntry.entryId, serverDocument: current }],
+  });
+  expect(
+    await app.get(LibraryMutationService).get(first.ownerId, firstEntry.entryId),
+  ).toMatchObject({ comment: 'mixed valid' });
+  for (const body of [
+    { schemaVersion: 1, rows: [firstRow, firstRow] },
+    { schemaVersion: 1, rows: [{ ...firstRow, ownerId: other.ownerId }] },
+    { schemaVersion: 1, rows: [{ ...firstRow, proposed: { ...firstRow.proposed, rating: 11 } }] },
+  ])
+    expect((await replicate('push', body)).status).toBe(400);
+
+  const semantic = await replicate('push', {
+    schemaVersion: 1,
+    rows: [
+      { assumedMaster: current, proposed: { ...current, comment: 'committed before error' } },
+      {
+        assumedMaster: null,
+        proposed: { ...firstEntry, entryId: randomUUID(), serverVersion: null, userTitle: '' },
+      },
+    ],
+  });
+  expect(semantic.status).toBe(400);
+  expect(
+    await app.get(LibraryMutationService).get(first.ownerId, secondEntry.entryId),
+  ).toMatchObject({ comment: 'committed before error' });
+  const docs = await fetch(base.replace(/v1\/library$/, 'docs-json'));
+  const schema = (await docs.json()) as { paths: Record<string, unknown> };
+  expect(schema.paths).toHaveProperty('/api/v1/replication/pull');
+  expect(schema.paths).toHaveProperty('/api/v1/replication/push');
+});
+
+test('concurrent replicated writes serialize assumed-state checks and publish only the winner', async () => {
+  const owner = await login('replication-concurrency');
+  const entry = await create({}, owner);
+  const results = await Promise.all(
+    [1, 2].map((progress) =>
+      replicate(
+        'push',
+        {
+          schemaVersion: 1,
+          rows: [{ assumedMaster: entry, proposed: { ...entry, progress } }],
+        },
+        owner,
+      ),
+    ),
+  );
+  const bodies = (await Promise.all(results.map((response) => response.json()))) as Array<{
+    conflicts: unknown[];
+  }>;
+  expect(bodies.map((body) => body.conflicts.length).sort()).toEqual([0, 1]);
+  const changes = await auth.database.entryChange.findMany({
+    where: { ownerId: owner.ownerId },
+    orderBy: { revision: 'asc' },
+  });
+  expect(changes).toHaveLength(2);
+  expect(changes.map((change) => change.revision)).toEqual([1n, 2n]);
+  const pulled = await replicate('pull', { schemaVersion: 1, checkpoint: null, limit: 100 }, owner);
+  const current = await app.get(LibraryMutationService).get(owner.ownerId, entry.entryId);
+  expect(await pulled.json()).toEqual({
+    schemaVersion: 1,
+    documents: [current],
+    checkpoint: { cursor: '2', entryId: entry.entryId },
+    hasMore: false,
+  });
+});

@@ -30,7 +30,8 @@
     "format": "eslint . --fix && prettier --write .",
     "format:affected": "lint-staged --diff=HEAD",
     "format:check": "eslint . && prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:replication": "nx build extension && vitest run --project replication"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

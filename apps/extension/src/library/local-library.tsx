@@ -3,6 +3,7 @@ import { Category, Status, type EntryPatch } from '@filecab/contracts';
 import { type LocalEntry } from './database';
 import { LocalLibraryError, LocalLibraryRepository, type LocalSnapshot } from './repository';
 import { exportRawLibrary } from './recovery';
+import { SyncControls } from './sync-controls';
 
 const FAILURE_MESSAGES = {
   CONFLICT:
@@ -258,7 +259,7 @@ export function LocalLibrary({ name }: { name: string }) {
     <section className="local-library" aria-label="Local library">
       <h1 className="local-library__title">{name}</h1>
       <p className="local-library__scope">{scopeLabel}</p>
-      {failed ? (
+      {failed && (
         <div className="local-library__recovery" role="alert">
           <p className="local-library__error">
             Local data could not be read. Existing storage has been preserved.
@@ -278,14 +279,14 @@ export function LocalLibrary({ name }: { name: string }) {
             Export recoverable raw data
           </button>
         </div>
-      ) : !snapshot || !repository ? (
+      )}
+      {!failed && (!snapshot || !repository) && (
         <p className="local-library__message">Loading local data…</p>
-      ) : (
+      )}
+      {!failed && snapshot && repository && (
         <>
-          <p className="local-library__message">
-            Saved locally · revision {snapshot.revision}. Account synchronization is not available
-            yet.
-          </p>
+          <p className="local-library__message">Saved locally · revision {snapshot.revision}.</p>
+          <SyncControls repository={repository} snapshot={snapshot} />
           {editing !== undefined ? (
             <EntryEditor
               key={`${editing?.entryId ?? 'new'}:${editing?.localRevision ?? 0}`}

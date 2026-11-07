@@ -1,14 +1,23 @@
-import { createHash } from 'node:crypto';
-import type {
-  EntryPatch,
-  ServerEntry,
-  Snapshot,
-  Category,
-  OwnerSnapshot,
-  MergeEntriesRequest,
-  ReassignSourceRequest,
-  LibraryMutationPreview,
+import {
+  ApiErrorCode,
+  ConflictReason,
+  emptySnapshot,
+  type ReplicationRow,
+  type Conflict,
+  type ReplicationPull,
+  type ReplicationPullResponse,
+  type EntryPatch,
+  type ServerEntry,
+  type Snapshot,
+  type Category,
+  type OwnerSnapshot,
+  type MergeEntriesRequest,
+  type ReassignSourceRequest,
+  type LibraryMutationPreview,
 } from '@filecab/contracts';
+import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
+import { ApiException } from '../http/api-error';
 import type { PrismaClient, Prisma } from '../generated/prisma/client';
 
 import {
@@ -53,13 +62,13 @@ export class LibraryMutationService {
           Array<{ ownerId: string }>
         >`SELECT "ownerId" FROM "UserLibrary" WHERE "ownerId" = ${ownerId}::uuid FOR UPDATE`;
 
-        if (!libraries.length) throw new MutationError('NOT_FOUND');
+        if (!libraries.length) throw new MutationError(ApiErrorCode.NotFound);
 
         return action(tx);
       });
     } catch (error) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002')
-        throw new MutationError('CONFLICT');
+        throw new MutationError(ApiErrorCode.Conflict);
 
       throw error;
     }
@@ -73,11 +82,11 @@ export class LibraryMutationService {
   ): Promise<ServerEntry> {
     const row = await tx.libraryEntry.findFirst({ where: { id: entryId, ownerId } });
 
-    if (!row) throw new MutationError('NOT_FOUND');
+    if (!row) throw new MutationError(ApiErrorCode.NotFound);
 
     const entry = row.document as unknown as ServerEntry;
 
-    if (entry.serverVersion !== expectedVersion) throw new MutationError('CONFLICT');
+    if (entry.serverVersion !== expectedVersion) throw new MutationError(ApiErrorCode.Conflict);
 
     return entry;
   }
@@ -121,10 +130,194 @@ export class LibraryMutationService {
     return entry;
   }
 
+  /** Reads a commit-consistent ordered feed and refuses checkpoints across missing history. */
+  async pull(ownerId: string, input: ReplicationPull): Promise<ReplicationPullResponse> {
+    const cursor = BigInt(input.checkpoint?.cursor ?? '0');
+
+    if (cursor > 9223372036854775807n) throw new MutationError(ApiErrorCode.ValidationError);
+
+    return this.database.$transaction(
+      async (tx) => {
+        const library = await tx.userLibrary.findUnique({ where: { ownerId } });
+
+        if (!library) throw new MutationError(ApiErrorCode.NotFound);
+
+        if (cursor > library.revision)
+          throw new ApiException(
+            409,
+            ApiErrorCode.SyncResetRequired,
+            'Replication checkpoint requires reset',
+          );
+
+        const changes = await tx.entryChange.findMany({
+          where: { ownerId, revision: { gt: cursor } },
+          orderBy: { revision: 'asc' },
+          take: input.limit,
+        });
+        let consumed = cursor;
+        const documents = new Map<string, ServerEntry>();
+        for (const change of changes) {
+          if (change.revision !== consumed + 1n)
+            throw new ApiException(
+              409,
+              ApiErrorCode.SyncResetRequired,
+              'Replication history requires reset',
+            );
+
+          consumed = change.revision;
+          documents.delete(change.entryId);
+          documents.set(change.entryId, change.document as unknown as ServerEntry);
+        }
+
+        if (consumed < library.revision && changes.length < input.limit)
+          throw new ApiException(
+            409,
+            ApiErrorCode.SyncResetRequired,
+            'Replication history requires reset',
+          );
+
+        return {
+          schemaVersion: 1,
+          documents: [...documents.values()],
+          checkpoint: {
+            cursor: consumed.toString(),
+            entryId: changes.at(-1)?.entryId ?? input.checkpoint?.entryId ?? null,
+          },
+          hasMore: consumed < library.revision,
+        };
+      },
+      { isolationLevel: 'RepeatableRead' },
+    );
+  }
+
+  /** Applies one replicated state through the same lock, claims and publication as manual writes. */
+  async pushRow(ownerId: string, row: ReplicationRow): Promise<Conflict | null> {
+    const { proposed, assumedMaster } = row;
+
+    if (
+      assumedMaster &&
+      (assumedMaster.entryId !== proposed.entryId || !assumedMaster.serverVersion)
+    )
+      throw new MutationError(ApiErrorCode.ValidationError);
+
+    try {
+      return await this.transaction(ownerId, async (tx) => {
+        const stored = await tx.libraryEntry.findUnique({ where: { id: proposed.entryId } });
+        const current =
+          stored?.ownerId === ownerId ? (stored.document as unknown as ServerEntry) : null;
+
+        if (stored && !current)
+          return {
+            entryId: proposed.entryId,
+            reason: ConflictReason.Identity,
+            serverDocument: null,
+          };
+
+        const fields: EntryPatch = {
+          category: proposed.category,
+          userTitle: proposed.userTitle,
+          status: proposed.status,
+          rating: proposed.rating,
+          progress: proposed.progress,
+          comment: proposed.comment,
+          sourceUrls: proposed.sources.map((source) => source.originalUrl),
+        };
+        const normalized = patchDocument(
+          current ?? {
+            ...proposed,
+            serverVersion: '0',
+          },
+          fields,
+        );
+
+        if (
+          !isDeepStrictEqual(
+            normalized.sources,
+            proposed.sources.map((source) => ({
+              originalUrl: source.originalUrl,
+              normalizedUrl: source.normalizedUrl,
+              policyVersion: source.policyVersion,
+            })),
+          )
+        )
+          throw new MutationError(ApiErrorCode.ValidationError);
+
+        // An acknowledged write may have lost its response. Compare mutable state before
+        // rejecting its now-stale assumption, excluding server-owned timestamps and version.
+        const same =
+          current &&
+          isDeepStrictEqual(
+            {
+              ...normalized,
+              catalogId: proposed.catalogId,
+              snapshot: proposed.snapshot,
+              deleted: proposed.deleted,
+            },
+            current,
+          );
+
+        if (same) return null;
+
+        if ((current?.serverVersion ?? null) !== (assumedMaster?.serverVersion ?? null))
+          return {
+            entryId: proposed.entryId,
+            reason: ConflictReason.Version,
+            serverDocument: current,
+          };
+
+        if (
+          current &&
+          (current.catalogId !== proposed.catalogId || current.createdAt !== proposed.createdAt)
+        )
+          throw new MutationError(ApiErrorCode.ValidationError);
+
+        await this.checkCatalog(tx, proposed.catalogId, proposed.category);
+        const catalog = proposed.catalogId
+          ? await tx.catalogItem.findUnique({ where: { id: proposed.catalogId } })
+          : null;
+        const snapshot =
+          current?.snapshot ??
+          (catalog?.snapshot as unknown as Snapshot | undefined) ??
+          emptySnapshot();
+
+        if (!isDeepStrictEqual(snapshot, proposed.snapshot))
+          throw new MutationError(ApiErrorCode.ValidationError);
+
+        const now = new Date(
+          Math.max(Date.now(), Date.parse(current?.updatedAt ?? '1970-01-01')),
+        ).toISOString();
+        const document: ServerEntry = {
+          ...normalized,
+          catalogId: proposed.catalogId,
+          snapshot,
+          deleted: proposed.deleted,
+          createdAt: current?.createdAt ?? now,
+          updatedAt: now,
+        };
+        validateEntry(document);
+        await this.publish(tx, ownerId, document, !current);
+
+        return null;
+      });
+    } catch (error) {
+      if (!(error instanceof MutationError) || error.code !== ApiErrorCode.Conflict) throw error;
+
+      const current = await this.database.libraryEntry.findFirst({
+        where: { ownerId, id: proposed.entryId },
+      });
+
+      return {
+        entryId: proposed.entryId,
+        reason: proposed.catalogId ? ConflictReason.Identity : ConflictReason.Source,
+        serverDocument: current ? (current.document as unknown as ServerEntry) : null,
+      };
+    }
+  }
+
   async create(ownerId: string, input: CreateEntry): Promise<ServerEntry> {
     return this.transaction(ownerId, async (tx) => {
       if (await tx.libraryEntry.findUnique({ where: { id: input.entryId } }))
-        throw new MutationError('CONFLICT');
+        throw new MutationError(ApiErrorCode.Conflict);
 
       await this.checkCatalog(tx, input.catalogId, input.category);
       const now = new Date().toISOString();
@@ -164,7 +357,8 @@ export class LibraryMutationService {
 
     const catalog = await tx.catalogItem.findUnique({ where: { id: catalogId } });
 
-    if (!catalog || catalog.category !== category) throw new MutationError('VALIDATION_ERROR');
+    if (!catalog || catalog.category !== category)
+      throw new MutationError(ApiErrorCode.ValidationError);
   }
 
   async update(
@@ -176,7 +370,7 @@ export class LibraryMutationService {
     return this.transaction(ownerId, async (tx) => {
       const before = await this.load(tx, ownerId, entryId, expectedVersion);
 
-      if (before.deleted) throw new MutationError('CONFLICT');
+      if (before.deleted) throw new MutationError(ApiErrorCode.Conflict);
 
       const after = patchDocument(before, patch);
       await this.checkCatalog(tx, after.catalogId, after.category);
@@ -237,7 +431,7 @@ export class LibraryMutationService {
       async (tx) => {
         const library = await tx.userLibrary.findUnique({ where: { ownerId } });
 
-        if (!library) throw new MutationError('NOT_FOUND');
+        if (!library) throw new MutationError(ApiErrorCode.NotFound);
 
         const rows = await tx.libraryEntry.findMany({
           where: { ownerId, deleted: false },
@@ -259,7 +453,7 @@ export class LibraryMutationService {
       where: { id: entryId, ownerId, deleted: false },
     });
 
-    if (!entry) throw new MutationError('NOT_FOUND');
+    if (!entry) throw new MutationError(ApiErrorCode.NotFound);
 
     return entry.document as unknown as ServerEntry;
   }
@@ -271,7 +465,7 @@ export class LibraryMutationService {
       const proposed = proposeMerge(survivor, removed, input.fields);
       await this.checkCatalog(tx, proposed[0].catalogId, proposed[0].category);
 
-      if (!this.previews) throw new MutationError('CONFLICT');
+      if (!this.previews) throw new MutationError(ApiErrorCode.Conflict);
 
       return this.previews.create(ownerId, 'merge', input, [survivor, removed], proposed);
     });
@@ -286,7 +480,7 @@ export class LibraryMutationService {
       const to = await this.load(tx, ownerId, input.toId, input.toVersion);
       const proposed = proposeReassignment(from, to, input.normalizedUrl);
 
-      if (!this.previews) throw new MutationError('CONFLICT');
+      if (!this.previews) throw new MutationError(ApiErrorCode.Conflict);
 
       return this.previews.create(ownerId, 'reassign-source', input, [from, to], proposed);
     });
@@ -307,7 +501,7 @@ export class LibraryMutationService {
       const proposed = proposeReassignment(from, to, normalizedUrl);
 
       if (previewToken !== undefined) {
-        if (!this.previews) throw new MutationError('CONFLICT');
+        if (!this.previews) throw new MutationError(ApiErrorCode.Conflict);
 
         this.previews.verify(
           previewToken,
@@ -344,7 +538,7 @@ export class LibraryMutationService {
       await this.checkCatalog(tx, merged.catalogId, merged.category);
 
       if (previewToken !== undefined) {
-        if (!this.previews) throw new MutationError('CONFLICT');
+        if (!this.previews) throw new MutationError(ApiErrorCode.Conflict);
 
         this.previews.verify(
           previewToken,

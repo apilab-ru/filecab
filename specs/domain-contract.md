@@ -15,3 +15,18 @@ Backups use `{ schemaVersion: 1, entries: [...] }` with active entry data, exclu
 Server consumers SHALL use the contracts package generated type declarations, building contracts before server compilation. Runtime request validation SHALL remain server-owned; tools that compile server DTO imports SHALL enable legacy TypeScript decorators consistently with NestJS.
 
 HTTP error envelopes SHALL include numeric `status` and boolean `retryable` alongside the stable code, safe message and correlation ID. Foundation error codes distinguish forbidden requests, oversized bodies, unsupported content types, unavailable service and unexpected internal failures. Validation issues SHALL omit submitted values.
+
+## Shared enum organization
+
+Each shared domain enum SHALL live in its own descriptively named module in
+`packages/contracts/src`, re-exported by the package entry point. API error codes
+use `ApiErrorCode`; extension synchronization-specific failure codes use
+`SyncErrorCode` and reuse `ApiErrorCode` for existing API values such as
+`SYNC_RESET_REQUIRED`, validation and forbidden errors. Preserve all serialized
+values. Shared synchronization operation names and safe diagnostic metadata
+belong to contracts as `SyncOperation` and `SyncDiagnostic`. Production consumers
+SHALL reference enum members, including message-map keys and server exceptions,
+rather than duplicate serialized literals. Diagnostic allowlists derive from
+`Object.values` of these enums; their sanitization remains extension-owned.
+Runtime-only constants, storage keys, UI copy and private implementation details
+remain with their owning application rather than becoming shared contracts.

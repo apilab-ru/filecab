@@ -289,4 +289,37 @@ Undo. The same entries and editor remain visible after sign-in/sign-out; local
 reads/writes work without the API or a running service worker.
 Failed reads show recovery with retry/raw export; failed writes retain editor
 input. See [local storage details](apps/extension/README.md#local-library-storage).
-Account replication and explicit guest adoption are the next implementation step.
+Account replication starts only after an explicit linking preview and confirmation; see [extension synchronization](apps/extension/README.md#account-synchronization).
+
+## Replication API
+
+Authenticated `POST /api/v1/replication/pull` accepts
+`{ "schemaVersion": 1, "checkpoint": null, "limit": 100 }` and returns complete
+changed documents, a checkpoint and `hasMore`. Reuse the returned checkpoint for
+subsequent pulls, continuing while `hasMore` is true. Limits are 1–100 and cursors
+are decimal strings. Changes include deletion tombstones; repeated revisions of
+one entry in a batch collapse to the last state.
+
+`POST /api/v1/replication/push` accepts
+`{ "schemaVersion": 1, "rows": [{ "assumedMaster": null, "proposed": entry }] }`.
+Use the full last server document as `assumedMaster` for updates. Each of 1–100
+distinct entry IDs commits independently. Stale assumptions return conflicts with
+the current owned document. Equivalent retries are no-ops. Invalid request shapes
+fail before writes; semantic failures stop the batch after any preceding commits.
+Retry the original batch after uncertain outcomes. Snapshots are authoritative
+server metadata and cannot be edited through replication. Cookie authentication
+requires the same CSRF controls as the library API; bearer authentication is
+supported. See `/api/docs` for full schemas.
+
+A `SYNC_RESET_REQUIRED` error signals an unavailable history position or a future
+checkpoint. History and tombstones are currently retained indefinitely. The extension
+uses native RxDB replication metadata, preserves rejected edits for deliberate review,
+and offers explicit recovery before replacing a stale replica. Signing in does not
+start synchronization or upload the device library.
+
+Run `pnpm test:replication` with an explicitly selected disposable `DATABASE_URL`
+and Chromium installed (`pnpm exec playwright install chromium`). It builds the
+extension and tests real Chrome messaging/native RxDB against the authenticated
+API and PostgreSQL. Google identity is synthetic; no live consent is claimed.
+`pnpm test:e2e` separately covers native protocol fixtures, browser restart,
+missing history, failed recovery writes and account switching. CI runs both checks.

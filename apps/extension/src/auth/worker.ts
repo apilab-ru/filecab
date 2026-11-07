@@ -1,3 +1,11 @@
+import {
+  SyncOperation,
+  ApiErrorCode,
+  SyncErrorCode,
+  type AccountInfo,
+  type ExtensionSession,
+  type ExtensionLoginConfig,
+} from '@filecab/contracts';
 import { browser } from 'wxt/browser';
 import {
   AuthFailure,
@@ -6,7 +14,6 @@ import {
   authStep,
   type AuthDiagnostic,
 } from './diagnostics';
-import type { AccountInfo, ExtensionSession, ExtensionLoginConfig } from '@filecab/contracts';
 
 import { API_ORIGIN, debugContext, type AuthDebugContext } from './connection';
 
@@ -15,6 +22,33 @@ const REFRESH_KEY = 'filecab.auth.refresh';
 const ACCESS_KEY = 'filecab.auth.access';
 
 const LOGIN_KEY = 'filecab.auth.login';
+
+const LIBRARY_ROUTES = new Map<string, string>([
+  [SyncOperation.Snapshot, 'library'],
+  [SyncOperation.Pull, 'replication/pull'],
+  [SyncOperation.Push, 'replication/push'],
+]);
+
+const SYNC_HTTP_ERRORS: Partial<Record<number, ApiErrorCode | SyncErrorCode>> = {
+  400: ApiErrorCode.ValidationError,
+  401: SyncErrorCode.AccountChanged,
+  403: ApiErrorCode.Forbidden,
+  404: SyncErrorCode.ApiOutdated,
+  413: ApiErrorCode.PayloadTooLarge,
+  429: ApiErrorCode.RateLimited,
+  503: ApiErrorCode.ServiceUnavailable,
+};
+
+const AUTH_HTTP_ERRORS: Partial<Record<number, AuthFailureCode>> = {
+  401: AuthFailureCode.SessionRejected,
+  404: AuthFailureCode.ApiOutdated,
+};
+
+const AUTH_ACTION_STAGES: Partial<Record<string, AuthStage>> = {
+  'auth.login': AuthStage.BrowserLogin,
+  'auth.logout': AuthStage.Logout,
+  'auth.logoutAll': AuthStage.Logout,
+};
 
 /** Stores durable refresh credentials only in the trusted extension local area. */
 interface StoredRefresh {
@@ -61,11 +95,7 @@ async function authFetch(
     const code =
       stage === AuthStage.Configuration && response.status === 403
         ? AuthFailureCode.ExtensionNotAllowed
-        : response.status === 404
-          ? AuthFailureCode.ApiOutdated
-          : response.status === 401
-            ? AuthFailureCode.SessionRejected
-            : AuthFailureCode.HttpRejected;
+        : (AUTH_HTTP_ERRORS[response.status] ?? AuthFailureCode.HttpRejected);
 
     throw new AuthFailure({ stage, code, status: response.status, correlationId });
   }
@@ -331,6 +361,82 @@ function trustedPage(sender: { id?: string; url?: string }): boolean {
   }
 }
 
+/** Recognizes the reset-required code without asserting a complete API error envelope. */
+function isSyncResetRequired(data: unknown): data is { code: ApiErrorCode.SyncResetRequired } {
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    'code' in data &&
+    data.code === ApiErrorCode.SyncResetRequired
+  );
+}
+
+/** Fetches only library/replication routes after verifying the captured account identity. */
+async function libraryRequest(message: object): Promise<unknown> {
+  const input = message as { ownerId?: string; operation?: string; body?: unknown };
+  const route = LIBRARY_ROUTES.get(String(input.operation));
+
+  if (!route || typeof input.ownerId !== 'string') return { error: SyncErrorCode.InvalidRequest };
+
+  const access = await accessCredential();
+
+  if (!access || access.ownerId !== input.ownerId) return { error: SyncErrorCode.AccountChanged };
+
+  const operation = input.operation as
+    SyncOperation.Snapshot | SyncOperation.Pull | SyncOperation.Push;
+  let response: Response;
+  try {
+    response = await fetch(`${API_ORIGIN}/api/v1/${route}`, {
+      method: operation === SyncOperation.Snapshot ? 'GET' : 'POST',
+      credentials: 'omit',
+      headers: {
+        Authorization: `Bearer ${access.accessToken}`,
+        ...(operation === SyncOperation.Snapshot ? {} : { 'Content-Type': 'application/json' }),
+      },
+      ...(operation === SyncOperation.Snapshot ? {} : { body: JSON.stringify(input.body) }),
+      signal: AbortSignal.timeout(10000),
+    });
+  } catch {
+    return {
+      error: SyncErrorCode.NetworkError,
+      diagnostic: { code: SyncErrorCode.NetworkError, operation },
+    };
+  }
+
+  const requestId = response.headers.get('X-Correlation-ID');
+  const correlationId =
+    requestId && /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(requestId)
+      ? requestId
+      : undefined;
+  const diagnostic = {
+    operation,
+    status: response.status,
+    ...(correlationId ? { correlationId } : {}),
+  };
+  let data: unknown;
+  try {
+    data = await response.json();
+  } catch {
+    if (response.ok)
+      return {
+        error: ApiErrorCode.InvalidResponse,
+        diagnostic: { ...diagnostic, code: ApiErrorCode.InvalidResponse },
+      };
+  }
+
+  if (response.ok) return { data };
+
+  let code = SYNC_HTTP_ERRORS[response.status];
+
+  if (!code) {
+    code = response.status >= 500 ? SyncErrorCode.ServerError : SyncErrorCode.RequestFailed;
+  }
+
+  if (isSyncResetRequired(data)) code = data.code;
+
+  return { error: code, diagnostic: { ...diagnostic, code } };
+}
+
 /** Registers serialized auth operations restricted to the extension's own UI pages. */
 export function registerAuthWorker(): void {
   const ready = authStep(AuthStage.Storage, restrictStorage);
@@ -349,20 +455,22 @@ export function registerAuthWorker(): void {
     const action = message.action;
 
     if (
-      !['auth.status', 'auth.login', 'auth.logout', 'auth.logoutAll', 'auth.diagnostics'].includes(
-        String(action),
-      )
+      ![
+        'auth.status',
+        'auth.login',
+        'auth.logout',
+        'auth.logoutAll',
+        'auth.diagnostics',
+        'sync.request',
+      ].includes(String(action))
     )
       return;
 
-    const stage =
-      action === 'auth.login'
-        ? AuthStage.BrowserLogin
-        : action === 'auth.logout' || action === 'auth.logoutAll'
-          ? AuthStage.Logout
-          : AuthStage.Account;
-    const execute = async (): Promise<AuthReply> => {
+    const stage = AUTH_ACTION_STAGES[String(action)] ?? AuthStage.Account;
+    const execute = async (): Promise<unknown> => {
       await ready;
+
+      if (action === 'sync.request') return libraryRequest(message);
 
       if (action === 'auth.diagnostics') {
         await checkConfiguration();
@@ -383,14 +491,16 @@ export function registerAuthWorker(): void {
     const operation =
       action === 'auth.diagnostics' ? execute() : queue.then(() => authStep(stage, execute));
 
-    if (action !== 'auth.status' && action !== 'auth.diagnostics')
+    if (action !== 'auth.status' && action !== 'auth.diagnostics' && action !== 'sync.request')
       void operation
         .then(() => browser.runtime.sendMessage({ action: 'auth.changed' }))
         .catch(() => {});
 
     if (action !== 'auth.diagnostics') queue = operation.catch(() => {});
 
-    return operation.catch((error: unknown): AuthReply => {
+    return operation.catch((error: unknown) => {
+      if (action === 'sync.request') return { error: SyncErrorCode.RequestFailed };
+
       const failure =
         error instanceof AuthFailure
           ? error

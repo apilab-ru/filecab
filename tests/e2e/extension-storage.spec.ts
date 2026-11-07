@@ -1,3 +1,4 @@
+import type { ApiErrorCode, SyncErrorCode } from '../../packages/contracts/src';
 import { chromium, expect, test, type BrowserContext } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -381,6 +382,574 @@ test('damaged local records enter recovery and export raw data without resetting
     expect((await download).suggestedFilename()).toBe('filecab-local-recovery.json');
     await page.getByRole('button', { name: 'Retry local storage' }).click();
     await expect(page.getByRole('alert')).toContainText('preserved');
+  } finally {
+    await context.close();
+    await rm(profile, { recursive: true, force: true });
+  }
+});
+
+test('native RxDB replication adopts explicitly, preserves stale intent and retries after restart', async () => {
+  test.setTimeout(60000);
+  const profile = await mkdtemp(join(tmpdir(), 'filecab-replication-'));
+  const server = {
+    revision: 0,
+    documents: new Map<string, Record<string, unknown>>(),
+    changes: [] as Record<string, unknown>[],
+    pushes: 0,
+    loseResponse: false,
+    floor: 0,
+  };
+  const ownerId = '10000000-0000-4000-8000-000000000001';
+  const handler = async (input: { operation: string; ownerId?: string; body?: unknown }) => {
+    const body = input.body as {
+      checkpoint?: { cursor: string };
+      limit?: number;
+      rows?: Array<{
+        proposed: Record<string, unknown>;
+        assumedMaster: Record<string, unknown> | null;
+      }>;
+    };
+
+    if (input.operation === 'edit') {
+      const existing = server.documents.values().next().value!;
+      const changed: Record<string, unknown> = {
+        ...existing,
+        comment: 'server wins',
+        serverVersion: String(++server.revision),
+        updatedAt: new Date().toISOString(),
+      };
+      server.documents.set(String(changed.entryId), changed);
+      server.changes.push(changed);
+
+      return { data: changed };
+    }
+
+    if (input.operation === 'lose-response') {
+      server.loseResponse = true;
+
+      return { data: true };
+    }
+
+    if (input.operation === 'snapshot')
+      return {
+        data: {
+          schemaVersion: 1,
+          revision: String(server.revision),
+          entries: [...server.documents.values()].filter((entry) => !entry.deleted),
+        },
+      };
+
+    if (input.operation === 'pull') {
+      const cursor = Number(body.checkpoint?.cursor ?? 0);
+
+      if (cursor < server.floor) return { error: 'SYNC_RESET_REQUIRED' };
+
+      const changes = server.changes
+        .filter((entry) => Number(entry.serverVersion) > cursor)
+        .slice(0, body.limit);
+      const documents = [...new Map(changes.map((entry) => [entry.entryId, entry])).values()];
+
+      return {
+        data: {
+          schemaVersion: 1,
+          documents,
+          checkpoint: {
+            cursor: String(changes.at(-1)?.serverVersion ?? cursor),
+            entryId: changes.at(-1)?.entryId ?? null,
+          },
+          hasMore: Number(changes.at(-1)?.serverVersion ?? cursor) < server.revision,
+        },
+      };
+    }
+
+    if (input.operation === 'push') {
+      server.pushes++;
+      const conflicts = [];
+      for (const row of body.rows!) {
+        const id = String(row.proposed.entryId);
+        const current = server.documents.get(id);
+        const intent = (entry: Record<string, unknown>) =>
+          JSON.stringify([
+            entry.userTitle,
+            entry.comment,
+            entry.progress,
+            entry.deleted,
+            entry.sources,
+          ]);
+
+        if (current && intent(current) === intent(row.proposed)) continue;
+
+        if ((current?.serverVersion ?? null) !== (row.assumedMaster?.serverVersion ?? null)) {
+          conflicts.push({ entryId: id, reason: 'VERSION', serverDocument: current ?? null });
+          continue;
+        }
+
+        const entry = {
+          ...row.proposed,
+          createdAt: current?.createdAt ?? new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          serverVersion: String(++server.revision),
+        };
+        server.documents.set(id, entry);
+        server.changes.push(entry);
+      }
+
+      if (server.loseResponse) {
+        server.loseResponse = false;
+
+        return { error: 'NETWORK_ERROR' };
+      }
+
+      return { data: { schemaVersion: 1, conflicts } };
+    }
+
+    throw new Error('Unknown fixture operation');
+  };
+  let launched = await launch(profile);
+  try {
+    await launched.context.exposeFunction('filecabFixture', handler);
+    let page = await launched.context.newPage();
+    await page.goto(`${launched.origin}/full-page.html`);
+    let url = `${launched.origin}/storage-test.js`;
+    const result = await page.evaluate(
+      async ({ url, ownerId }) => {
+        const module = (await import(url)) as typeof import('./fixtures/storage');
+        const bridge = (
+          globalThis as unknown as {
+            filecabFixture(
+              input: unknown,
+            ): Promise<{ data?: unknown; error?: ApiErrorCode | SyncErrorCode }>;
+          }
+        ).filecabFixture;
+        const request = async <T>(
+          ownerId: string,
+          operation: 'pull' | 'push' | 'snapshot',
+          body?: unknown,
+        ): Promise<T> => {
+          const reply = await bridge({ ownerId, operation, body });
+
+          if (reply.error) throw new module.SyncError(reply.error);
+
+          return reply.data as T;
+        };
+        const repository = await module.LocalLibraryRepository.open();
+        const database = repository.database;
+        const guest = await repository.create(module.Category.Anime, {
+          userTitle: 'Explicit guest adoption',
+          comment: 'original',
+        });
+        const preview = await module.previewLink(database, ownerId, request);
+        await repository.update(guest.entryId, guest.localRevision, { progress: 1 });
+        let stalePreview = false;
+        try {
+          await module.confirmLink(database, preview, request);
+        } catch (error) {
+          stalePreview = error instanceof module.SyncError && error.code === 'PREVIEW_CHANGED';
+        }
+        const before = await module.readCollection(database.binding);
+        await module.confirmLink(
+          database,
+          await module.previewLink(database, ownerId, request),
+          request,
+        );
+        let binding = (await module.readCollection(database.binding))[0];
+        const errors: string[] = [];
+        let state = module.startLibraryReplication(database, binding, () => {}, request);
+        state.error$.subscribe((error) => errors.push(String(error)));
+        const settle = () =>
+          Promise.race([
+            state.awaitInSync(),
+            new Promise<never>((_, reject) =>
+              setTimeout(
+                () => reject(new Error(`Replication timed out: ${errors.join('; ')}`)),
+                10000,
+              ),
+            ),
+          ]);
+        await settle();
+        const first = (await repository.snapshot()).rows.find(
+          (row) => row.entryId === guest.entryId,
+        )!;
+        await state.cancel();
+        await bridge({ operation: 'edit' });
+        await repository.update(first.entryId, first.localRevision, {
+          comment: 'rejected offline intent',
+        });
+        binding = (await module.readCollection(database.binding))[0];
+        state = module.startLibraryReplication(database, binding, () => {}, request);
+        state.error$.subscribe((error) => errors.push(String(error)));
+        await settle();
+        const conflict = (await repository.snapshot()).rows.find(
+          (row) => row.entryId === first.entryId,
+        )!;
+        const issues = await module.readCollection(database.issues);
+        await state.cancel();
+        await repository.reapplyIssue(issues[0].id, ownerId, conflict.localRevision);
+        state = module.startLibraryReplication(database, binding, () => {}, request);
+        await settle();
+        const applied = (await repository.snapshot()).rows.find(
+          (row) => row.entryId === first.entryId,
+        )!;
+        const deleted = await repository.delete(applied.entryId, applied.localRevision);
+        await settle();
+        const deletion = (await repository.snapshot()).rows.find(
+          (row) => row.entryId === first.entryId,
+        )!;
+        await repository.undo(deletion.entryId, deletion.localRevision);
+        await settle();
+        const restored = (await repository.snapshot()).rows.find(
+          (row) => row.entryId === first.entryId,
+        )!;
+        await state.cancel();
+        await repository.update(restored.entryId, restored.localRevision, {
+          comment: 'pending across browser restart',
+        });
+        const recoveryCleared = (await module.readCollection(database.issues)).length;
+        await repository.close();
+
+        return {
+          stalePreview,
+          unlinkedBeforeConfirmation: before.length === 0,
+          adopted: first.entry.serverVersion !== null,
+          serverWon: conflict.entry.comment,
+          retained: issues.map((issue) => issue.proposed.comment),
+          reapplied: applied.entry.comment,
+          undoDeleted: deleted.entry.deleted,
+          restored: !restored.entry.deleted,
+          recoveryCleared,
+        };
+      },
+      { url, ownerId },
+    );
+    expect(result).toMatchObject({
+      stalePreview: true,
+      unlinkedBeforeConfirmation: true,
+      adopted: true,
+      serverWon: 'server wins',
+      retained: ['rejected offline intent'],
+      reapplied: 'rejected offline intent',
+      undoDeleted: true,
+      restored: true,
+      recoveryCleared: 0,
+    });
+    const revisionBeforeRestart = server.revision;
+    await launched.context.close();
+    launched = await launch(profile);
+    await launched.context.exposeFunction('filecabFixture', handler);
+    page = await launched.context.newPage();
+    await page.goto(`${launched.origin}/full-page.html`);
+    url = `${launched.origin}/storage-test.js`;
+    const restarted = await page.evaluate(
+      async ({ url, ownerId }) => {
+        const module = (await import(url)) as typeof import('./fixtures/storage');
+        const bridge = (
+          globalThis as unknown as {
+            filecabFixture(
+              input: unknown,
+            ): Promise<{ data?: unknown; error?: ApiErrorCode | SyncErrorCode }>;
+          }
+        ).filecabFixture;
+        const request = async <T>(
+          ownerId: string,
+          operation: 'pull' | 'push' | 'snapshot',
+          body?: unknown,
+        ): Promise<T> => {
+          const result = await bridge({ ownerId, operation, body });
+
+          if (result.error) throw new module.SyncError(result.error);
+
+          return result.data as T;
+        };
+        const repository = await module.LocalLibraryRepository.open();
+        const binding = (await module.readCollection(repository.database.binding))[0];
+        await bridge({ operation: 'lose-response' });
+        const state = module.startLibraryReplication(
+          repository.database,
+          binding,
+          () => {},
+          request,
+        );
+        // A lost reply must leave native metadata pending. Cancel the failed cycle,
+        // restart it immediately, and verify the already-committed write is a no-op.
+        await new Promise<void>((resolve) => state.error$.subscribe(() => resolve()));
+        await state.cancel();
+        const resumed = module.startLibraryReplication(
+          repository.database,
+          binding,
+          () => {},
+          request,
+        );
+        await Promise.race([
+          resumed.awaitInSync(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Restart did not converge')), 10000),
+          ),
+        ]);
+        const rows = (await repository.snapshot()).rows;
+        const issues = await module.readCollection(repository.database.issues);
+        await resumed.cancel();
+        await repository.close();
+
+        return { comment: rows[0].entry.comment, issues: issues.length };
+      },
+      { url, ownerId },
+    );
+    expect(restarted).toEqual({ comment: 'pending across browser restart', issues: 0 });
+    expect(server.revision).toBe(revisionBeforeRestart + 1);
+  } finally {
+    await launched.context.close();
+    await rm(profile, { recursive: true, force: true });
+  }
+});
+
+test('history reset blocks uploads and preserves intent before any replacement, including failed recovery writes', async () => {
+  test.setTimeout(30000);
+  const profile = await mkdtemp(join(tmpdir(), 'filecab-reset-'));
+  const { context, origin } = await launch(profile);
+  try {
+    const page = await context.newPage();
+    await page.goto(`${origin}/full-page.html`);
+    const result = await page.evaluate(async (url) => {
+      const module = (await import(url)) as typeof import('./fixtures/storage');
+      const repository = await module.LocalLibraryRepository.open();
+      const database = repository.database;
+      const ownerId = '10000000-0000-4000-8000-000000000002';
+      const pending = await repository.create(module.Category.Anime, {
+        userTitle: 'Recoverable pending intent',
+        comment: 'keep this exact note',
+      });
+      await database.binding.insert({
+        key: 'device',
+        ownerId,
+        generation: 1,
+        phase: 'linked',
+        initialCheckpoint: null,
+      });
+      let pushes = 0;
+      let revision = 3;
+      let master: typeof pending.entry | null = null;
+      const request = async <T>(
+        _ownerId: string,
+        operation: 'pull' | 'push' | 'snapshot',
+        input?: unknown,
+      ): Promise<T> => {
+        if (operation === 'snapshot')
+          return {
+            schemaVersion: 1,
+            revision: String(revision),
+            entries: master ? [master] : [],
+          } as T;
+
+        if (operation === 'pull') {
+          const body = input as { checkpoint: { cursor: string } | null };
+          const cursor = Number(body.checkpoint?.cursor ?? 0);
+
+          if (cursor < 3) throw new module.SyncError(module.ApiErrorCode.SyncResetRequired);
+
+          return {
+            schemaVersion: 1,
+            documents: master && cursor < revision ? [master] : [],
+            checkpoint: { cursor: String(revision), entryId: master?.entryId ?? null },
+            hasMore: false,
+          } as T;
+        }
+
+        pushes++;
+        const body = input as { rows: Array<{ proposed: typeof pending.entry }> };
+        master = { ...body.rows[0].proposed, serverVersion: String(++revision) };
+
+        return { schemaVersion: 1, conflicts: [] } as T;
+      };
+      const binding = (await module.readCollection(database.binding))[0];
+      const state = module.startLibraryReplication(database, binding, () => {}, request);
+      await new Promise<void>((resolve) => state.error$.subscribe(() => resolve()));
+      await state.cancel();
+      const phase = (await module.readCollection(database.binding))[0].phase;
+      const beforePushes = pushes;
+      const original = database.issues.incrementalUpsert.bind(database.issues);
+      database.issues.incrementalUpsert = async () => {
+        throw new Error('Injected quota failure');
+      };
+      let failed = false;
+      try {
+        await module.reconcileReset(database, ownerId, request);
+      } catch {
+        failed = true;
+      }
+      database.issues.incrementalUpsert = original;
+      const afterFailure = (await repository.snapshot()).rows[0];
+      const failedPhase = (await module.readCollection(database.binding))[0].phase;
+      await module.reconcileReset(database, ownerId, request);
+      const recovered = (await repository.snapshot()).rows[0];
+      const issues = await module.readCollection(database.issues);
+      const resetBinding = (await module.readCollection(database.binding))[0];
+      let resumed = module.startLibraryReplication(database, resetBinding, () => {}, request);
+      const settle = () =>
+        Promise.race([
+          resumed.awaitInSync(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error('Reset replication timed out')), 5000),
+          ),
+        ]);
+      await settle();
+      const afterResetPushes = pushes;
+      await resumed.cancel();
+      let wrongAccount = false;
+      try {
+        await repository.reapplyIssue(
+          issues[0].id,
+          '10000000-0000-4000-8000-000000000003',
+          recovered.localRevision,
+        );
+      } catch {
+        wrongAccount = true;
+      }
+      await repository.reapplyIssue(issues[0].id, ownerId, recovered.localRevision);
+      resumed = module.startLibraryReplication(database, resetBinding, () => {}, request);
+      await settle();
+      const reapplied = (await repository.snapshot()).rows[0];
+      await resumed.cancel();
+      await repository.close();
+
+      return {
+        phase,
+        beforePushes,
+        failed,
+        unchangedAfterFailure: JSON.stringify(afterFailure.entry) === JSON.stringify(pending.entry),
+        failedPhase,
+        recoveredDeleted: recovered.entry.deleted,
+        recoveredComment: issues[0].proposed.comment,
+        kind: issues[0].kind,
+        checkpoint: resetBinding.initialCheckpoint?.cursor,
+        generation: resetBinding.generation,
+        afterResetPushes,
+        wrongAccount,
+        reapplied: !reapplied.entry.deleted && reapplied.entry.serverVersion !== null,
+      };
+    }, `${origin}/storage-test.js`);
+    expect(result).toEqual({
+      phase: 'reset-required',
+      beforePushes: 0,
+      failed: true,
+      unchangedAfterFailure: true,
+      failedPhase: 'resetting',
+      recoveredDeleted: true,
+      recoveredComment: 'keep this exact note',
+      kind: 'reset',
+      checkpoint: '3',
+      generation: 2,
+      afterResetPushes: 0,
+      wrongAccount: true,
+      reapplied: true,
+    });
+  } finally {
+    await context.close();
+    await rm(profile, { recursive: true, force: true });
+  }
+});
+
+test('collapsed pull pages reach the latest master and missing-master conflicts retain the rejected create', async () => {
+  const profile = await mkdtemp(join(tmpdir(), 'filecab-pull-conflict-'));
+  const { context, origin } = await launch(profile);
+  try {
+    const page = await context.newPage();
+    await page.goto(`${origin}/full-page.html`);
+    const result = await page.evaluate(async (url) => {
+      const module = (await import(url)) as typeof import('./fixtures/storage');
+      const repository = await module.LocalLibraryRepository.open();
+      const database = repository.database;
+      const ownerId = '10000000-0000-4000-8000-000000000006';
+      const local = await repository.create(module.Category.Anime, {
+        userTitle: 'Conflicting device create',
+        sourceUrls: ['https://example.test/already-owned'],
+      });
+      const remote = {
+        ...local.entry,
+        entryId: crypto.randomUUID(),
+        userTitle: 'Existing account entry',
+        serverVersion: '1',
+      };
+      const changes = Array.from({ length: 121 }, (_, index) => ({
+        ...remote,
+        serverVersion: String(index + 1),
+        progress: index,
+      }));
+      let pullRequests = 0;
+      let rejected = false;
+      const request = async <T>(
+        _ownerId: string,
+        operation: 'pull' | 'push' | 'snapshot',
+        input?: unknown,
+      ): Promise<T> => {
+        if (operation === 'snapshot')
+          return { schemaVersion: 1, revision: '121', entries: [changes[120]] } as T;
+
+        if (operation === 'pull') {
+          pullRequests++;
+          const body = input as { checkpoint: { cursor: string } | null; limit: number };
+          const cursor = Number(body.checkpoint?.cursor ?? 0);
+          const page = changes.slice(cursor, cursor + body.limit);
+          const checkpoint = Number(page.at(-1)?.serverVersion ?? cursor);
+
+          return {
+            schemaVersion: 1,
+            documents: page.length ? [page.at(-1)] : [],
+            checkpoint: { cursor: String(checkpoint), entryId: remote.entryId },
+            hasMore: checkpoint < 121,
+          } as T;
+        }
+
+        const body = input as { rows: Array<{ proposed: typeof local.entry }> };
+        const conflicts = body.rows
+          .filter((row) => row.proposed.entryId === local.entryId)
+          .map((row) => ({
+            entryId: row.proposed.entryId,
+            reason: 'SOURCE',
+            serverDocument: null,
+          }));
+        rejected ||= conflicts.length > 0;
+
+        return { schemaVersion: 1, conflicts } as T;
+      };
+      await module.confirmLink(
+        database,
+        await module.previewLink(database, ownerId, request),
+        request,
+      );
+      const binding = (await module.readCollection(database.binding))[0];
+      const state = module.startLibraryReplication(database, binding, () => {}, request);
+      await Promise.race([
+        state.awaitInSync(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Collapsed feed failed to converge')), 5000),
+        ),
+      ]);
+      const rows = (await repository.snapshot()).rows;
+      const issues = await module.readCollection(database.issues);
+      await state.cancel();
+      await repository.close();
+
+      return {
+        rejected,
+        continued: pullRequests > 1,
+        active: rows
+          .filter((row) => !row.entry.deleted)
+          .map((row) => ({ title: row.entry.userTitle, progress: row.entry.progress })),
+        retained: issues.map((issue) => ({
+          title: issue.proposed.userTitle,
+          reason: issue.conflict.reason,
+          master: issue.conflict.serverDocument,
+        })),
+        rejectedCreateDeleted: rows.find((row) => row.entryId === local.entryId)?.entry.deleted,
+      };
+    }, `${origin}/storage-test.js`);
+    expect(result).toEqual({
+      rejected: true,
+      continued: true,
+      active: [{ title: 'Existing account entry', progress: 120 }],
+      retained: [{ title: 'Conflicting device create', reason: 'SOURCE', master: null }],
+      rejectedCreateDeleted: true,
+    });
   } finally {
     await context.close();
     await rm(profile, { recursive: true, force: true });

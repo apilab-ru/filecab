@@ -1,10 +1,10 @@
 # Filecab — Implementation Plan
 
-Status: execution baseline, 2 November 2026. Steps 1–8 are delivered. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Steps 9–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
+Status: execution baseline, 2 November 2026. Steps 1–9 are delivered. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Steps 10–21 are pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
 
 ## Baseline and scope
 
-The initial workspace contained React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. Steps 1–5 now provide shared contracts, transactional PostgreSQL persistence and the documented API foundation. Google authentication, session clients and the owner-library API are implemented. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Extension local persistence and a basic manual editor are delivered; shared library UI, catalog providers, replication, and external list synchronization remain to be implemented. Old-data migration and old route compatibility are out of scope.
+The initial workspace contained React/Vite, WXT, and NestJS scaffolds and placeholder shared packages. Steps 1–5 now provide shared contracts, transactional PostgreSQL persistence and the documented API foundation. Google authentication, session clients and the owner-library API are implemented. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Extension local persistence and a basic manual editor are delivered; explicitly linked account replication is delivered; shared library UI, catalog providers, and external list synchronization remain to be implemented. Old-data migration and old route compatibility are out of scope.
 
 This plan covers required behavior in [Functionality](../specs/functionality.md), [Backend](../specs/backend.md), [Stack](../specs/stack.md), [Catalog](../specs/catalog-spec.md), [User List Synchronization](../specs/user-list-sync-spec.md), and all three integration specifications. [Plans](../specs/plans.md) is a separate future-feature backlog and is excluded from this implementation plan. Section 13 of Functionality contains recommendations rather than additional release requirements.
 
@@ -88,7 +88,7 @@ Depends on steps 4–6.
 - [x] Keep display search/filter/sort/pagination out of the owner snapshot API; expose revision information for safe bulk replacement.
 - [x] Implement version-checked explicit merge and source-reassignment previews, preserving the selected surviving identity and publishing removed identities as tombstones.
 
-Exit satisfied: authenticated manual CRUD works with catalog providers disabled. Complete snapshots are consistent under concurrent writes and include hidden entries while excluding tombstones. Version-bound merge/source previews apply atomically through the common owner-scoped service. See [step 7 evidence](requirement-checklist.md#owner-library-api-and-complete-snapshots-step-7). Replication delivery of tombstones remains step 9; editing interfaces remain step 11.
+Exit satisfied: authenticated manual CRUD works with catalog providers disabled. Complete snapshots are consistent under concurrent writes and include hidden entries while excluding tombstones. Version-bound merge/source previews apply atomically through the common owner-scoped service. See [step 7 evidence](requirement-checklist.md#owner-library-api-and-complete-snapshots-step-7). Replication delivery of tombstones is delivered in step 9; editing interfaces remain step 11.
 
 ## 8. Build extension offline persistence
 
@@ -99,20 +99,20 @@ Depends on steps 2–3. Can proceed alongside steps 4–7 after contracts stabil
 - [x] Support durable manual CRUD, sources, snapshots, settings, local revisions, tombstones, and 10-second Undo. Report success only after durable persistence.
 - [x] Preserve raw recoverable data after read/corruption failures; distinguish a missing database from a failed read.
 
-Exit satisfied: real unpacked Chromium tests verify offline CRUD across popup/full-page surfaces, worker termination (Chrome reports STOPPED before and after local writes), browser restart, revision conflicts, ten-second Undo and recovery without resetting damaged records. The device library and category/mode preferences remain durable across authentication changes. See [step 8 evidence](requirement-checklist.md#extension-offline-persistence-step-8). Replication/guest adoption remain step 9; shared library navigation, filtering and full editing interfaces remain steps 10–11.
+Exit satisfied: real unpacked Chromium tests verify offline CRUD across popup/full-page surfaces, worker termination (Chrome reports STOPPED before and after local writes), browser restart, revision conflicts, ten-second Undo and recovery without resetting damaged records. The device library and category/mode preferences remain durable across authentication changes. See [step 8 evidence](requirement-checklist.md#extension-offline-persistence-step-8). Replication/guest adoption are delivered in step 9; shared library navigation, filtering and full editing interfaces remain steps 10–11.
 
 ## 9. Implement extension-to-Filecab replication
 
 Depends on steps 6–8.
 
-- [ ] Implement the installed RxDB protocol's checkpoint pull and assumed-master-state push, deterministic owner-scoped batches, deletion representation, and documented invalid-write/conflict behavior.
-- [ ] Use RxDB replication metadata rather than a second client mutation outbox. Cover all server mutation paths with the transactional change feed.
-- [ ] Keep the server document on stale-version conflicts while durably retaining rejected local intent for visible, deliberate reapplication.
-- [ ] Trigger synchronization on opening, edits, reconnect, and manual refresh; isolate account/schema state and show pending/failure/conflict status.
-- [ ] Retain tombstones/history for at least 90 days; implement `SYNC_RESET_REQUIRED` recovery that preserves pending intent and prevents resurrection.
-- [ ] Add explicit device-library linking/adoption preview and confirmation with retry-safe imports. Keep the local library visible on login/logout; never silently upload it, replace it or send one account’s pending changes to another account.
+- [x] Implement the installed RxDB protocol's checkpoint pull and assumed-master-state push, deterministic owner-scoped batches, deletion representation, and documented invalid-write/conflict behavior.
+- [x] Use RxDB replication metadata rather than a second client mutation outbox. Cover all server mutation paths with the transactional change feed.
+- [x] Keep the server document on stale-version conflicts while durably retaining rejected local intent for visible, deliberate reapplication.
+- [x] Trigger synchronization on opening, edits, reconnect, and manual refresh; isolate account/schema state and show pending/failure/conflict status.
+- [x] Retain tombstones/history for at least 90 days; implement `SYNC_RESET_REQUIRED` recovery that preserves pending intent and prevents resurrection.
+- [x] Add explicit device-library linking/adoption preview and confirmation with retry-safe imports. Keep the local library visible on login/logout; never silently upload it, replace it or send one account’s pending changes to another account.
 
-Exit: integration tests exercise concurrent commits, retry/restart, delete/restore, mixed batches, account switching, guest adoption, stale checkpoints, and conflict recovery.
+Exit satisfied: PostgreSQL HTTP integration tests, real Chromium/native RxDB tests and a production-extension-to-real-API/PostgreSQL test exercise concurrent commits, retry/restart, delete/restore, mixed batches, account switching, explicit guest adoption, stale checkpoints and durable conflict/reset recovery. History and tombstones are retained indefinitely. The device library binds to one account; other accounts suspend its replication rather than rebind pending data. See [step 9 evidence](requirement-checklist.md#extension-to-filecab-replication-step-9). Google consent remains separately verified as recorded in step 6; the new full-stack test uses synthetic Google identity with real sessions, HTTP and PostgreSQL.
 
 ## 10. Build shared UI, localization, and navigation
 

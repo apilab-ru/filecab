@@ -240,3 +240,87 @@ test('trusted UI query variants can run diagnostics while content-script context
     handler({ action: 'auth.diagnostics' }, { ...sender, url: 'https://fixture/popup.html' }),
   ).toBeUndefined();
 });
+
+test('replication requests are owner-bound, route-allowlisted and unavailable to content scripts', async () => {
+  mocks.session['filecab.auth.access'] = {
+    ownerId: tokens.ownerId,
+    accessToken: tokens.accessToken,
+    accessExpiresAt: tokens.accessExpiresAt,
+  };
+  vi.mocked(fetch).mockResolvedValue(
+    new Response(JSON.stringify({ schemaVersion: 1, conflicts: [] })),
+  );
+  const handler = await worker();
+  const message = {
+    action: 'sync.request',
+    ownerId: tokens.ownerId,
+    operation: 'push',
+    body: { schemaVersion: 1, rows: [] },
+  };
+  expect(handler(message, { id: 'fixture', url: 'https://example.com/' })).toBeUndefined();
+  expect(await handler({ ...message, ownerId: 'another-owner' }, sender)).toEqual({
+    error: 'ACCOUNT_CHANGED',
+  });
+  expect(await handler({ ...message, operation: '../auth/refresh' }, sender)).toEqual({
+    error: 'INVALID_REQUEST',
+  });
+  expect(await handler({ ...message, operation: 'constructor' }, sender)).toEqual({
+    error: 'INVALID_REQUEST',
+  });
+  expect(fetch).not.toHaveBeenCalled();
+  const result = await handler(message, sender);
+  expect(result).toEqual({ data: { schemaVersion: 1, conflicts: [] } });
+  expect(JSON.stringify(result)).not.toContain(tokens.accessToken);
+  expect(fetch).toHaveBeenCalledWith(
+    expect.stringContaining('/api/v1/replication/push'),
+    expect.objectContaining({
+      headers: expect.objectContaining({ Authorization: `Bearer ${tokens.accessToken}` }),
+    }),
+  );
+  await handler({ action: 'auth.logout' }, sender);
+  vi.mocked(fetch).mockClear();
+  expect(await handler(message, sender)).toEqual({ error: 'ACCOUNT_CHANGED' });
+  expect(fetch).not.toHaveBeenCalled();
+});
+
+test.each([
+  [400, 'VALIDATION_ERROR'],
+  [401, 'ACCOUNT_CHANGED'],
+  [403, 'FORBIDDEN'],
+  [404, 'API_OUTDATED'],
+  [413, 'PAYLOAD_TOO_LARGE'],
+  [429, 'RATE_LIMITED'],
+  [500, 'SERVER_ERROR'],
+  [503, 'SERVICE_UNAVAILABLE'],
+])(
+  'replication HTTP %s keeps safe status and request ID even when the response is not JSON',
+  async (status, code) => {
+    const requestId = '10000000-0000-4000-8000-000000000001';
+    mocks.session['filecab.auth.access'] = {
+      ownerId: tokens.ownerId,
+      accessToken: tokens.accessToken,
+      accessExpiresAt: tokens.accessExpiresAt,
+    };
+    vi.mocked(fetch).mockResolvedValue(
+      new Response('private upstream response', {
+        status,
+        headers: { 'X-Correlation-ID': requestId },
+      }),
+    );
+    const handler = await worker();
+    const reply = await handler(
+      {
+        action: 'sync.request',
+        ownerId: tokens.ownerId,
+        operation: 'pull',
+        body: { schemaVersion: 1, checkpoint: null, limit: 1 },
+      },
+      sender,
+    );
+    expect(reply).toEqual({
+      error: code,
+      diagnostic: { code, operation: 'pull', status, correlationId: requestId },
+    });
+    expect(JSON.stringify(reply)).not.toContain('private');
+  },
+);

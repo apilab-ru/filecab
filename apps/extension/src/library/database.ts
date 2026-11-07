@@ -14,6 +14,10 @@ import { RxDBMigrationSchemaPlugin } from 'rxdb/plugins/migration-schema';
 import type { Category, Entry, Locale, Status } from '@filecab/contracts';
 import entrySchema from './entry.schema.json';
 import settingsSchema from './settings.schema.json';
+import bindingSchema from './binding.schema.json';
+import issueSchema from './issue.schema.json';
+import type { SyncBinding, SyncIssue } from './sync-models';
+import { libraryConflictHandler } from './sync-recovery';
 import { validatorBySchema } from './generated-validators.mjs';
 
 /** Stores a single durable entry mutation and its recoverable deletion state. */
@@ -44,7 +48,12 @@ export interface LocalSettings {
   preferences: Preferences;
 }
 
-type Collections = { entries: RxCollection<LocalEntry>; settings: RxCollection<LocalSettings> };
+type Collections = {
+  entries: RxCollection<LocalEntry>;
+  settings: RxCollection<LocalSettings>;
+  binding: RxCollection<SyncBinding>;
+  issues: RxCollection<SyncIssue>;
+};
 
 export type LocalDatabase = RxDatabase<Collections>;
 
@@ -77,7 +86,7 @@ function validatedStorage() {
     createStorageInstance: <T>(
       parameters: Parameters<typeof storage.createStorageInstance<T>>[0],
     ) =>
-      ['entries', 'settings'].includes(parameters.collectionName)
+      ['entries', 'settings', 'binding', 'issues'].includes(parameters.collectionName)
         ? wrapped.createStorageInstance(parameters)
         : storage.createStorageInstance(parameters),
   };
@@ -93,7 +102,13 @@ async function createLocalDatabase(name: string): Promise<LocalDatabase> {
   });
   try {
     await database.addCollections({
-      entries: { schema: entrySchema as RxJsonSchema<LocalEntry>, migrationStrategies: {} },
+      entries: {
+        schema: entrySchema as RxJsonSchema<LocalEntry>,
+        migrationStrategies: {},
+        conflictHandler: libraryConflictHandler(() => database),
+      },
+      binding: { schema: bindingSchema as RxJsonSchema<SyncBinding>, migrationStrategies: {} },
+      issues: { schema: issueSchema as RxJsonSchema<SyncIssue>, migrationStrategies: {} },
       settings: { schema: settingsSchema as RxJsonSchema<LocalSettings>, migrationStrategies: {} },
     });
 
@@ -120,6 +135,8 @@ export async function readCollection<T>(collection: RxCollection<T>): Promise<T[
 export async function assertStoredRecords(database: LocalDatabase): Promise<void> {
   await readCollection(database.entries);
   await readCollection(database.settings);
+  await readCollection(database.binding);
+  await readCollection(database.issues);
 }
 
 /** Shares one connection per UI realm, including overlapping React StrictMode mounts. */
