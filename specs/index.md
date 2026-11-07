@@ -11,3 +11,8 @@
 - [Shikimori User List Synchronization](integration-shikimori-spec.md)
 - [Smotret Anime Integration](integration-smotret-anime-spec.md)
 - [Plans](plans.md)
+
+## Mockups
+
+- [Light theme mockup](white-mockup.png)
+- [Dark theme mockup](dark-mockup.png)

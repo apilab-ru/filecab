@@ -32,6 +32,11 @@ The following choices resolve ambiguities in the supplied description and are im
 
 ## 2. Users, surfaces, and navigation
 
+Visual references: [light theme mockup](white-mockup.png) and
+[dark theme mockup](dark-mockup.png). Use these mockups as the visual reference
+for layout, colors, typography, and component appearance alongside the behavior
+requirements below.
+
 **NAV-01.** The popup shall offer Page and Search modes, plus links to Library and Settings. The full-page library link shall open the extension's `full-page.html` in a new browser tab. Page shall be the initial mode when a usable HTTP(S) tab exists. Search shall remain available regardless of page parsing success.
 
 **NAV-02.** The full-page library and website shall provide anime, films, and TV routes, each with Library and Catalog Search modes. Library shall be the initial mode. Unknown routes shall redirect to anime without modifying data.
