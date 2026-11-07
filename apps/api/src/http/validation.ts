@@ -1,6 +1,6 @@
+import { ApiErrorCode, type ValidationIssue } from '@filecab/contracts';
 import { ValidationPipe, type Type, type ArgumentMetadata } from '@nestjs/common';
 import type { ValidationError } from 'class-validator';
-import type { ValidationIssue } from '@filecab/contracts';
 import { ApiException } from './api-error';
 
 /** Produces field issues without class-validator messages that may interpolate private values. */
@@ -31,7 +31,7 @@ export class StrictValidationPipe extends ValidationPipe {
       exceptionFactory: (errors) =>
         new ApiException(
           400,
-          'VALIDATION_ERROR',
+          ApiErrorCode.ValidationError,
           'Request validation failed',
           false,
           validationIssues(errors),
@@ -51,11 +51,15 @@ export class StrictValidationPipe extends ValidationPipe {
       if (item === null || typeof item !== 'object') continue;
 
       if (depth > 32)
-        throw new ApiException(400, 'VALIDATION_ERROR', 'Request nesting exceeds the limit');
+        throw new ApiException(
+          400,
+          ApiErrorCode.ValidationError,
+          'Request nesting exceeds the limit',
+        );
 
       for (const [key, child] of Object.entries(item)) {
         if (['__proto__', 'prototype', 'constructor'].includes(key))
-          throw new ApiException(400, 'VALIDATION_ERROR', 'Reserved property name');
+          throw new ApiException(400, ApiErrorCode.ValidationError, 'Reserved property name');
 
         pending.push({ value: child, depth: depth + 1 });
       }

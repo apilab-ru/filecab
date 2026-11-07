@@ -1,5 +1,10 @@
+import {
+  ApiErrorCode,
+  type Entry,
+  type LibraryMutationPreview,
+  type ServerEntry,
+} from '@filecab/contracts';
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
-import type { Entry, LibraryMutationPreview, ServerEntry } from '@filecab/contracts';
 import { MutationError } from './proposals';
 
 const PREVIEW_LIFETIME_MS = 5 * 60 * 1000;
@@ -11,7 +16,11 @@ function canonical(value: unknown): string {
   if (value !== null && typeof value === 'object')
     return `{${Object.entries(value)
       .filter(([, child]) => child !== undefined)
-      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .sort(([a], [b]) => {
+        if (a < b) return -1;
+
+        return a > b ? 1 : 0;
+      })
       .map(([key, child]) => `${JSON.stringify(key)}:${canonical(child)}`)
       .join(',')}}`;
 
@@ -61,7 +70,7 @@ export class LibraryPreviewSigner {
     before: ServerEntry[],
   ): void {
     if (!/^\d{13}\.[0-9a-f]{64}\.[A-Za-z0-9_-]{43}$/.test(token))
-      throw new MutationError('CONFLICT');
+      throw new MutationError(ApiErrorCode.Conflict);
 
     const [expires, digest, signature] = token.split('.');
     const payload = `${expires}.${digest}`;
@@ -74,6 +83,6 @@ export class LibraryPreviewSigner {
       !timingSafeEqual(supplied, expected) ||
       digest !== this.digest(ownerId, kind, input, before)
     )
-      throw new MutationError('CONFLICT');
+      throw new MutationError(ApiErrorCode.Conflict);
   }
 }

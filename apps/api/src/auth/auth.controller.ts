@@ -1,3 +1,4 @@
+import { ApiErrorCode } from '@filecab/contracts';
 import { RequestDtoPipe } from '../http/validation';
 import {
   Body,
@@ -157,7 +158,7 @@ export class AuthController {
     const binding = readCookie(request, this.names.login);
     response.clearCookie(this.names.login, this.cookieOptions());
 
-    if (!binding) throw new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+    if (!binding) throw new ApiException(401, ApiErrorCode.Unauthorized, 'Authentication required');
 
     const result = await this.auth.callback(
       input.state,
@@ -205,11 +206,11 @@ export class AuthController {
     const cookie = readCookie(request, this.names.refresh);
 
     if ((cookie && input.refreshToken) || request.get('authorization'))
-      throw new ApiException(400, 'VALIDATION_ERROR', 'Ambiguous refresh credentials');
+      throw new ApiException(400, ApiErrorCode.ValidationError, 'Ambiguous refresh credentials');
 
     const token = cookie ?? input.refreshToken;
 
-    if (!token) throw new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+    if (!token) throw new ApiException(401, ApiErrorCode.Unauthorized, 'Authentication required');
 
     try {
       const tokens = await this.auth.refresh(
@@ -234,7 +235,7 @@ export class AuthController {
     if (Object.keys(request.query).length || request.body !== undefined)
       throw new ApiException(
         400,
-        'VALIDATION_ERROR',
+        ApiErrorCode.ValidationError,
         'This operation accepts no query parameters or body',
       );
   }

@@ -1,3 +1,4 @@
+import { ApiErrorCode } from '@filecab/contracts';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /** Documents the public field-validation issue without rejected values. */
@@ -14,7 +15,7 @@ export class ApiErrorDto {
   @ApiProperty({ type: Number, enum: [1] })
   schemaVersion!: 1;
 
-  @ApiProperty({ type: String, example: 'SERVICE_UNAVAILABLE' })
+  @ApiProperty({ type: String, example: ApiErrorCode.ServiceUnavailable })
   code!: string;
 
   @ApiProperty({ type: Number, example: 503 })

@@ -175,14 +175,18 @@ export function checkBoundaries(root) {
 
       if (client && /(?:src|entrypoints)\//.test(relative(project.path, path))) {
         // Analyze member access rather than matching text in comments or strings.
-        const member = (node) =>
-          ts.isPropertyAccessExpression(node)
-            ? node.name.text
-            : ts.isElementAccessExpression(node) &&
-                node.argumentExpression &&
-                ts.isStringLiteralLike(node.argumentExpression)
-              ? node.argumentExpression.text
-              : undefined;
+        const member = (node) => {
+          if (ts.isPropertyAccessExpression(node)) return node.name.text;
+
+          if (
+            ts.isElementAccessExpression(node) &&
+            node.argumentExpression &&
+            ts.isStringLiteralLike(node.argumentExpression)
+          )
+            return node.argumentExpression.text;
+
+          return undefined;
+        };
         const isMember = (node) =>
           ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node);
         const isClientEnv = (node) =>

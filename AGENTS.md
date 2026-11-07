@@ -16,6 +16,8 @@ Require a blank line before function declarations (before attached JSDoc) and be
 
 Keep large static lookup tables, configuration objects and arrays at module scope, outside functions, when they do not depend on function arguments or local state.
 
+Prefer module-level constant lookup maps over nested ternary operators when selecting values by a fixed key. Use explicit `if` statements for ordered conditions or predicates that do not fit a lookup map. Do not use nested ternary operators; enforce this with ESLint in formatting checks and the staged-file hook.
+
 # Style rules
 
 These rules apply to styles throughout the repository.

@@ -1,3 +1,4 @@
+import { ApiErrorCode } from '@filecab/contracts';
 import { createRemoteJWKSet, customFetch, jwtVerify, type JWTVerifyGetKey } from 'jose';
 import type { ApiEnvironment } from '../config/environment';
 import { ApiException } from '../http/api-error';
@@ -57,7 +58,7 @@ async function boundedGoogleFetch(...args: Parameters<typeof fetch>): ReturnType
   } catch {
     throw new ApiException(
       503,
-      'SERVICE_UNAVAILABLE',
+      ApiErrorCode.ServiceUnavailable,
       'Google login is temporarily unavailable',
       true,
     );
@@ -94,7 +95,7 @@ export async function verifyGoogleIdentity(
   } catch (error) {
     if (error instanceof ApiException) throw error;
 
-    throw new ApiException(401, 'UNAUTHORIZED', 'Google identity could not be verified');
+    throw new ApiException(401, ApiErrorCode.Unauthorized, 'Google identity could not be verified');
   }
 }
 
@@ -144,7 +145,7 @@ export class GoogleOAuthProvider implements GoogleIdentityProvider {
       });
 
       if (!response.ok)
-        throw new ApiException(401, 'UNAUTHORIZED', 'Google authorization was rejected');
+        throw new ApiException(401, ApiErrorCode.Unauthorized, 'Google authorization was rejected');
 
       const body: unknown = await response.json();
 
@@ -157,14 +158,18 @@ export class GoogleOAuthProvider implements GoogleIdentityProvider {
 
       throw new ApiException(
         503,
-        'SERVICE_UNAVAILABLE',
+        ApiErrorCode.ServiceUnavailable,
         'Google login is temporarily unavailable',
         true,
       );
     }
 
     if (typeof token !== 'string' || token.length > 32768)
-      throw new ApiException(401, 'UNAUTHORIZED', 'Google identity could not be verified');
+      throw new ApiException(
+        401,
+        ApiErrorCode.Unauthorized,
+        'Google identity could not be verified',
+      );
 
     return verifyGoogleIdentity(token, this.environment.google.clientId!, nonce, this.keys);
   }

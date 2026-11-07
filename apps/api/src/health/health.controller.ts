@@ -1,3 +1,4 @@
+import { ApiErrorCode } from '@filecab/contracts';
 import { Controller, Get, Inject, Query } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DATABASE_READINESS, type DatabaseReadiness } from './readiness';
@@ -7,7 +8,7 @@ import { ApiErrorDto, HealthResponseDto } from '../http/openapi.dto';
 /** Enforces the health endpoint's empty query allowlist. */
 function checkQuery(query: Record<string, unknown>): void {
   if (Object.keys(query).length)
-    throw new ApiException(400, 'VALIDATION_ERROR', 'Query parameters are not supported');
+    throw new ApiException(400, ApiErrorCode.ValidationError, 'Query parameters are not supported');
 }
 
 @ApiTags('Health')
@@ -56,7 +57,12 @@ export class HealthController {
     try {
       await this.database.check();
     } catch {
-      throw new ApiException(503, 'SERVICE_UNAVAILABLE', 'Service temporarily unavailable', true);
+      throw new ApiException(
+        503,
+        ApiErrorCode.ServiceUnavailable,
+        'Service temporarily unavailable',
+        true,
+      );
     }
 
     return { schemaVersion: 1, status: 'ok' };

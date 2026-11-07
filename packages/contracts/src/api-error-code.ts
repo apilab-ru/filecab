@@ -1,0 +1,16 @@
+export enum ApiErrorCode {
+  ValidationError = 'VALIDATION_ERROR',
+  TransportError = 'TRANSPORT_ERROR',
+  InvalidResponse = 'INVALID_RESPONSE',
+  ProviderUnavailable = 'PROVIDER_UNAVAILABLE',
+  NotFound = 'NOT_FOUND',
+  Unauthorized = 'UNAUTHORIZED',
+  Conflict = 'CONFLICT',
+  RateLimited = 'RATE_LIMITED',
+  SyncResetRequired = 'SYNC_RESET_REQUIRED',
+  Forbidden = 'FORBIDDEN',
+  PayloadTooLarge = 'PAYLOAD_TOO_LARGE',
+  UnsupportedMediaType = 'UNSUPPORTED_MEDIA_TYPE',
+  ServiceUnavailable = 'SERVICE_UNAVAILABLE',
+  InternalError = 'INTERNAL_ERROR',
+}

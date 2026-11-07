@@ -1,3 +1,4 @@
+import { ApiErrorCode } from '@filecab/contracts';
 import {
   Inject,
   Injectable,
@@ -25,7 +26,8 @@ export function readCookie(request: Request, name: string): string | undefined {
     .filter((item) => item.startsWith(`${name}=`))
     .map((item) => item.slice(name.length + 1));
 
-  if (values.length > 1) throw new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+  if (values.length > 1)
+    throw new ApiException(401, ApiErrorCode.Unauthorized, 'Authentication required');
 
   return values[0];
 }
@@ -45,7 +47,7 @@ export class AuthGuard implements CanActivate {
     const bearer = header?.match(/^Bearer ([A-Za-z0-9_-]{43})$/)?.[1];
 
     if ((header && (!bearer || cookie || refresh)) || (!bearer && !cookie))
-      throw new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+      throw new ApiException(401, ApiErrorCode.Unauthorized, 'Authentication required');
 
     request[AUTH_CONTEXT] = await this.auth.authenticate(
       bearer ?? cookie!,
@@ -61,7 +63,8 @@ export const CurrentAccount = createParamDecorator(
   (_data: unknown, context: ExecutionContext): AuthIdentity => {
     const identity = context.switchToHttp().getRequest<AuthenticatedRequest>()[AUTH_CONTEXT];
 
-    if (!identity) throw new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+    if (!identity)
+      throw new ApiException(401, ApiErrorCode.Unauthorized, 'Authentication required');
 
     return identity;
   },

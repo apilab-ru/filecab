@@ -1,3 +1,4 @@
+import { ApiErrorCode } from '@filecab/contracts';
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { NestFactory } from '@nestjs/core';
@@ -62,13 +63,19 @@ export function configureApiApplication(
       response.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
       if (!request.secure)
-        return sendApiError(new ApiException(403, 'FORBIDDEN', 'HTTPS required'), response);
+        return sendApiError(
+          new ApiException(403, ApiErrorCode.Forbidden, 'HTTPS required'),
+          response,
+        );
     }
 
     const origin = request.get('origin');
 
     if (origin && !origins.has(origin))
-      return sendApiError(new ApiException(403, 'FORBIDDEN', 'Origin is not allowed'), response);
+      return sendApiError(
+        new ApiException(403, ApiErrorCode.Forbidden, 'Origin is not allowed'),
+        response,
+      );
 
     if (
       isUnsafe(request) &&
@@ -78,7 +85,7 @@ export function configureApiApplication(
       return sendApiError(
         new ApiException(
           403,
-          'FORBIDDEN',
+          ApiErrorCode.Forbidden,
           'Cookie request requires trusted Origin and X-Filecab-Request: 1',
         ),
         response,
@@ -91,7 +98,7 @@ export function configureApiApplication(
       !request.is('application/json')
     )
       return sendApiError(
-        new ApiException(415, 'UNSUPPORTED_MEDIA_TYPE', 'JSON content type required'),
+        new ApiException(415, ApiErrorCode.UnsupportedMediaType, 'JSON content type required'),
         response,
       );
 

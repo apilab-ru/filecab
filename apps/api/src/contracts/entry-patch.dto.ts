@@ -1,5 +1,5 @@
+import { ApiErrorCode, type Category, type Status } from '@filecab/contracts';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import type { Category, Status } from '@filecab/contracts';
 import { plainToInstance } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -137,7 +137,7 @@ export interface RequestValidationIssue {
 }
 
 export class RequestValidationError extends Error {
-  readonly code = 'VALIDATION_ERROR';
+  readonly code = ApiErrorCode.ValidationError;
   constructor(readonly issues: RequestValidationIssue[]) {
     super('Request validation failed');
     this.name = 'RequestValidationError';

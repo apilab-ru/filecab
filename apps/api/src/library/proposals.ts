@@ -1,8 +1,10 @@
-import type { EntryPatch, ServerEntry } from '@filecab/contracts';
+import { ApiErrorCode, type EntryPatch, type ServerEntry } from '@filecab/contracts';
 import { validateEntryPatchDto } from '../contracts/entry-patch.dto';
 
 export class MutationError extends Error {
-  constructor(readonly code: 'NOT_FOUND' | 'CONFLICT' | 'VALIDATION_ERROR') {
+  constructor(
+    readonly code: ApiErrorCode.NotFound | ApiErrorCode.Conflict | ApiErrorCode.ValidationError,
+  ) {
     super(code);
   }
 }
@@ -28,7 +30,7 @@ export function patchDocument(entry: ServerEntry, patch: EntryPatch): ServerEntr
 /** Enforces entry-dependent rules without trimming or rewriting user text. */
 export function validateEntry(entry: ServerEntry): void {
   if ((!entry.catalogId && !entry.userTitle.trim()) || entry.sources.length > 100)
-    throw new MutationError('VALIDATION_ERROR');
+    throw new MutationError(ApiErrorCode.ValidationError);
 }
 
 /** Proposes a merge without changing timestamps, server versions or persistence. */
@@ -46,7 +48,7 @@ export function proposeMerge(
     fields.sourceUrls !== undefined ||
     (fields.category !== undefined && fields.category !== survivor.category)
   )
-    throw new MutationError('CONFLICT');
+    throw new MutationError(ApiErrorCode.Conflict);
 
   const merged = patchDocument(survivor, fields);
   merged.catalogId = survivor.catalogId ?? removed.catalogId;
@@ -72,7 +74,7 @@ export function proposeReassignment(
   const source = from.sources.find((value) => value.normalizedUrl === normalizedUrl);
 
   if (from.entryId === to.entryId || from.deleted || to.deleted || !source)
-    throw new MutationError('CONFLICT');
+    throw new MutationError(ApiErrorCode.Conflict);
 
   const moved: [ServerEntry, ServerEntry] = [
     { ...from, sources: from.sources.filter((value) => value !== source) },

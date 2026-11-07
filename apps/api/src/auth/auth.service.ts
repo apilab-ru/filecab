@@ -1,5 +1,5 @@
+import { ApiErrorCode, type ExtensionSession } from '@filecab/contracts';
 import { Inject, Injectable, type OnModuleDestroy } from '@nestjs/common';
-import type { ExtensionSession } from '@filecab/contracts';
 import { randomUUID } from 'node:crypto';
 import type { Prisma, Session } from '../generated/prisma/client';
 import { createDatabaseClient } from '../database/client';
@@ -27,7 +27,7 @@ export interface SessionTokens extends ExtensionSession {}
 
 /** Rejects authentication failures without revealing account or credential existence. */
 function unauthorized(): ApiException {
-  return new ApiException(401, 'UNAUTHORIZED', 'Authentication required');
+  return new ApiException(401, ApiErrorCode.Unauthorized, 'Authentication required');
 }
 
 /** Persists browser-bound login, owner identity and transactional session rotation. */
@@ -52,7 +52,7 @@ export class AuthService implements OnModuleDestroy {
 
   private assertEnabled(): void {
     if (!this.environment.google.enabled)
-      throw new ApiException(503, 'SERVICE_UNAVAILABLE', 'Google login is disabled');
+      throw new ApiException(503, ApiErrorCode.ServiceUnavailable, 'Google login is disabled');
   }
 
   async start(client: AuthClient, returnTo: string, challenge?: string, attempt?: string) {
@@ -72,7 +72,7 @@ export class AuthService implements OnModuleDestroy {
     )
       throw new ApiException(
         400,
-        'VALIDATION_ERROR',
+        ApiErrorCode.ValidationError,
         'Invalid login destination or attempt binding',
       );
 

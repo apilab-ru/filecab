@@ -26,6 +26,7 @@ export default [
     },
     plugins: { '@stylistic': stylistic },
     rules: {
+      'no-nested-ternary': 'error',
       '@stylistic/padding-line-between-statements': [
         'error',
         { blankLine: 'always', prev: '*', next: ['function', 'if', 'return'] },

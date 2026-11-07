@@ -1,28 +1,32 @@
+import { ApiErrorCode, type ApiError, type ValidationIssue } from '@filecab/contracts';
 import { Catch, HttpException, type ArgumentsHost, type ExceptionFilter } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import type { ApiError, ApiErrorCode, ValidationIssue } from '@filecab/contracts';
 import { RequestValidationError } from '../contracts/entry-patch.dto';
 import { MutationError } from '../library/mutation.service';
 
-type ErrorCode = `${ApiErrorCode}`;
+const HTTP_ERRORS: Record<number, [ApiErrorCode, string]> = {
+  400: [ApiErrorCode.ValidationError, 'Invalid request'],
+  401: [ApiErrorCode.Unauthorized, 'Authentication required'],
+  403: [ApiErrorCode.Forbidden, 'Request forbidden'],
+  404: [ApiErrorCode.NotFound, 'Resource not found'],
+  409: [ApiErrorCode.Conflict, 'State conflict'],
+  413: [ApiErrorCode.PayloadTooLarge, 'Request body exceeds the size limit'],
+  415: [ApiErrorCode.UnsupportedMediaType, 'JSON content type required'],
+  429: [ApiErrorCode.RateLimited, 'Too many requests'],
+  503: [ApiErrorCode.ServiceUnavailable, 'Service temporarily unavailable'],
+};
 
-const HTTP_ERRORS: Record<number, [ErrorCode, string]> = {
-  400: ['VALIDATION_ERROR', 'Invalid request'],
-  401: ['UNAUTHORIZED', 'Authentication required'],
-  403: ['FORBIDDEN', 'Request forbidden'],
-  404: ['NOT_FOUND', 'Resource not found'],
-  409: ['CONFLICT', 'State conflict'],
-  413: ['PAYLOAD_TOO_LARGE', 'Request body exceeds the size limit'],
-  415: ['UNSUPPORTED_MEDIA_TYPE', 'JSON content type required'],
-  429: ['RATE_LIMITED', 'Too many requests'],
-  503: ['SERVICE_UNAVAILABLE', 'Service temporarily unavailable'],
+const MUTATION_HTTP_STATUSES = {
+  [ApiErrorCode.NotFound]: 404,
+  [ApiErrorCode.Conflict]: 409,
+  [ApiErrorCode.ValidationError]: 400,
 };
 
 /** Describes an intentional failure without retaining a private payload or underlying error. */
 export class ApiException extends HttpException {
   constructor(
     readonly httpStatus: number,
-    readonly code: ErrorCode,
+    readonly code: ApiErrorCode,
     readonly safeMessage: string,
     readonly retryable = false,
     readonly issues?: ValidationIssue[],
@@ -38,37 +42,36 @@ function publicError(error: unknown): ApiException {
   if (error instanceof RequestValidationError)
     return new ApiException(
       400,
-      'VALIDATION_ERROR',
+      ApiErrorCode.ValidationError,
       'Request validation failed',
       false,
       error.issues,
     );
 
   if (error instanceof MutationError) {
-    const status = error.code === 'NOT_FOUND' ? 404 : error.code === 'CONFLICT' ? 409 : 400;
+    const status = MUTATION_HTTP_STATUSES[error.code];
+    const message = status === 400 ? 'Request validation failed' : HTTP_ERRORS[status][1];
 
-    return new ApiException(
-      status,
-      error.code,
-      status === 404
-        ? 'Resource not found'
-        : status === 409
-          ? 'State conflict'
-          : 'Request validation failed',
-    );
+    return new ApiException(status, error.code, message);
   }
 
-  const status =
-    error instanceof HttpException
-      ? error.getStatus()
-      : typeof error === 'object' &&
-          error !== null &&
-          'status' in error &&
-          typeof error.status === 'number'
-        ? error.status
-        : 500;
+  let status = 500;
 
-  const [code, message] = HTTP_ERRORS[status] ?? ['INTERNAL_ERROR', 'Internal server error'];
+  if (error instanceof HttpException) {
+    status = error.getStatus();
+  } else if (
+    typeof error === 'object' &&
+    error !== null &&
+    'status' in error &&
+    typeof error.status === 'number'
+  ) {
+    status = error.status;
+  }
+
+  const [code, message] = HTTP_ERRORS[status] ?? [
+    ApiErrorCode.InternalError,
+    'Internal server error',
+  ];
 
   const httpStatus = HTTP_ERRORS[status] ? status : 500;
 
@@ -78,7 +81,7 @@ function publicError(error: unknown): ApiException {
 /** Writes the common envelope for controller, middleware and body-parser failures. */
 export function sendApiError(error: unknown, response: Response): void {
   const safe = publicError(error);
-  const body: Omit<ApiError, 'code'> & { code: ErrorCode } = {
+  const body: ApiError = {
     schemaVersion: 1,
     code: safe.code,
     status: safe.httpStatus,

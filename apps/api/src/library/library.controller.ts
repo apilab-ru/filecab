@@ -1,4 +1,12 @@
 import {
+  ApiErrorCode,
+  type LibraryMutationPreview,
+  type LibraryMutationResult,
+  type OwnerSnapshot,
+  type ServerEntry,
+  type Snapshot,
+} from '@filecab/contracts';
+import {
   Body,
   Controller,
   Delete,
@@ -25,13 +33,6 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import type {
-  LibraryMutationPreview,
-  LibraryMutationResult,
-  OwnerSnapshot,
-  ServerEntry,
-  Snapshot,
-} from '@filecab/contracts';
 import { AuthGuard, CurrentAccount } from '../auth/auth.guard';
 import type { AuthIdentity } from '../auth/auth.service';
 import { AuthService } from '../auth/auth.service';
@@ -85,7 +86,7 @@ export class LibraryInputGuard implements CanActivate {
     )
       throw new ApiException(
         400,
-        'VALIDATION_ERROR',
+        ApiErrorCode.ValidationError,
         'Owner-library routes accept no query parameters or read bodies',
       );
 
@@ -159,7 +160,7 @@ export class LibraryController {
       const catalog = await this.auth.database.catalogItem.findUnique({ where: { id: catalogId } });
 
       if (!catalog || catalog.category !== input.category)
-        throw new MutationError('VALIDATION_ERROR');
+        throw new MutationError(ApiErrorCode.ValidationError);
 
       snapshot = catalog.snapshot as unknown as Snapshot;
     }
