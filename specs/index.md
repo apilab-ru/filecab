@@ -14,5 +14,9 @@
 
 ## Mockups
 
-- [Light theme mockup](white-mockup.png)
-- [Dark theme mockup](dark-mockup.png)
+- [Light theme mockup](mockup-white.png)
+- [Dark theme mockup](mockup-dark.png)
+- [Settings mockup](mockup-settings.png)
+
+- [Supplied interface icons](../apps/extension/public/icons)
+- [Current Filecab icon](../apps/extension/public/wish-list-icon.png)

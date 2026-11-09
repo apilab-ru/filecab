@@ -3,6 +3,10 @@
 This repository follows spec-driven development.
 Before implementing any change, update the relevant specification files, then implement the change according to the updated specifications.
 
+Keep one React component per source file. Place each component in its own file and import it where needed.
+
+Keep component styles in separate stylesheets alongside the components that use them, and import those styles from the corresponding component. Keep shared and global styles in dedicated stylesheets. Avoid duplicating rules and remove styles and imports that are no longer used. Preserve existing styling, responsive behavior, CSS specificity, cascade order, and style precedence when moving rules.
+
 Do not use Zod or add it as a dependency anywhere in the repository. Use class-validator/class-transformer for server request validation. Shared contracts use typed models directly, without runtime parsers or client validation.
 
 Separate top-level `const` (including `declare const`), `enum`, `type`, and `interface` declarations from the next declaration with a blank line. Add a short JSDoc comment before each interface explaining its purpose.

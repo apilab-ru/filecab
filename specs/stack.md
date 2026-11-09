@@ -20,6 +20,7 @@ This document records the chosen architecture. It does not claim that the planne
 | Database             | PostgreSQL 17                                                             | Persistent server-side application data                                           |
 | ORM                  | Prisma                                                                    | Database access and versioned migrations                                          |
 | Extension database   | RxDB with the free Dexie storage adapter over IndexedDB                   | Extension-only offline persistence, reactive queries, migrations, and replication |
+| Local UI state       | Zustand                                                                   | Component and application UI state in the website and extension                   |
 | Website server state | TanStack Query                                                            | Fetching, caching, and mutations through NestJS; no durable offline editing       |
 | Authentication       | Google OAuth through NestJS                                               | Google-only sign-in and application sessions                                      |
 | UI primitives        | Base UI (`@base-ui/react`)                                                | Accessible, unstyled interactive components wrapped in `packages/ui`              |
@@ -85,6 +86,10 @@ Use ordinary `.scss` files imported by components, example:
 ```
 
 Keep shared colors, spacing, and typography in CSS variables. Prefix reusable blocks to reduce global collisions. Use Shadow DOM isolation for injected extension UI when needed; BEM alone does not isolate styles from a host page.
+
+### Client-side routes
+
+Use React Router with hash-based URLs for website and full-page extension routes. Represent each page as a separate React component and render pages through route definitions rather than branching the application shell's page content on route state. Keep library data adapters mounted across page navigation so synchronization state and unsaved editors survive page changes. Keep popup-only views compatible with the extension's fixed popup surface.
 
 ## Extension surfaces
 
