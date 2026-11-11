@@ -1,6 +1,7 @@
 # Specs
 
 - [Contributing](contributing.md)
+- [Conventions](conventions.md)
 - [Functionality](functionality.md)
 - [Stack](stack.md)
 - [Shared Domain Contract](domain-contract.md)

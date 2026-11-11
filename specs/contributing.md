@@ -3,6 +3,8 @@
 This repository follows spec-driven development.
 Before implementing any change, update the relevant specification files, then implement the change according to the updated specifications.
 
+Follow [Conventions](conventions.md) for package boundaries, UI composition, state management, authentication and translations.
+
 Keep one React component per source file. Place each component in its own file and import it where needed.
 
 Keep component styles in separate stylesheets alongside the components that use them, and import those styles from the corresponding component. Keep shared and global styles in dedicated stylesheets. Avoid duplicating rules and remove styles and imports that are no longer used. Preserve existing styling, responsive behavior, CSS specificity, cascade order, and style precedence when moving rules.

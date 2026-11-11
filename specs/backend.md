@@ -180,6 +180,10 @@ Shared filters, ordering, and counts SHALL operate only on the visible projectio
 
 Shared responses SHALL represent server-committed data only. Responses SHALL use `Cache-Control: no-store`, noindex directives, and restrictive referrer policy. Tokens SHALL be redacted from logs. Unknown/revoked links SHALL receive non-enumerating not-found responses.
 
+Shared lists SHALL NOT appear in public discovery or sitemaps. Revocation SHALL
+block subsequent server requests; it cannot retract data already viewed or copied
+and SHALL NOT promise immediate removal from an already open page.
+
 ## Capability: Backup and restore
 
 ### Requirement: Export and import formats

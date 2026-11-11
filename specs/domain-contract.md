@@ -1,6 +1,6 @@
 # Shared domain contract v1
 
-`packages/contracts` defines shared TypeScript models and domain rules. Follow [Functionality](functionality.md), [Stack](stack.md) and [Baseline Decisions](../implementation/baseline-decisions.md).
+`packages/contracts` defines shared TypeScript models and domain rules. Follow [Functionality](functionality.md), [Conventions](conventions.md) and [Baseline Decisions](../implementation/baseline-decisions.md).
 
 - **Validation:** shared contracts use typed models directly, without runtime parsers or client validation. Server DTOs use class-validator/class-transformer without implicit coercion.
 - **Identity:** represent entry UUIDs, catalog IDs, provider IDs and remote record IDs as plain strings, without branded types or primitive aliases. Keep their identity scopes distinct through descriptive field names. Preserve prefixes/leading zeros. Unverified references never prove identity.
