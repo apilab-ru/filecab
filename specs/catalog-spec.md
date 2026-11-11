@@ -85,8 +85,15 @@ universal cross-language search are optional.
 
 Use stable internal IDs, localized labels and explicit provider mappings; matching labels
 alone are insufficient. Preserve unknown genres/source data without rejecting a record.
-Library filters use internal IDs; adapters use verified mappings. Refresh is operator-only,
-never a public GET with write effects.
+Library filters use internal IDs; adapters use verified mappings. Unknown provider IDs keep
+a provider-scoped internal candidate and an unverified mapping until a trusted adapter
+supplies a canonical key from its curated server-side crosswalk (never from provider
+payload text). Contradictory canonical keys are retained as review conflicts
+without replacing the existing mapping. Refresh and conflict review require an authenticated
+account in the configured operator allowlist, which defaults to empty. Public genre reads
+are read-only and may return stable internal genres whose provider mappings still need
+review; adapters only use verified mappings. Bound response bytes, item count, elapsed time, concurrency, retries and
+Retry-After waits by server configuration; return structured safe errors on budget exhaustion.
 
 ### Provider resilience and metadata cache
 

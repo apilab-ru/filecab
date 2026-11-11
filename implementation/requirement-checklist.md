@@ -187,6 +187,26 @@ cache limits are 5,000 search pages globally, 20 per request identity and 10,000
 rows. Typecheck, Prisma schema validation, ESLint and Prettier pass; deterministic cache
 behavior checks remain pending, so the broader catalog requirement rows stay unchecked.
 
+12.c administration code is delivered in `apps/api/src/catalog/catalog-genre.service.ts`
+and `catalog-genre-admin.controller.ts`, with conflict persistence from migration
+`20261111020000_genre_administration`. Refresh/review require an authenticated account
+listed in `CATALOG_OPERATOR_ACCOUNT_IDS`; the default allowlist is empty. Public
+`GET /catalog/genres` is read-only and returns stable internal genres; adapters still
+require verified provider mappings. Provider data is
+bounded and validated; budgets are configurable in `apps/api/.env.example`. Unmapped
+provider IDs and contradictory/missing crosswalk targets remain visible to operator
+review. No genre adapter is wired yet, so refresh correctly remains unavailable. API
+typecheck, Prisma validation, ESLint and Prettier pass; deterministic genre authorization,
+mapping and budget checks remain pending.
+
+Seed data was scanned from `https://api.apilab.ru/file-cab/genres/list` on 11 November
+2026 and added in migration `20261111030000_seed_catalog_genres`: 117 source rows become
+112 stable internal genre keys, 136 category associations and 135 provider mappings.
+The source contains 12 conflicting Smotret ID claims; conflict rows are not seeded by
+this migration. Provider mapping provenance remains
+unverified until the provider adapters are independently verified; the internal genre
+list is still publicly readable and the adapters must not consume these mappings yet.
+
 ## External list synchronization
 
 | Done | Requirement                                                                                                            | Step | Planned code area                             | Status  | Code / verification evidence | Blocker |

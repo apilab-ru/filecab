@@ -45,6 +45,7 @@ export interface Genre {
   genreId: string;
   key: string;
   labels: LocalizedText[];
+  categories?: Category[];
 }
 
 /** Keeps a provider score separate from the user rating. */
@@ -176,6 +177,46 @@ export interface GenreResponse {
   schemaVersion: 1;
   locale: Locale;
   genres: Genre[];
+}
+
+/** Describes a provider mapping that needs operator review. */
+export interface GenreMappingReview {
+  provider: string;
+  externalId: string;
+  genreId: string;
+  labels: LocalizedText[];
+  provenance: Provenance;
+  verified: boolean;
+}
+
+/** Preserves a contradictory or unresolved provider genre crosswalk claim. */
+export interface GenreMappingConflict {
+  conflictId: string;
+  provider: string;
+  externalId: string;
+  currentGenreId: string | null;
+  proposedKey: string;
+  labels: LocalizedText[];
+  provenance: Provenance;
+  reason: 'target-missing' | 'mapping-change';
+  createdAt: string;
+}
+
+/** Summarizes one protected provider genre refresh. */
+export interface GenreRefreshResponse {
+  schemaVersion: 1;
+  provider: string;
+  locale: Locale;
+  imported: number;
+  unresolved: number;
+  conflicts: GenreMappingConflict[];
+}
+
+/** Lists unknown mappings and conflicts without changing provider or catalog state. */
+export interface GenreReviewResponse {
+  schemaVersion: 1;
+  mappings: GenreMappingReview[];
+  conflicts: GenreMappingConflict[];
 }
 
 export type FieldPath = (string | number)[];

@@ -194,11 +194,11 @@ Exit: implementation is delivered; deterministic checks for cache isolation, sta
 
 ### 12.c Implement genre administration
 
-- [ ] Add protected operator-only genre refresh with verified provider mappings and stable internal IDs.
-- [ ] Preserve unknown provider labels and mapping conflicts; keep public genre reads side-effect free.
-- [ ] Add provider response validation and configured size/time/concurrency/retry/throttling budgets with structured errors.
+- [x] Add protected operator-only genre refresh with verified provider mappings and stable internal IDs.
+- [x] Preserve unknown provider labels and mapping conflicts; keep public genre reads side-effect free.
+- [x] Add provider response validation and configured size/time/concurrency/retry/throttling budgets with structured errors.
 
-Exit: only authenticated operator actions refresh genres; public reads do not write; unknown labels and conflicting mappings remain reviewable.
+Exit: code is delivered; provider refresh remains unavailable until a verified adapter is wired, and deterministic authorization/mapping/budget checks remain pending.
 
 Exit: deterministic tests cover identity/upsert races, pagination, locale retention, mapping conflicts, provider failure versus valid empty results, and cache isolation from private data.
 

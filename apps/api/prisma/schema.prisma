@@ -131,11 +131,22 @@ model CatalogTranslation {
 
 /// Stable internal genre identity with localized, attributed labels.
 model Genre {
-  id       String         @id @db.Uuid
-  key      String         @unique
+  id         String          @id @db.Uuid
+  key        String          @unique
   /// Shared-contract LocalizedText[] with language and provenance per label.
-  labels   Json
-  mappings GenreMapping[]
+  labels     Json
+  categories GenreCategory[]
+  mappings   GenreMapping[]
+}
+
+/// Catalog categories in which an internal genre is known to apply.
+model GenreCategory {
+  genreId  String @db.Uuid
+  genre    Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  category String
+
+  @@id([genreId, category])
+  @@index([category])
 }
 
 /// Provider genre identity mapped explicitly to an internal genre.
@@ -149,6 +160,23 @@ model GenreMapping {
   provenance Json
 
   @@id([namespace, externalId])
+}
+
+/// Retains unresolved or contradictory provider mapping proposals for operator review.
+model GenreMappingConflict {
+  id             String    @id @db.Uuid
+  namespace      String
+  externalId     String
+  proposedKey    String
+  currentGenreId String?   @db.Uuid
+  labels         Json
+  provenance     Json
+  reason         String
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  reviewedAt     DateTime? @db.Timestamptz(3)
+
+  @@index([namespace, reviewedAt, createdAt])
+  @@index([externalId, namespace])
 }
 
 /// Owner library identity with its complete current server document, including tombstones.

@@ -3,6 +3,7 @@ import {
   Category,
   type CatalogCapabilities,
   type CatalogRecord,
+  type GenreResponse,
 } from '@filecab/contracts';
 import { Controller, Get, Inject, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -11,6 +12,8 @@ import { ApiException } from '../http/api-error';
 import { ApiErrorDto } from '../http/openapi.dto';
 import { RequestDtoPipe } from '../http/validation';
 import { CatalogCacheService } from './catalog-cache.service';
+import { CatalogGenreLocaleQueryDto, CatalogGenreResponseDto } from './catalog-genre.dto';
+import { CatalogGenreService } from './catalog-genre.service';
 import {
   CatalogCapabilitiesDto,
   CatalogDetailsQueryDto,
@@ -31,6 +34,7 @@ export class CatalogController {
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(CatalogSearchService) private readonly catalog: CatalogSearchService,
     @Inject(CatalogCacheService) private readonly cache: CatalogCacheService,
+    @Inject(CatalogGenreService) private readonly genres: CatalogGenreService,
   ) {}
 
   @Get('capabilities')
@@ -42,6 +46,20 @@ export class CatalogController {
   @ApiResponse({ status: 200, type: CatalogCapabilitiesDto })
   capabilities(): CatalogCapabilities {
     return this.catalog.capabilities();
+  }
+
+  @Get('genres')
+  @ApiQuery({ name: 'locale', enum: ['en', 'ru'], required: true })
+  @ApiOperation({
+    summary: 'Read stable catalog genres without changing provider state',
+    description:
+      'Public, read-only genre list. Refresh is available only through operator administration.',
+  })
+  @ApiResponse({ status: 200, type: CatalogGenreResponseDto })
+  genresRead(
+    @Query(new RequestDtoPipe(CatalogGenreLocaleQueryDto)) query: CatalogGenreLocaleQueryDto,
+  ): Promise<GenreResponse> {
+    return this.genres.publicGenres(query.locale);
   }
 
   @Get('search')

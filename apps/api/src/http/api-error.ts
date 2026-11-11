@@ -15,6 +15,7 @@ const HTTP_ERRORS: Record<number, [ApiErrorCode, string]> = {
   429: [ApiErrorCode.RateLimited, 'Too many requests'],
   502: [ApiErrorCode.InvalidResponse, 'Catalog provider returned an invalid response'],
   503: [ApiErrorCode.ServiceUnavailable, 'Service temporarily unavailable'],
+  504: [ApiErrorCode.TransportError, 'Upstream request timed out'],
 };
 
 const MUTATION_HTTP_STATUSES = {
@@ -31,6 +32,7 @@ export class ApiException extends HttpException {
     readonly safeMessage: string,
     readonly retryable = false,
     readonly issues?: ValidationIssue[],
+    readonly retryAfterSeconds?: number,
   ) {
     super(safeMessage, httpStatus);
   }
@@ -90,7 +92,20 @@ export function sendApiError(error: unknown, response: Response): void {
     correlationId: String(response.getHeader('X-Correlation-ID')),
     retryable: safe.retryable,
     ...(safe.issues ? { issues: safe.issues } : {}),
+    ...(safe.retryAfterSeconds !== undefined &&
+    Number.isSafeInteger(safe.retryAfterSeconds) &&
+    safe.retryAfterSeconds >= 0
+      ? { retryAfterSeconds: safe.retryAfterSeconds }
+      : {}),
   };
+
+  if (
+    safe.retryAfterSeconds !== undefined &&
+    Number.isSafeInteger(safe.retryAfterSeconds) &&
+    safe.retryAfterSeconds >= 0
+  )
+    response.setHeader('Retry-After', String(safe.retryAfterSeconds));
+
   response.status(safe.httpStatus).json(body);
 }
 

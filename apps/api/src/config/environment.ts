@@ -94,6 +94,19 @@ export function validateEnvironment(env: Environment) {
   for (const origin of extensionOrigins) {
     if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) invalid.add('EXTENSION_ORIGINS');
   }
+  const catalogOperatorAccountIds = (env.CATALOG_OPERATOR_ACCOUNT_IDS ?? '')
+    .split(',')
+    .map((value) => value.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (
+    catalogOperatorAccountIds.some(
+      (id) =>
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id),
+    )
+  )
+    invalid.add('CATALOG_OPERATOR_ACCOUNT_IDS');
+
   const secret = (key: string, needed: boolean) => {
     const value = env[key] ?? '';
 
@@ -136,6 +149,26 @@ export function validateEnvironment(env: Environment) {
       invalid.add(key);
 
     return value;
+  };
+  const boundedInteger = (key: string, fallback: number, minimum: number, maximum: number) => {
+    const text = env[key] ?? String(fallback);
+    const value = Number(text);
+
+    if (!/^\d+$/.test(text) || !Number.isSafeInteger(value) || value < minimum || value > maximum)
+      invalid.add(key);
+
+    return value;
+  };
+  const catalog = {
+    operatorAccountIds: catalogOperatorAccountIds,
+    budgets: {
+      timeoutMs: duration('CATALOG_PROVIDER_TIMEOUT_MS', 5000, 30000),
+      maxResponseBytes: duration('CATALOG_PROVIDER_MAX_RESPONSE_BYTES', 262144, 1048576),
+      maxGenres: duration('CATALOG_PROVIDER_MAX_GENRES', 500, 2000),
+      concurrency: duration('CATALOG_PROVIDER_CONCURRENCY', 2, 8),
+      retries: boundedInteger('CATALOG_PROVIDER_RETRIES', 2, 0, 5),
+      maxRetryAfterSeconds: duration('CATALOG_PROVIDER_MAX_RETRY_AFTER_SECONDS', 60, 300),
+    },
   };
   const auth = {
     accessSeconds: duration('AUTH_ACCESS_SECONDS', 900, 900),
@@ -201,6 +234,7 @@ export function validateEnvironment(env: Environment) {
     encryptionKey,
     google,
     auth,
+    catalog,
     providers,
   };
 }

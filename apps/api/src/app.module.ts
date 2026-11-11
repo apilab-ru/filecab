@@ -15,6 +15,8 @@ import { CatalogController } from './catalog/catalog.controller';
 import { CatalogIdentityService } from './catalog/catalog-identity.service';
 import { CatalogSearchService } from './catalog/catalog-search.service';
 import { CatalogCacheService } from './catalog/catalog-cache.service';
+import { CatalogGenreAdminController } from './catalog/catalog-genre-admin.controller';
+import { CatalogGenreService } from './catalog/catalog-genre.service';
 
 @Module({})
 export class AppModule {
@@ -31,6 +33,7 @@ export class AppModule {
         LibraryController,
         ReplicationController,
         CatalogController,
+        CatalogGenreAdminController,
       ],
       providers: [
         { provide: AUTH_ENVIRONMENT, useValue: environment },
@@ -50,6 +53,12 @@ export class AppModule {
           provide: CatalogSearchService,
           inject: [CatalogCacheService],
           useFactory: (cache: CatalogCacheService) => new CatalogSearchService([], cache),
+        },
+        {
+          provide: CatalogGenreService,
+          inject: [AuthService],
+          useFactory: (auth: AuthService) =>
+            new CatalogGenreService(auth.database, environment.catalog, []),
         },
         {
           provide: CatalogIdentityService,
