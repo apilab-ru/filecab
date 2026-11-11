@@ -3,8 +3,8 @@ import { browser } from 'wxt/browser';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AuthProvider, ApplicationShell, FullPage } from '@filecab/library';
-import { extensionPreferences } from '../../src/interface-preferences';
-import { LocalLibrary } from '../../src/library/local-library/local-library';
+import { extensionPreferences } from '../../src/models/interface-preferences';
+import { LocalLibrary } from '../../src/library/components/local-library/local-library';
 import '../../styles.scss';
 
 const ICON_BASE_URL = new URL('.', browser.runtime.getURL('/icons/library.svg')).href;

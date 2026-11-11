@@ -1,8 +1,8 @@
 import type {} from '../models/i18next';
 import { createInstance, type i18n } from 'i18next';
 import { Locale } from '@filecab/contracts';
-import { EN } from '../locales/en';
-import { RU } from '../locales/ru';
+import { EN } from './locales/en';
+import { RU } from './locales/ru';
 
 const RESOURCES = {
   [Locale.En]: { translation: EN },

@@ -5,7 +5,7 @@ import { AuthProvider, ApplicationShell, FullPage, websitePreferences } from '@f
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './auth/session';
 import './styles.scss';
-import { OnlineLibrary } from './online-library/online-library';
+import { OnlineLibrary } from './online-library/components/online-library/online-library';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

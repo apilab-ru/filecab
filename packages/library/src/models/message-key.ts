@@ -1,2 +1,2 @@
 /** Names the shared English and Russian interface message catalog. */
-export type MessageKey = keyof typeof import('../locales/en').EN;
+export type MessageKey = keyof typeof import('../i18n/locales/en').EN;

@@ -1,11 +1,11 @@
-import { Popup } from '../../src/popup/popup';
+import { Popup } from '../../src/popup/components/popup/popup';
 import { authRepository } from '../../src/auth/auth-repository';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { browser } from 'wxt/browser';
 import { AuthProvider, ApplicationShell } from '@filecab/library';
-import { extensionPreferences } from '../../src/interface-preferences';
-import { DeviceSync } from '../../src/library/device-sync/device-sync';
+import { extensionPreferences } from '../../src/models/interface-preferences';
+import { DeviceSync } from '../../src/library/components/device-sync/device-sync';
 import '../../styles.scss';
 
 createRoot(document.getElementById('root')!).render(

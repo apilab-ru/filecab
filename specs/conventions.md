@@ -18,6 +18,12 @@ Use workspace imports and public exports. Never import backend code, Prisma, sec
 server environment files or server DTO dependencies into clients. Vite/WXT/NestJS
 retain their build tools; Nx orchestrates targets.
 
+## Folder structure
+
+Organize code by feature first, then responsibility, then specific component or module: `src/<feature>/<group>/<item>/`. For example, extension library UI lives in `src/library/components/device-sync/`. If an app or package contains only one feature, omit the feature level and use paths such as `src/components/` or `src/models/`. The shared `packages/library` screens use explicit top-level `components/`, `providers/`, `pages/`, `hooks/` and `models/` groups; translations stay in `i18n/`. Keep each component's styles, types, hooks and utilities in its component folder. Keep shared hooks and models in responsibility groups. Use `.tsx` for React components, `.ts` for logic and types, and colocated BEM SCSS for component styles. Name hooks `useSomething`.
+
+Keep app features together: web uses `auth/` and `online-library/`; extension uses `auth/`, `library/` and `popup/`; API uses `auth/`, `health/` and `library/`. Place each feature's components, providers, pages, hooks and models in its corresponding group. Shared UI components use `components/` and providers use `providers/`; shared contracts use `models/` and `domain/`. Keep library translations in `i18n/`.
+
 ## Shared UI components
 
 Use Filecab Base UI wrappers; simple controls may be native. Preserve keyboard operation,
@@ -39,11 +45,11 @@ adapter directly. The shell owns routing, preferences, sync settings and `IconPr
 `ApplicationShellContent` owns draft registration/confirmation. Neither chooses layout
 through a `popup` boolean or forwards layout-specific props.
 
-| Component   | Location and role                                       |
-| ----------- | ------------------------------------------------------- |
-| `FullPage`  | `packages/library/src/full-page/`: full-page navigation |
-| `Popup`     | `apps/extension/src/popup/`: popup routes/navigation    |
-| `PopupPage` | `apps/extension/src/popup-page/`: popup Page route      |
+| Component   | Location and role                                                     |
+| ----------- | --------------------------------------------------------------------- |
+| `FullPage`  | `packages/library/src/pages/full-page/`: full-page navigation         |
+| `Popup`     | `apps/extension/src/popup/components/popup/`: popup routes/navigation |
+| `PopupPage` | `apps/extension/src/popup/pages/popup-page/`: popup Page route        |
 
 Use hash-based React Router routes and page components. Derive category/mode from routes,
 not interface context or a parallel parser. FullPage passes category via `renderLibrary`;

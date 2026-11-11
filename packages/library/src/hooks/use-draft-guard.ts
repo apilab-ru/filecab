@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useBlocker } from 'react-router-dom';
 import type { DraftActions } from '../models/interface-context';
-import { useLocalStore } from '../use-local-store';
+import { useLocalStore } from './use-local-store';
 
 /** Guards route changes and window unloads until the current draft is resolved. */
 export function useDraftGuard() {
