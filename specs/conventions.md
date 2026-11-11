@@ -1,175 +1,135 @@
 # Conventions
 
-Architecture and implementation conventions for the selected [technology stack](stack.md).
-Follow [Contributing](contributing.md) for specification updates, code style,
-component colocation, validation and formatting rules. Product behavior belongs
-in [Functionality](functionality.md), API behavior in [Backend](backend.md), and
-detailed persistence policies in [Baseline decisions](../implementation/baseline-decisions.md).
+Implementation patterns for the [Stack](stack.md). [Contributing](contributing.md)
+owns code/style/workflow rules; [Functionality](functionality.md) owns user behavior.
 
 ## Repository structure
 
-```text
-apps/
-  web/          # React + Vite website
-  extension/    # WXT popup, full page, worker and content scripts
-  api/          # NestJS API and Prisma
-packages/
-  ui/           # Shared React primitives and styles
-  library/      # Shared screens, hooks and application logic
-  contracts/    # Framework-independent models and domain rules
-```
+| Package              | Responsibility                                                      |
+| -------------------- | ------------------------------------------------------------------- |
+| `apps/web`           | React/Vite website and online adapters                              |
+| `apps/extension`     | WXT popup/full page, worker, content scripts and device persistence |
+| `apps/api`           | NestJS API and Prisma                                               |
+| `packages/ui`        | Shared primitives/styles, independent of auth/data/library adapters |
+| `packages/library`   | Shared screens, hooks and application logic                         |
+| `packages/contracts` | Framework-independent models and domain rules                       |
 
-Use workspace imports and public package exports. Frontend bundles must not import
-backend code, Prisma, secrets, server environment files or server-only DTO dependencies.
-Keep `packages/ui` independent of library adapters, authentication and data access.
-Vite, WXT and NestJS retain their own build tools; Nx orchestrates their targets.
+Use workspace imports and public exports. Never import backend code, Prisma, secrets,
+server environment files or server DTO dependencies into clients. Vite/WXT/NestJS
+retain their build tools; Nx orchestrates targets.
 
 ## Shared UI components
 
-Use Filecab wrappers from `packages/ui` for Base UI primitives; simple controls may
-use native HTML elements. Preserve keyboard operation, visible focus and focus
-restoration across website, full-page and popup surfaces. Dialog overlays must
-inherit theme tokens within their styled document.
+Use Filecab Base UI wrappers; simple controls may be native. Preserve keyboard operation,
+visible focus and focus restoration. Dialog overlays inherit theme tokens inside their
+styled container across website/full-page/popup surfaces.
 
 ## Styling convention
 
-Use colocated SCSS, BEM classes and shared CSS variables for design tokens.
-Regular stylesheets do not scope classes automatically. Shared declarations may
-use Sass mixins or dedicated shared stylesheets. Each layout owns its root and
-layout styles. Follow the detailed [style colocation rules](contributing.md#component-style-colocation).
-
-Injected page UI must use Shadow DOM isolation; BEM alone does not isolate styles
-from the host page. Portaled overlays must remain inside the styled container.
+Use colocated SCSS, BEM classes and shared CSS variables. Each layout owns its root/styles;
+share declarations through mixins or dedicated stylesheets. Imports do not scope classes.
+Follow [colocation rules](contributing.md#component-style-colocation).
+Injected UI uses Shadow DOM; BEM alone cannot isolate host styles. Keep portals inside
+the styled container.
 
 ## Client-side routes
 
-Entry points compose `ApplicationShell` with a chosen layout. The shell provides
-routing, preferences, synchronization settings and the icon base URL through
-`IconProvider`; `ApplicationShellContent` provides draft registration and confirmation.
-Neither component selects a layout using a `popup` boolean or forwards layout-specific props.
+Entry points compose `ApplicationShell` with a layout and pass its icons/links/library
+adapter directly. The shell owns routing, preferences, sync settings and `IconProvider`;
+`ApplicationShellContent` owns draft registration/confirmation. Neither chooses layout
+through a `popup` boolean or forwards layout-specific props.
 
-- Shared `FullPage` lives in `packages/library/src/full-page/` and owns full-page navigation.
-- Extension-owned `Popup` lives in `apps/extension/src/popup/` and owns popup routes and navigation.
-- The popup Page route uses extension-owned `PopupPage` in `apps/extension/src/popup-page/`.
-- Pass icons, full-page links and the library adapter directly to the chosen layout.
+| Component   | Location and role                                       |
+| ----------- | ------------------------------------------------------- |
+| `FullPage`  | `packages/library/src/full-page/`: full-page navigation |
+| `Popup`     | `apps/extension/src/popup/`: popup routes/navigation    |
+| `PopupPage` | `apps/extension/src/popup-page/`: popup Page route      |
 
-Use hash-based React Router routes and separate page components. Derive category
-and mode from routes; do not store them in interface context or introduce a
-parallel route parser. Full-page routes pass category to the library adapter
-through `renderLibrary`. Popup navigation uses React Router directly.
-Keep data adapters mounted across navigation so replication and draft editors survive.
-Canonical routes, redirects and popup Back behavior are defined in
-[Navigation](functionality.md#2-users-surfaces-and-navigation).
+Use hash-based React Router routes and page components. Derive category/mode from routes,
+not interface context or a parallel parser. FullPage passes category via `renderLibrary`;
+Popup navigates directly. Keep adapters/editors mounted across navigation.
+[Navigation requirements](functionality.md#2-users-surfaces-and-navigation) define redirects/Back.
 
 ## Unsaved draft guard
 
-`useDraftGuard` owns draft registration, router blocking, save/discard decisions
-and `beforeunload`. Editors register their actions through `Context.setDirty`;
-the shell renders the confirmation dialog. Save proceeds only after successful
-persistence; Discard clears the draft; Continue editing cancels navigation.
+`useDraftGuard` owns registration, route blocking, save/discard decisions and `beforeunload`.
+Editors use `Context.setDirty`; the shell renders confirmation. Save requires successful
+persistence, Discard clears the draft, Continue cancels navigation.
 
 ## Interface preferences
 
-`useInterfacePreferences` reads one live preference provider per shell. Components
-read theme, locale and setters from the hook rather than receive them through props.
-Keep preference storage independent of accounts and library replication.
-Use the first supported browser language and system color scheme until explicit
-preferences are saved. Synchronize changes across open surfaces and update document
-attributes without remounting editors. Storage failures must not prevent live updates.
+Read locale/theme/setters through one `useInterfacePreferences` provider per shell,
+not routed props. Keep storage independent of accounts/library replication.
+Defaults use the first supported browser language and system theme. Persist explicit
+choices, synchronize surfaces and document attributes, and preserve mounted editors.
+Storage failure must not prevent live updates.
 
 ## Local state management
 
-Use component-scoped Zustand stores for transient UI state. Independent surfaces
-must not share drafts or filters. URL parameters may hold non-sensitive filters
-and sorting; preserve website query parameters during navigation.
-
-Publish synchronization settings through `useSyncSettings`, not interface context
-or routed-page props. Persist only serializable status in localStorage; keep refresh
-callbacks in memory. Restored status must not enable refresh until a live adapter
-registers its action. Adapter cleanup clears its published settings. Storage errors
-must not break live controls.
+Use component-scoped Zustand stores; surfaces do not share drafts/filters.
+URLs may hold non-sensitive filters/sort; preserve website query parameters.
+Publish sync settings through `useSyncSettings`, not interface context/page props.
+Persist serializable status only; callbacks stay in memory. Restored state cannot enable
+refresh until a live adapter registers it. Cleanup clears status; storage errors do not
+break live controls.
 
 ## Shared authentication controls
 
-Settings renders the shared `AuthControls`. Applications supply an `AuthRepository`
-through `AuthProvider`; do not pass account UI through the shell. The repository
-exposes observable account state, busy/error state and sign-in, sign-out and
-sign-out-all operations. Repositories contain platform logic, not presentation.
-
-The website adapter reuses its account query and cookie-session functions, including
-cross-tab invalidation and private-cache cleanup. The extension adapter uses privileged
-worker messages and auth-change notifications; credentials stay in the worker.
-Clean up subscriptions when consumers unmount. Both adapters report the same
-`AuthError` model; shared controls render localized guidance, optional safe diagnostics
-and collapsed public connection details. Do not expose raw errors or private payloads.
+Settings renders shared `AuthControls` from `AuthProvider`/`AuthRepository`, not injected
+account UI. Repositories expose observable account/busy/error state and sign-in/out/all
+operations; they own platform logic, never presentation. Website adapters reuse account
+queries/cookies, cross-tab invalidation and private-cache cleanup. Extension adapters use
+worker messages/auth notifications; credentials stay privileged. Unsubscribe on unmount.
+Both report `AuthError`; controls localize safe guidance/diagnostics and collapsed public
+connection details, never raw errors/private payloads.
 
 ## Internationalization
 
-Use `useTranslation` from react-i18next. Keep matching, typed English/Russian catalogs
-in separate shared TypeScript modules and bundle both for offline operation.
-Each shell owns an i18next instance synchronized with its preference provider;
-do not add another language detector, persistence mechanism or remote catalog loader.
-
-Use i18next interpolation and plural forms instead of manual replacement or plural
-selection. Read locale from the preference hook for catalog text, dates, numbers and
-sorting. Preserve unknown dynamic messages through an explicit default value and
-treat existing sentence-shaped error keys literally, including punctuation.
-Keep Chrome manifest `_locales` metadata separate. Language changes must refresh
-translated synchronization status without remounting editors or recreating routing.
+Use react-i18next `useTranslation` with matching typed en/ru TypeScript catalogs, bundled
+offline. Each shell has an instance synchronized with its preference provider; do not
+add remote catalogs or another detector/persistence mechanism. Use i18next interpolation/
+plurals; the preference hook supplies locale for metadata, numbers, dates and sorting.
+Unknown dynamic messages use explicit defaults; existing sentence keys include literal
+punctuation. Chrome `_locales` stays separate. Refresh translated sync status without
+remounting editors or recreating routing.
 
 ## Data ownership and database usage
 
-The extension owns one device-local RxDB/Dexie library; the website uses online
-NestJS operations through TanStack Query. PostgreSQL is authoritative for authenticated
-server libraries. Clients never connect directly to PostgreSQL. Keep platform persistence
-behind adapters so shared screens do not require RxDB or TanStack Query.
-
-Extension writes must be durable before reporting success and must not depend on an
-always-running MV3 worker. Authentication must not switch or clear device storage.
-Account replication requires explicit linking; a guest library may remain local.
-Use RxDB replication metadata instead of a second mutation queue. Preserve tombstones,
-rejected intent, retry safety and explicit reset recovery as defined in
+PostgreSQL owns authenticated server libraries; clients never access it directly.
+Extension RxDB/Dexie owns one device library; the website uses online API state.
+Keep persistence behind platform adapters. Acknowledge durable saves only; do not rely
+on a permanent MV3 worker. Login does not switch/clear device data. Guests may stay local;
+replication needs explicit linking and native RxDB metadata, not another client queue.
+Tombstones, rejected intent and reset/retry rules are defined in
 [Local persistence](../implementation/baseline-decisions.md#local-persistence),
 [Extension replication](../implementation/baseline-decisions.md#extension-replication)
-and [Backend replication](backend.md#capability-extension-offline-data-and-synchronization).
+and [Backend](backend.md#extension-offline-data-and-synchronization).
 
 ## Website server state
 
-- Use TanStack Query's in-memory cache for owner and shared read-only queries.
-- Do not persist website libraries in RxDB, IndexedDB or localStorage, or add durable offline mutation queues.
-- Scope query keys by account/list identity and clear private queries and mutations on account changes.
-- Refresh or invalidate relevant queries after successful writes; optimistic updates require rollback and reconciliation.
-- Reuse backend ownership, version checks and change tracking so website writes reach extension replication.
-- Preserve unsaved input and offer retry after network failure; never report a failed write as saved.
+- Use TanStack Query in-memory owner/shared queries; no persistent library or offline mutation queue in RxDB/IndexedDB/localStorage.
+- Scope keys by owner/list; clear private queries/mutations on account changes.
+- Refresh/invalidate after writes; optimistic changes need rollback/reconciliation.
+- Reuse backend ownership/version/change-feed rules so website writes reach replication.
+- Preserve failed-write input and Retry; never claim a failed write was saved.
 
 ## Shared domain contracts
 
-Use plain TypeScript models and framework-independent domain rules from
-`packages/contracts`, without shared runtime parsers or client DTO validation.
-Server request validation stays in NestJS DTOs using class-validator/class-transformer,
-with unknown-field rejection and no implicit coercion. Follow the
-[Shared domain contract](domain-contract.md) for identity, versions, clearing and serialization.
+Use typed models/domain rules, not shared runtime parsers or client DTO validation.
+NestJS class-validator/class-transformer rejects unknown fields without implicit coercion.
+[Domain contracts](domain-contract.md) own identities, versions, clearing and serialization.
 
 ## Configuration and verification
 
-Keep backend environment files and generated Prisma source backend-only and out of
-version control. Validate database, origins, ports, enabled integrations and production
-secrets before listening. Report invalid field names without printing values.
-Disabled integrations need no credentials; frontend configuration exposes only public
-API origins. Use distinct development, test and production database targets and
-synthetic `.env.example` files.
-
-Run build/typecheck, `check:boundaries`, unit, contract, integration and E2E checks as
-appropriate. Boundary checks must cover relative imports, aliases and re-exports.
-Keep Vitest unit/contract suites separate from PostgreSQL integration tests; integration
-tests require an explicitly configured dedicated test database and must not silently skip.
-CI uses PostgreSQL 17 and synthetic credentials and verifies schema generation,
-committed migrations, migration status and generated-client access.
-
-Test application behavior, configuration and dependency boundaries rather than
-third-party internals. Run the real-workspace boundary check once through its contract
-suite; the standalone command remains available locally. Prisma must expose generation,
-validation, development/deployment migration and migration-status commands.
-
-Use the [README](../README.md#postgresql-and-migrations-macos) for macOS setup and service
-commands; do not duplicate operational scripts in architecture specifications.
+Keep server env/Prisma generation backend-only and untracked. Validate database/origins/
+ports/integrations/production secrets before listening; report field names, not values.
+Disabled integrations need no credentials; frontend config exposes only public origins.
+Separate dev/test/production databases and provide synthetic `.env.example` files.
+Run relevant build/typecheck/boundary/unit/contract/integration/E2E checks. Boundary tests
+cover aliases, relatives and re-exports. Keep unit/contracts separate from dedicated
+PostgreSQL integration tests; fail rather than silently skip without their database.
+CI uses PostgreSQL 17/synthetic credentials and checks generation, committed migrations,
+status and generated-client access. Test application behavior, not third-party internals.
+Run real-workspace boundary verification once in contracts; retain its local command.
+Prisma exposes generate/validate/dev-migrate/deploy-migrate/status commands.
+Use [README setup](../README.md#postgresql-and-migrations-macos), not duplicated scripts.

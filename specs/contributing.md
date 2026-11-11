@@ -1,41 +1,46 @@
 # Contributing
 
-This repository follows spec-driven development.
-Before implementing any change, update the relevant specification files, then implement the change according to the updated specifications.
+## Workflow
 
-Follow [Conventions](conventions.md) for package boundaries, UI composition, state management, authentication and translations.
+1. Update the affected specification before changing implementation.
+2. Follow [Conventions](conventions.md) and the repository [coding rules](../AGENTS.md).
+3. Run relevant checks and record actual evidence in the [checklist](../implementation/requirement-checklist.md).
 
-Keep one React component per source file. Place each component in its own file and import it where needed.
+## Code conventions
 
-Keep component styles in separate stylesheets alongside the components that use them, and import those styles from the corresponding component. Keep shared and global styles in dedicated stylesheets. Avoid duplicating rules and remove styles and imports that are no longer used. Preserve existing styling, responsive behavior, CSS specificity, cascade order, and style precedence when moving rules.
+Keep one named React component per folder/file; index files only re-export.
+Use the model placement, validation, function documentation, spacing and constant
+rules in [AGENTS.md](../AGENTS.md). Never add Zod.
+
+Separate top-level const/enum/type/interface declarations with blank lines and document
+interfaces. Prefer string enums over derived `as const` value sets; use
+`Object.values(EnumName)` and preserve serialized values. Keep individual IDs,
+timestamps, versions and cursors as primitives.
 
 ### Component Style Colocation
 
-- Keep component-specific styles colocated with their React components.
-- Each component should have its own stylesheet (e.g., `ComponentName.tsx` → `ComponentName.scss`) imported directly into the component.
-- Do not place component-specific styles in global stylesheets.
-- Global stylesheets should contain only resets, typography, design tokens, CSS variables, and truly application-wide styles.
-- When refactoring, move existing component-specific CSS rules into the corresponding component stylesheets.
-- Avoid duplicating CSS rules. Extract genuinely shared styles into dedicated shared stylesheets when necessary.
-- Preserve existing appearance, responsive behavior, and functionality, including CSS specificity, cascade order, and style precedence.
-- Prefer locally scoped class names to avoid collisions. Importing a regular CSS or SCSS file does not automatically scope its styles.
+Import component-specific styles directly from a neighboring stylesheet. Globals
+contain resets, typography, tokens and truly application-wide styles only.
+Extract genuinely shared styles without duplication; regular CSS/SCSS imports do
+not scope classes. Refactors preserve appearance, responsive behavior, specificity,
+cascade and functionality. See [style rules](../AGENTS.md#style-rules).
 
-Do not use Zod or add it as a dependency anywhere in the repository. Use class-validator/class-transformer for server request validation. Shared contracts use typed models directly, without runtime parsers or client validation.
+## Formatting and checks
 
-Separate top-level `const` (including `declare const`), `enum`, `type`, and `interface` declarations from the next declaration with a blank line. Add a short JSDoc comment before each interface explaining its purpose.
+Use `pnpm format` and `pnpm format:check` for ESLint Stylistic and Prettier checks,
+including statement spacing and the ban on nested ternaries. Exclude generated files,
+build output, lockfiles and local environment files. The root `prepare` script installs
+Husky; lint-staged formats staged files, preserves unstaged edits and blocks failures.
+CI runs the formatting check. Test meaningful behavior/regressions, not copies of the
+implementation or third-party internals.
 
-Separate function declarations from preceding code with a blank line (before their JSDoc, when present). Add a short JSDoc comment describing the purpose of every module-level function declaration, including non-exported helpers.
+## Specification format
 
-Require a blank line before function declarations (before attached JSDoc) and before `if` and `return` statements when another statement precedes them in the same block. Require a blank line after each complete `if` statement when another statement follows in the same block. Do not insert blank lines at the start of a block or between an unbraced `if` and its body. Enforce statement spacing with ESLint Stylistic alongside Prettier in format, format:check and the staged-file hook.
-
-Keep large static lookup tables, configuration objects and arrays at module scope, outside functions, when they do not depend on function arguments or local state.
-
-Prefer module-level constant lookup maps over nested ternary operators when selecting values by a fixed key. Use explicit `if` statements for ordered conditions or predicates that do not fit a lookup map. Do not use nested ternary operators; enforce this with ESLint in formatting checks and the staged-file hook.
-
-Prefer string enums over `as const` arrays with derived union types for named sets of values. Use `Object.values(EnumName)` when an array is needed for validation; preserve existing serialized values.
-
-Use Prettier for supported source, configuration and documentation files. Run `pnpm format` to format the repository and `pnpm format:check` to check it. Exclude generated files, build output, dependency lockfiles and local environment files. Install Git hooks through the root `prepare` script; the pre-commit hook must format staged files with lint-staged, preserving unstaged changes and blocking commits on formatting failures. CI must run the formatting check.
-
-Write tests only when they verify meaningful behavior or prevent regressions. Avoid redundant tests and tests that merely mirror the implementation.
-
-Use primitive types (`string`, `number`, etc.) directly instead of branded types or aliases for individual IDs, timestamps, versions and cursors.
+- Give each file one responsibility; link to shared rules instead of restating them.
+- Start feature specs with Purpose, then Requirements and Verification. Use short headings without repeated “Capability” or “Requirement” prefixes.
+- Write short, testable rules in plain language. Requirements are mandatory unless explicitly optional.
+- Preserve existing requirement IDs and update links when headings move.
+- Use tables for mappings, limits and comparisons; keep independent rules in short paragraphs or lists.
+- Keep technologies in Stack, engineering rules in Conventions, product behavior in Functionality, and provider differences in integration specs.
+- Keep protocol/design decisions under `implementation/`, delivery evidence in its checklist, and optional ideas in Plans.
+- Label assumptions/open decisions. Do not silently resolve conflicts or claim fixtures prove live provider availability.

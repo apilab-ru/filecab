@@ -1,87 +1,105 @@
-# Catalog Specification
+# Catalog
 
 ## Purpose
 
-Provide a provider-independent catalog for anime, films, and TV series. This specification owns shared catalog behavior. Provider-specific requirements are defined in the adjacent integration specifications. Library ownership, CRUD, replication, sharing, and entry identity remain defined in the backend specification.
+Provider-independent discovery and metadata for anime, films and TV. This document
+owns shared catalog rules; integration specs add provider-specific constraints.
+[Backend](backend.md) owns private library access and synchronization.
 
 ## Requirements
 
-### Requirement: Provider adapters and capabilities
+### Provider adapters and capabilities
 
-The backend SHALL implement independently configurable Smotret Anime and Kinopoisk Dev catalog adapters. It SHALL expose enabled providers and their supported categories, operations, filters, ordering, lookup namespaces, and language capabilities. Unsupported operations SHALL return a structured capability error rather than silently ignore inputs.
+- Configure Smotret and Kinopoisk Dev independently; expose enabled categories, operations, filters, ordering, reference namespaces and language support.
+- Reject unsupported capabilities explicitly; never ignore inputs or simulate success.
+- Enable only after verifying the selected API, credentials, quotas and usage conditions.
+- Manual/stored-library CRUD must remain available during provider failure.
+- Shikimori is [personal-list sync](integration-shikimori-spec.md), not catalog search/browse/genre refresh.
 
-Shikimori SHALL be a personal-list synchronization provider only, as defined in its integration specification; it SHALL NOT be advertised for catalog search, browsing, or genre refresh.
+### Routing and selection
 
-An adapter SHALL be enabled only after its configured API contract, credentials, quotas, and usage conditions are verified. Provider availability SHALL NOT be required for manual entry creation or stored-library CRUD.
+Allow an explicit enabled provider; otherwise use deployment defaults:
+`anime=smotret`, `films=kinopoisk-dev`, `tv=kinopoisk-dev`.
+A disabled default returns unavailable, without silent switching. Search uses one
+provider; users may choose another after failure. Automatic aggregation is optional.
+Provider selection never changes Filecab login, ownership or extension replication.
 
-### Requirement: Routing and selection
+### Search contract
 
-Catalog requests SHALL accept an optional explicit provider and otherwise use the configured default for the category. Defaults SHALL be explicit deployment configuration: `anime=smotret`, `films=kinopoisk-dev`, and `tv=kinopoisk-dev`. Disabled defaults SHALL return an unavailable-provider result; they SHALL NOT silently switch providers. Search SHALL use one selected provider; automatic aggregation and silent provider switching are not required. Clients SHALL be able to select another enabled provider after a failure.
+Accept unchanged query text, category, explicit `en|ru` locale, one-based page,
+limit 1–50 and advertised filters. Reject missing/unsupported locale; normalize query
+text only as documented by the provider. Personal status/rating are not catalog filters.
+Return `{ page, results, hasMore, total? }` with internal catalog IDs and namespaced
+references. Omit unknown/inexact totals. Empty results and upstream failures differ.
 
-Provider routing SHALL NOT alter Google authentication, entry ownership, or extension replication.
+### Pagination integrity
 
-### Requirement: Search contract
+Preserve deterministic ordering; deduplicate verified records without merging installments.
+`hasMore` means another deliverable normalized result, established from continuation
+or bounded lookahead. Track consumed upstream position separately from display pages
+when filtering; bounded cached cursor/page mappings may be used.
+Invalidate mappings on query/category/filter/order/provider/locale changes.
+Never skip eligible results or expose unfiltered totals. Unsupported modes and exhausted
+lookahead return an explicit limitation, not a fabricated end.
 
-Search SHALL accept text, category, locale, one-based page, page size 1–50, and supported catalog filters. User viewing status and personal rating SHALL NOT be interpreted as catalog fields. Input text SHALL remain unchanged except for documented provider-required encoding/normalization.
+### Identity and cross-provider references
 
-Responses SHALL use `{ page, results, hasMore, total? }`. Each result SHALL contain an internal catalog identity and namespaced provider references. Exact total SHALL be omitted when unknown or invalidated by normalization. Valid empty results SHALL be distinguishable from upstream failures.
+Use backend-owned `catalogId` and unique `{ provider, entityType, id }` string references.
+Keep one internal identity across locales/repeated searches. Cross-provider links need
+trusted explicit references or verified crosswalks with attribution. Numeric equality,
+a lone candidate, similar titles or franchise relations are not proof. Conflicting
+references remain resolution conflicts; unverified references do not establish identity.
 
-### Requirement: Pagination integrity
+### Details and safe enrichment
 
-Pagination SHALL preserve deterministic provider ordering and deduplicate verified repeated references without merging different installments. `hasMore` SHALL indicate another deliverable normalized result, using provider continuation evidence or bounded lookahead.
+Separate internal details from provider resolution; never use raw provider IDs as internal
+primary keys. Upserts must be concurrency-safe. Missing fields preserve known values;
+actual removal needs an explicit refresh policy. Refresh never alters entry UUIDs or
+user titles/notes/status/rating/progress/links, or deletes saved entries/snapshots.
 
-If records are excluded, the adapter SHALL track consumed upstream position independently from the displayed page, using a bounded cached cursor/page mapping when necessary. Changing query, category, filters, ordering, provider, or locale SHALL invalidate that mapping. It SHALL NOT silently skip eligible results or report provider-wide totals for a filtered subset.
+### Normalized media metadata
 
-A provider mode SHALL not be advertised as supported if it cannot satisfy the contract. Lookahead exhaustion SHALL return a structured limitation, not a fabricated definitive end.
+Keep category, format, localized titles/aliases/descriptions, poster, year, genres,
+provider scores and provenance distinct. Unknown numbers are null. Provider scores
+are attributed, never personal ratings or unlabeled popularity. Distinguish declared
+and available episode counts. Preserve season/special/movie/remake/edition identities;
+relationships do not merge installments.
 
-### Requirement: Identity and cross-provider references
+### Localization
 
-Internal `catalogId` SHALL be backend-owned and independent of raw provider IDs. References SHALL preserve `{ provider, entityType, id }`, with string IDs. Uniqueness SHALL cover the full namespace/entity scope.
+Return requested locale, actual field language and source, including unknown.
+Title fallback: requested translation → original → another translation → client-localized
+unavailable label. Use field-specific description/genre fallback. Do not assume original
+means English. Preserve translations under stable IDs or locale-specific projections;
+refreshing one locale never overwrites another or user text. Machine translation and
+universal cross-language search are optional.
 
-The same verified provider record SHALL retain one internal identity across language changes and repeated searches. Cross-provider association SHALL require a trusted explicit reference or verified crosswalk. Numerical equality, one returned candidate, similar titles, or franchise relations SHALL NOT prove equivalence.
+### Genres
 
-When existing references disagree, the backend SHALL return a resolution conflict rather than silently combine records. Source attribution SHALL remain available for every verified mapping. Unverified references SHALL NOT establish catalog identity.
+Use stable internal IDs, localized labels and explicit provider mappings; matching labels
+alone are insufficient. Preserve unknown genres/source data without rejecting a record.
+Library filters use internal IDs; adapters use verified mappings. Refresh is operator-only,
+never a public GET with write effects.
 
-### Requirement: Details and safe enrichment
+### Provider resilience and metadata cache
 
-Internal catalog detail and provider reference resolution SHALL be separate operations. A detail lookup SHALL never query an internal primary key using a raw provider ID.
+Validate responses; bound timeouts, sizes, retries and concurrency. Honor throttling and
+Retry-After; keep secrets server-side and never rotate keys to evade limits.
+Cache keys include provider, reference/query, category, locale, filters, ordering,
+pagination and adapter/schema version as applicable. Exclude private fields.
+Identify stale fallback; do not mask empty results or explicit removals.
+Distinguish unavailable, credentials, quota, capability, missing-record, malformed-response,
+timeout and mapping-conflict errors without leaking secrets or upstream payloads.
 
-Upserts SHALL be concurrency-safe. Provider absence SHALL not erase known values; genuine removals SHALL require an explicit refresh policy. Catalog changes SHALL NOT overwrite user titles, notes, status, rating, progress, viewing links, or entry UUIDs. Unavailable provider/catalog rows SHALL NOT remove saved entries or snapshots.
+### Client and API boundaries
 
-### Requirement: Normalized media metadata
+Catalog pagination is provider/server-driven. Library filters/sort/pagination operate
+client-side over the complete owner dataset. Document both contracts in Swagger,
+including capabilities, provenance, nullable fields and lookup identity. Provider DTOs
+and credentials stay backend-only.
 
-Normalized records SHALL distinguish library category, format, titles/aliases, descriptions, poster, release year, episode total, genres, provider scores, and provenance. Unknown numeric values SHALL be null rather than invented zeros. Provider scores SHALL NOT become personal ratings or an unlabeled popularity metric.
+## Verification
 
-Episode totals SHALL distinguish declared total from released/available episodes where available. Season, special, movie, remake, and edition identities SHALL be retained. Relationships SHALL not automatically collapse installments.
-
-### Requirement: Localization
-
-Search/detail/genre requests SHALL accept `en` or `ru`; new clients SHALL send a locale. Unsupported nonempty locales SHALL fail validation. Responses SHALL identify requested locale, actual field language, and source, including unknown when not established.
-
-Title fallback SHALL use requested translation, original title, another available title, then let the client display a localized unavailable-title label. Description and genre fallback SHALL be field-specific. Original title SHALL NOT be assumed to be English. Machine translation and universal cross-language search are not required.
-
-Storage SHALL retain translations under stable identities or locale-specific projections. Refreshing one locale SHALL not overwrite another. User-owned text SHALL remain unchanged.
-
-### Requirement: Genres
-
-Genres SHALL have stable internal IDs, localized labels, and provider-scoped references. Matching translated labels alone SHALL not establish equivalence. Unknown genres SHALL preserve source data for later mapping without failing the complete media record.
-
-Owner-library filters SHALL use stable internal genre IDs. Provider adapters SHALL translate those IDs only through verified mappings. Genre refresh SHALL be protected operator functionality; public GET requests SHALL not trigger refresh writes.
-
-### Requirement: Provider resilience and metadata cache
-
-Adapters SHALL validate upstream responses and impose configurable timeouts, retry budgets, concurrency and response-size limits. They SHALL respect throttling and Retry-After, keep credentials server-side, and never rotate credentials to evade quotas.
-
-Caches SHALL be keyed by provider, namespace/ID or query, category, locale, filters, ordering, pagination state, and adapter/schema version where applicable. They SHALL not contain owner notes or other private fields. Stale fallback SHALL be identified explicitly and SHALL not mask a valid empty result or explicit removal.
-
-Errors SHALL distinguish unavailable provider, invalid credentials, throttling, unsupported capability, missing record, malformed response, timeout, and mapping conflict. Upstream secrets/payloads SHALL not leak into client errors.
-
-### Requirement: Client and API boundaries
-
-Catalog search pagination SHALL remain server/provider-driven. Owner-library search, sorting, filters, and display pagination SHALL run client-side over the complete owner dataset. These contracts SHALL not be conflated.
-
-Swagger SHALL document normalized catalog contracts, capability failures, locale provenance, internal/provider lookup differences, and nullable metadata. Provider DTOs and credentials SHALL remain backend-only.
-
-### Requirement: Verification
-
-Adapters SHALL have deterministic request/response fixture tests, identity/upsert tests, category and pagination tests, locale tests, and failure tests. Live smoke tests MAY supplement fixtures when authorized credentials and service availability permit. Fixtures SHALL not be described as proof of live availability.
+Use deterministic request/response fixtures plus identity/upsert, category, pagination,
+locale and failure tests. Authorized live checks supplement fixtures; report them
+separately rather than claiming fixtures prove live availability.

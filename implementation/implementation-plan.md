@@ -313,3 +313,25 @@ Exit: every mandatory requirement in scope has implementation and verification e
 | Release readiness            | 21    | Complete requirement evidence and tested operational recovery.                                                |
 
 No calendar estimate is assigned before the specification conflicts and external provider verification are resolved. External credentials can block live activation while deterministic domain, UI, and fixture work continues.
+
+## Source defect mapping
+
+| Source problem                                               | Target resolution          |
+| ------------------------------------------------------------ | -------------------------- |
+| Cabinet Add event unconnected; no saved-state decoration     | SEARCH-04                  |
+| Generic-page Search lacks initialized context                | NAV-04, PAGE-04, SEARCH-01 |
+| Kinopoisk parser ID mapped as internal ID                    | PAGE-02, MODEL-02          |
+| Internal/provider IDs collide during import/update/delete    | MODEL-01–02                |
+| Cabinet edits skip timestamp updates                         | MODEL-07                   |
+| Hidden status does not hide entries                          | LIB-04                     |
+| Pending save flag cleared before persistence                 | EDIT-02                    |
+| Unguarded backup restore; immediate replacement              | BACKUP-03–05               |
+| Genres and genre-click filters not wired                     | LIB-03                     |
+| Errors shown as empty results; stale requests can win        | SEARCH-02, API-06          |
+| No rating reset or coherent progress rules                   | MODEL-05, EDIT-01          |
+| Backend pagination mismatches frontend                       | API-01–02                  |
+| TV route does not enforce TV-only selection                  | API-03                     |
+| Provider identity namespaces overloaded                      | MODEL-02, API-05           |
+| Catalog refresh leaves stale descriptive fields              | API-05                     |
+| Single-language metadata/cache contradicts multilingual goal | LANG-03–06                 |
+| Website parity and storage relationship unspecified          | NAV-03, section 1.2        |

@@ -1,32 +1,55 @@
 # Shared domain contract v1
 
-`packages/contracts` defines shared TypeScript models and domain rules. Follow [Functionality](functionality.md), [Conventions](conventions.md) and [Baseline Decisions](../implementation/baseline-decisions.md).
+`packages/contracts` owns framework-independent models and domain rules.
+See [Product data rules](functionality.md#3-domain-identity-and-validation),
+[Conventions](conventions.md) and [Baseline decisions](../implementation/baseline-decisions.md).
 
-- **Validation:** shared contracts use typed models directly, without runtime parsers or client validation. Server DTOs use class-validator/class-transformer without implicit coercion.
-- **Identity:** represent entry UUIDs, catalog IDs, provider IDs and remote record IDs as plain strings, without branded types or primitive aliases. Keep their identity scopes distinct through descriptive field names. Preserve prefixes/leading zeros. Unverified references never prove identity.
-- **Representation:** envelopes use `schemaVersion: 1`; UTC timestamps include milliseconds. Versions/cursors are canonical decimal strings, at most 128 digits; versions start at 1, cursors at 0. New/guest entries have null serverVersion; accepted server documents require a version.
-- **Metadata:** missing scalar fields use null; collections use arrays. Keep format separate from category, declared totals from available counts, personal ratings from attributed provider scores, and original titles from translations. Display selections report requested locale, actual language/provenance and catalog/user/fallback origin. Enrichment preserves known values, other translations and user fields.
-- **Sources:** `generic-v1` follows baseline URL normalization; retain original URLs/order and reject normalized duplicates.
-- **Edits:** ordinary PATCH allows category, userTitle, status, rating, progress, comment and sourceUrls. No-op saves preserve timestamps/version. Semantic edits require nondecreasing server time and increasing version; metadata refresh is not a user edit. Matching prioritizes catalog identity, verified compatible references, then saved sources; report contradictions/category conflicts deterministically.
-- **Replication:** conflict reasons use the shared `ConflictReason` string enum with serialized values `VERSION`, `IDENTITY`, `SOURCE` and `CATEGORY`. Transport-neutral envelopes use cursor/entry-ID checkpoints, assumed/proposed documents and at most 100 rows. Reject duplicate/mismatched IDs and invalid batches. Pull includes tombstones; private snapshots include hidden entries but exclude tombstones. Preserve rejected intent separately. Verify native RxDB adaptation in step 9.
+## Representation
 
-Backups use `{ schemaVersion: 1, entries: [...] }` with active entry data, excluding per-entry schemaVersion, serverVersion and deletion state. Only this format is supported; reject missing timestamps, old formats and unknown fields. Requests require an explicit locale from the shared `Locale` string enum (`en`/`ru`). Restore UI and atomic replacement belong to step 17.
+| Concern          | Contract                                                                                                                                                   |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Validation       | Typed shared models only; no runtime parsers/client DTO validation. Server DTOs use class-validator/class-transformer without implicit coercion            |
+| Identity         | Primitive strings for UUIDs, provider IDs, timestamps, versions and cursors; no branding/primitive aliases. Preserve namespace, prefixes and leading zeros |
+| Envelopes        | `schemaVersion: 1`; UTC timestamps include milliseconds                                                                                                    |
+| Versions/cursors | Canonical decimal strings, at most 128 digits. Versions start at 1; cursors at 0. Guest/new entries have null serverVersion                                |
+| Missing metadata | Null scalars and array collections; never invent numeric zeros                                                                                             |
+| Metadata meaning | Separate category/format, declared/available episodes, personal/provider ratings and original/localized text                                               |
+| Language         | Request explicit `Locale.En`/`Locale.Ru`; display selections report requested/actual language, provenance and catalog/user/fallback origin                 |
+| Sources          | `generic-v1` [normalization](../implementation/baseline-decisions.md#viewing-source-normalization), original URLs/order and duplicate rejection            |
 
-Server consumers SHALL use the contracts package generated type declarations, building contracts before server compilation. Runtime request validation SHALL remain server-owned; tools that compile server DTO imports SHALL enable legacy TypeScript decorators consistently with NestJS.
+## Edits and replication
 
-HTTP error envelopes SHALL include numeric `status` and boolean `retryable` alongside the stable code, safe message and correlation ID. Foundation error codes distinguish forbidden requests, oversized bodies, unsupported content types, unavailable service and unexpected internal failures. Validation issues SHALL omit submitted values.
+Ordinary PATCH accepts category, userTitle, status, rating, progress, comment and sourceUrls.
+No-ops preserve timestamps/version; semantic edits require nondecreasing server time and
+increasing versions. Metadata refresh is not a user edit and preserves user fields,
+known metadata and other translations. Match catalog identity → verified compatible
+references → saved sources; report contradictions/category conflicts deterministically.
+Unverified references do not prove identity.
+
+Replication uses `ConflictReason` values `VERSION`, `IDENTITY`, `SOURCE`, `CATEGORY`,
+cursor/entry-ID checkpoints, assumed/proposed documents and batches up to 100 rows.
+Reject duplicate/mismatched IDs and invalid batches. Pull includes tombstones; private
+snapshots include hidden entries but exclude tombstones. Preserve rejected intent separately.
+
+## Backup and errors
+
+Backups contain `{ schemaVersion: 1, entries: [...] }` with active entry data, excluding
+per-entry schemaVersion, serverVersion, deletion state, account/settings data and credentials.
+Reject missing/invalid timestamps, unknown fields and legacy formats; see
+[Backup behavior](functionality.md#8-backup-and-restore).
+
+HTTP errors include numeric `status`, boolean `retryable`, stable code, safe message and
+correlation ID. Distinguish forbidden/body-size/content-type/unavailable/unexpected failures;
+validation details never contain submitted values.
 
 ## Shared enum organization
 
-Each shared domain enum SHALL live in its own descriptively named module in
-`packages/contracts/src`, re-exported by the package entry point. API error codes
-use `ApiErrorCode`; extension synchronization-specific failure codes use
-`SyncErrorCode` and reuse `ApiErrorCode` for existing API values such as
-`SYNC_RESET_REQUIRED`, validation and forbidden errors. Preserve all serialized
-values. Shared synchronization operation names and safe diagnostic metadata
-belong to contracts as `SyncOperation` and `SyncDiagnostic`. Production consumers
-SHALL reference enum members, including message-map keys and server exceptions,
-rather than duplicate serialized literals. Diagnostic allowlists derive from
-`Object.values` of these enums; their sanitization remains extension-owned.
-Runtime-only constants, storage keys, UI copy and private implementation details
-remain with their owning application rather than becoming shared contracts.
+Keep each domain enum in its own module and re-export it. Use `ApiErrorCode`, with
+`SyncErrorCode` reusing existing API codes rather than duplicating them.
+Shared operation names and safe diagnostics use `SyncOperation`/`SyncDiagnostic`.
+Use enum members in production consumers/message maps and derive allowlists with
+`Object.values`; sanitization stays extension-owned. Preserve serialized values.
+Keep storage keys, UI copy and private runtime constants in their owning application.
+
+Server builds consume generated contract declarations and build contracts first.
+Tools compiling DTO imports must enable NestJS-compatible legacy decorators.

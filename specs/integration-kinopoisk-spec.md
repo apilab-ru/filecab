@@ -1,83 +1,98 @@
-# Kinopoisk Dev Integration Specification
+# Kinopoisk Dev integration
 
 ## Purpose
 
-Provide film and TV catalog search, detail lookup, external-reference resolution, and metadata through the Kinopoisk Dev API. The adapter SHALL conform to [Catalog Specification](catalog-spec.md).
+Film/TV search, reference resolution and metadata through Kinopoisk Dev.
+Apply all shared [Catalog rules](catalog-spec.md); this file defines adapter differences.
+Streaming, provider accounts and watchlist synchronization are out of scope.
 
 ## Requirements
 
-### Requirement: Configuration and scope
+### Configuration and scope
 
-The adapter SHALL use provider key `kinopoisk-dev`; catalog references SHALL use the Kinopoisk title namespace rather than treat a transport/vendor name as a different film identity. The provider-key-to-reference-namespace distinction SHALL be explicit in contracts.
+Use provider key `kinopoisk-dev` but the Kinopoisk title-reference namespace.
+Configure origin/version and server-only documented authentication; requested origin
+is `https://api.kinopoisk.dev`. Verified replacement origins must preserve existing
+identity mappings. Do not substitute `kinopoiskapiunofficial.tech`. Google login
+requires no Kinopoisk account.
 
-The API origin/version SHALL be configurable, with `https://api.kinopoisk.dev` as the requested integration origin. Server credentials SHALL be sent through the provider's documented authentication mechanism and never exposed to clients. Documented replacement origins MAY be configured after verification without rewriting existing verified Kinopoisk title references.
+### Text search and filtered discovery
 
-This integration SHALL not be conflated with `kinopoiskapiunofficial.tech`. Google login SHALL not require a Kinopoisk account. Streaming, account access, and watchlist synchronization with Kinopoisk are excluded.
+Treat text search and structured discovery as separate capabilities. Use only filters
+each operation supports. Enforce category on every result; when upstream text search
+cannot combine filters, use bounded continuation-aware filtering or reject the combination.
+Never label mixed results as correctly filtered.
 
-### Requirement: Text search and filtered discovery
+### Film and TV classification
 
-The adapter SHALL distinguish title text search from structured filtered discovery. It SHALL map query text to a documented text-search operation and filters to operations that actually support them. It SHALL not assume that every filter supported by discovery is available on text search.
+| Filecab category | Default provider types                                                        |
+| ---------------- | ----------------------------------------------------------------------------- |
+| Films            | `movie`, `cartoon`                                                            |
+| TV               | `tv-series`, `animated-series`                                                |
+| Anime            | Requires a separately supported policy; never silently treat `anime` as films |
 
-Filecab category constraints SHALL apply to every returned result, including text-search results. If upstream text search cannot combine filters, the adapter SHALL implement bounded continuation-aware filtering or report the combination unsupported. It SHALL not return mixed categories as if the category filter worked.
+Keep category and format separate. Diagnose unknown types, check verified `isSeries`
+consistency, and enforce actual constraints rather than relying on an `isTv` variable.
 
-### Requirement: Film and TV classification
+### Detail and external-reference lookup
 
-Default films selection SHALL include provider `movie` and `cartoon` records; default TV selection SHALL include `tv-series` and `animated-series`. Provider `anime` records SHALL not be silently assigned to films; anime-category use requires an explicit supported classification policy. Unknown provider types SHALL remain diagnosable and SHALL not be guessed.
+Resolve Kinopoisk title IDs and exact documented IMDb/TMDB fields. Keep IMDb `tt`
+prefixes/leading zeros and TMDB movie/TV scope; ambiguous scope stays unresolved.
+Kinopoisk HD IDs/playback URLs are not numeric title IDs or internal primary keys.
+Empty/invalid references must not become unrestricted searches.
 
-Category and media format SHALL be normalized independently. Provider `isSeries`, where verified, SHALL be used for consistency checks rather than ignored. A boolean named `isTv` in backend code SHALL not substitute for an actual enforced upstream/result constraint.
+### Metadata normalization
 
-### Requirement: Detail and external-reference lookup
+Normalize Russian/international names, aliases, description, poster, year, format,
+genres, episodes, attributed ratings, catalog URL and references. Do not assume
+`alternativeName` is original or English. Missing posters remain null, not placeholders.
+Keep personal ratings, provider scores and popularity separate. Use verified film/series
+catalog paths; watch-provider/HD links remain optional metadata, never saved-source replacements.
 
-The adapter SHALL support detail retrieval by Kinopoisk title ID. Verified IMDb/TMDB lookup SHALL use the exact documented reference field. An IMDb reference SHALL retain its `tt` prefix and leading zeros. TMDB references SHALL retain their movie/TV entity scope; ambiguous scope SHALL not produce an invented mapping.
+### Episode totals
 
-Kinopoisk HD IDs SHALL be separate from numeric Kinopoisk title IDs. Neither provider IDs nor a Kinopoisk HD playback URL SHALL be used as the internal catalog primary key. Empty/invalid references SHALL not produce unrestricted search.
+Fetch season counts only when needed/supported. Sum only complete coverage with an
+explicit specials/season-zero/deduplication policy; missing seasons mean unknown.
+A whole provider series is not automatically an anime season from another catalog.
 
-### Requirement: Metadata normalization
+### Genres, filters, and ordering
 
-The adapter SHALL normalize available Russian name, alternative/international names, aliases, description, poster, release year, media format, genres, episode metadata, provider ratings, catalog URL, and external references.
+Map internal genres to verified provider values and preserve unknown source labels.
+Advertise year/genre/format/reference/provider-rating/order support per operation.
+Provider rating filters must not use personal ratings. Translated labels do not create
+new genre identities.
 
-`alternativeName` SHALL not automatically be labeled original title or English without evidence. Missing posters SHALL return nullable metadata rather than store a frontend placeholder as authoritative content. IMDb/Kinopoisk scores SHALL remain attributed provider ratings, separate from personal rating and generic popularity.
+### Pagination
 
-The canonical catalog link SHALL identify the correct title and film/series path when established. Watch-provider links and Kinopoisk HD links SHALL remain distinct optional metadata and SHALL not overwrite saved viewing sources.
+Map page/limit to verified upstream operations. Normalize documents, pages and totals
+after category filtering/deduplication; totals must describe eligible Filecab results.
+Short filtered pages are not necessarily the end. Follow shared continuation rules and
+invalidate mappings when request identity changes.
 
-### Requirement: Episode totals
+### Localization and enrichment
 
-Season episode counts SHALL be fetched only when required and supported. Summing season counts SHALL produce a total only when coverage is known complete and the counting policy handles specials/season zero and duplicates explicitly. Missing season data SHALL mean unknown rather than zero.
+Use requested `en|ru` for available fields and shared fallbacks. Do not invent a language
+parameter, English descriptions or language provenance. Preserve verified translations,
+references and user fields when incoming metadata is absent.
 
-Provider-wide series entries SHALL not be automatically equated to anime season-level entries from another provider. Cross-provider reconciliation SHALL account for granularity.
+### Authentication failures and quotas
 
-### Requirement: Genres, filters, and ordering
+Distinguish missing/invalid credentials, insufficient access, quota, provider failure,
+missing title and malformed response. Honor throttling; do not evade limits by switching
+keys. Keep secrets out of URLs, headers shown to users, logs and Swagger examples.
 
-The adapter SHALL map stable internal genre IDs to verified provider genre values. Documented year, genre, format, reference, rating, and ordering filters SHALL be advertised per operation, not as a global unsupported promise. Provider rating filters SHALL be explicitly labeled and SHALL not use the owner's rating.
+## Contract verification
 
-Unknown genre labels SHALL be retained for mapping rather than silently dropped. Language differences in genre labels SHALL not create new internal genre identities.
-
-### Requirement: Pagination
-
-The adapter SHALL map Filecab page/limit to verified upstream pagination and normalize provider documents, page count, and total. Returned total SHALL describe Filecab's eligible normalized result set; provider totals SHALL not be exposed unchanged after category post-filtering or deduplication that changes the result count.
-
-A short filtered page SHALL not imply end-of-results if additional eligible records remain upstream. Any continuation mapping SHALL follow the shared catalog contract and reset when request identity changes.
-
-### Requirement: Localization and enrichment
-
-Requested `en` or `ru` locale SHALL control presentation of available stored fields. The adapter SHALL not fabricate English descriptions or send an invented language parameter. Unknown language SHALL remain unknown. Missing requested-language metadata SHALL use shared fallback rules.
-
-Enrichment SHALL preserve existing translations and user fields. Missing external IDs or description SHALL not erase previously verified data automatically.
-
-### Requirement: Authentication failures and quotas
-
-The adapter SHALL distinguish absent/invalid API credentials, insufficient access, quota exhaustion, provider failure, missing title, and malformed response. It SHALL honor throttling and not randomly switch API keys to evade limits. URLs, headers, logs, and Swagger examples SHALL not expose secrets.
-
-### Requirement: Contract verification
-
-The implementation SHALL select and verify a supported API version before activation. Operation capabilities SHALL be based on that version's actual documentation and fixtures. Text search, discovery, detail lookup, and any genre dictionary operation SHALL have separate contract checks.
-
-Tests SHALL cover TV filtering, text-search/filter combinations, IMDb string preservation, TMDB scope, missing episode totals, poster nullability, mapped/unmapped genres, post-filter pagination, credential errors, and locale fallback.
+Verify a supported API version before activation. Check text search, discovery, details
+and any genre dictionary independently. Test TV/category enforcement, search/filter
+combinations, IMDb strings, TMDB scope, incomplete episodes, nullable posters, genre
+mapping, post-filter pagination, auth failures and locale fallback.
 
 ## Provider documentation
 
-- https://kinopoiskdev.readme.io/reference/moviecontroller_searchmoviev1_4
-- https://kinopoiskdev.readme.io/reference/moviecontroller_findmanybyqueryv1_4
-- https://kinopoiskdev.readme.io/reference/moviecontroller_findonev1_4
+- [Text search](https://kinopoiskdev.readme.io/reference/moviecontroller_searchmoviev1_4)
+- [Filtered discovery](https://kinopoiskdev.readme.io/reference/moviecontroller_findmanybyqueryv1_4)
+- [Details](https://kinopoiskdev.readme.io/reference/moviecontroller_findonev1_4)
 
-Exact paths, headers, query serialization, and payload examples SHALL be maintained in implementation design for the selected supported version, not inferred from a previous adapter version.
+Record verified paths, headers, query serialization and payload fixtures in the adapter
+design for the selected version. Do not infer compatibility from an older adapter.
