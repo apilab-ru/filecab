@@ -1,0 +1,30 @@
+.library-sync {
+  &__diagnostic {
+    margin: 0.5rem 0;
+    font-size: 0.8rem;
+  }
+
+  margin-block: 16px;
+
+  &__preview,
+  &__recovery,
+  &__issue {
+    margin-block: 12px;
+  }
+
+  &__summary {
+    cursor: pointer;
+    font: inherit;
+    color: var(--fc-text);
+    background: var(--fc-input);
+    border: 1px solid var(--fc-border);
+    border-radius: var(--fc-radius);
+  }
+
+  &__intent {
+    max-height: 240px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}

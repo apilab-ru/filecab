@@ -1,0 +1,16 @@
+.interface-preference {
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.interface-select {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--fc-border);
+  border-radius: var(--fc-radius);
+  background: var(--fc-input);
+  color: var(--fc-text);
+  font: inherit;
+}

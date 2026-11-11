@@ -2,7 +2,7 @@ import { ConflictReason, hasSemanticChange, type Entry, type Conflict } from '@f
 import { deepEqual } from 'rxdb/plugins/utils';
 import type { RxConflictHandler } from 'rxdb/plugins/core';
 import type { LocalDatabase, LocalEntry } from './database';
-import type { SyncIssue } from './sync-models';
+import type { SyncIssue } from './models/sync-models';
 
 /** Detects user intent changes independently of server-assigned versions and timestamps. */
 export function differsInIntent(a: Entry, b: Entry): boolean {

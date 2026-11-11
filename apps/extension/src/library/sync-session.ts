@@ -14,18 +14,10 @@ import {
 import { retainIntent } from './sync-recovery';
 import { masterRow } from './replication';
 import { SyncError, syncRequest } from './sync-transport';
-
-export const SYNC_RUN_LOCK = `${LOCAL_DATABASE_NAME}:sync-run`;
-
-/** Binds a linking confirmation to exact local contents and the owner's remote revision. */
-export interface LinkPreview {
-  ownerId: string;
-  localDigest: string;
-  remoteRevision: string;
-  localCount: number;
-  remoteCount: number;
-  conflicts: number;
-}
+import type { LinkPreview } from './models/link-preview';
+import { SYNC_RUN_LOCK } from './models/sync-run-lock';
+export { SYNC_RUN_LOCK } from './models/sync-run-lock';
+export type { LinkPreview } from './models/link-preview';
 
 /** Fingerprints local documents so confirmation cannot adopt data edited after the preview. */
 async function digest(rows: LocalEntry[]): Promise<string> {

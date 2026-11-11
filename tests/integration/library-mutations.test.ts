@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, test } from 'vitest';
-import { Category, Status, emptySnapshot } from '../../packages/contracts/src';
+import { Category, Status, emptySnapshot } from '../../packages/contracts/src/index';
 import { createDatabaseClient } from '../../apps/api/src/database/client';
 import { validateEnvironment } from '../../apps/api/src/config/environment';
 import { LibraryMutationService } from '../../apps/api/src/library/mutation.service';

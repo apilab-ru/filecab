@@ -1,0 +1,21 @@
+@mixin header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@mixin brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-inline: 8px;
+  font-size: 22px;
+  font-weight: 750;
+  letter-spacing: -0.7px;
+}
+
+@mixin mark {
+  flex-shrink: 0;
+  object-fit: contain;
+}

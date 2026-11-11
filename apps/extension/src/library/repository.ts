@@ -17,6 +17,8 @@ import {
   type LocalSettings,
   type Preferences,
 } from './database';
+import type { LocalSnapshot } from './models/local-snapshot';
+export type { LocalSnapshot } from './models/local-snapshot';
 
 /** Provides a safe failure classification without exposing saved personal data. */
 export class LocalLibraryError extends Error {
@@ -26,13 +28,6 @@ export class LocalLibraryError extends Error {
   ) {
     super(code);
   }
-}
-
-/** Describes one consistent local library state, including retained tombstones. */
-export interface LocalSnapshot {
-  revision: number;
-  updatedAt: number;
-  rows: LocalEntry[];
 }
 
 /** Computes revision metadata from the same committed rows as the entries. */

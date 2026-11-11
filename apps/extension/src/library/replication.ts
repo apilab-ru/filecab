@@ -14,16 +14,11 @@ import { getLastCheckpointDoc, type WithDeleted } from 'rxdb/plugins/core';
 import { type LocalDatabase, type LocalEntry, readCollection } from './database';
 import { retainIntent } from './sync-recovery';
 import { SyncError, syncRequest } from './sync-transport';
-import type { SyncBinding } from './sync-models';
+import type { SyncBinding } from './models/sync-models';
 import { API_ORIGIN } from '../auth/connection';
 import { syncDiagnostic } from './sync-diagnostics';
-
-/** Describes the current surface's network state; pending changes remain in native RxDB metadata. */
-export interface SyncStatus {
-  phase: 'syncing' | 'idle' | 'failed' | 'reset-required';
-  error?: ApiErrorCode | SyncErrorCode;
-  diagnostic?: SyncDiagnostic;
-}
+import type { SyncStatus } from './models/sync-status';
+export type { SyncStatus } from './models/sync-status';
 
 /** Wraps a master document without exposing local revision or Undo fields to the server. */
 export function masterRow(entry: Entry, previous?: LocalEntry): WithDeleted<LocalEntry> {

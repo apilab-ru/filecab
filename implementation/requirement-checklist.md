@@ -1,6 +1,6 @@
 # Requirement Delivery Checklist
 
-Status: steps 1–8 delivered, with evidence and remaining verification limits recorded below; complete client library workflows remain pending. Step 1 establishes this checklist; it does not implement the requirements. Each row is a checkable delivery unit. A named requirement includes every clause under that heading.
+Status: steps 1–10 delivered, with evidence and remaining verification limits recorded below; complete client library workflows remain pending. Step 1 establishes this checklist; it does not implement the requirements. Each row is a checkable delivery unit. A named requirement includes every clause under that heading.
 
 For each completed row, replace Pending with Complete and record actual code paths, test names/results, and any remaining blocker. Use Blocked only with a concrete dependency. Planned code areas below are targets, not evidence. `—` means no implementation or verification evidence recorded. Provider fixtures and live verification must be recorded separately.
 
@@ -8,71 +8,71 @@ Delivery steps refer to [Implementation Plan](implementation-plan.md). Baseline 
 
 ## Product requirements
 
-| Done | Requirement                                                                         | Steps             | Planned code area                              | Status                                                 | Code / verification evidence                       | Blocker              |
-| ---- | ----------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------- | ------------------------------------------------------ | -------------------------------------------------- | -------------------- |
-| [ ]  | [NAV-01](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [NAV-02](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [NAV-03](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [NAV-04](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [NAV-05](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [MODEL-01](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [MODEL-02](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [MODEL-03](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [MODEL-04](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [MODEL-05](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [MODEL-06](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [MODEL-07](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [MODEL-08](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [PAGE-01](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | apps/extension; apps/api                       | Pending                                                | —                                                  | —                    |
-| [ ]  | [PAGE-02](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | apps/extension; apps/api                       | Pending                                                | —                                                  | —                    |
-| [ ]  | [PAGE-03](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | apps/extension; apps/api                       | Pending                                                | —                                                  | —                    |
-| [ ]  | [PAGE-04](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | apps/extension; apps/api                       | Pending                                                | —                                                  | —                    |
-| [ ]  | [MATCH-01](../specs/functionality.md#4-page-extraction-and-matching)                | 4, 15, 16         | packages/library; apps/api                     | Pending                                                | —                                                  | —                    |
-| [ ]  | [MATCH-02](../specs/functionality.md#4-page-extraction-and-matching)                | 4, 15, 16         | packages/library; apps/api                     | Pending                                                | —                                                  | —                    |
-| [ ]  | [MATCH-03](../specs/functionality.md#4-page-extraction-and-matching)                | 4, 15, 16         | packages/library; apps/api                     | Pending                                                | —                                                  | —                    |
-| [ ]  | [SEARCH-01](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | packages/library; apps/api                     | Pending                                                | —                                                  | —                    |
-| [ ]  | [SEARCH-02](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | packages/library; apps/api                     | Pending                                                | —                                                  | —                    |
-| [ ]  | [SEARCH-03](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | packages/library; apps/api                     | Pending                                                | —                                                  | —                    |
-| [ ]  | [SEARCH-04](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | packages/library; apps/api                     | Pending                                                | —                                                  | —                    |
-| [ ]  | [EDIT-01](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | packages/library; apps/api; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [EDIT-02](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | packages/library; apps/api; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [EDIT-03](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | packages/library; apps/api; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [EDIT-04](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | packages/library; apps/api; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [LIB-01](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                  | —                    |
-| [ ]  | [LIB-02](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                  | —                    |
-| [ ]  | [LIB-03](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                  | —                    |
-| [ ]  | [LIB-04](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                  | —                    |
-| [ ]  | [LIB-05](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                  | —                    |
-| [ ]  | [LIB-06](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                  | —                    |
-| [ ]  | [LIB-07](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                  | —                    |
-| [ ]  | [DATA-01](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                  | —                    |
-| [ ]  | [DATA-02](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                  | —                    |
-| [ ]  | [DATA-03](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                  | —                    |
-| [ ]  | [DATA-04](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                  | —                    |
-| [ ]  | [DATA-05](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                  | —                    |
-| [ ]  | [DATA-06](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                  | —                    |
-| [ ]  | [BACKUP-01](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [BACKUP-02](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [BACKUP-03](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [BACKUP-04](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [BACKUP-05](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                  | —                    |
-| [ ]  | [API-01](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [API-02](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Pending                                                | —                                                  | —                    |
-| [ ]  | [API-03](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Pending                                                | —                                                  | —                    |
-| [ ]  | [API-04](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [API-05](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [API-06](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [API-07](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Pending                                                | —                                                  | —                    |
-| [ ]  | [LANG-01](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Pending                                                | —                                                  | —                    |
-| [ ]  | [LANG-02](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Pending                                                | —                                                  | —                    |
-| [ ]  | [LANG-03](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [LANG-04](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [LANG-05](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [LANG-06](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3) | Later delivery steps |
-| [ ]  | [PLAT-01](../specs/functionality.md#11-platform-privacy-and-usability)              | 5, 6, 16          | apps/extension; apps/api                       | Pending                                                | —                                                  | —                    |
-| [ ]  | [PLAT-02](../specs/functionality.md#11-platform-privacy-and-usability)              | 5, 6, 16          | apps/extension; apps/api                       | Pending                                                | —                                                  | —                    |
-| [ ]  | [PLAT-03](../specs/functionality.md#11-platform-privacy-and-usability)              | 5, 6, 16          | apps/extension; apps/api                       | Pending                                                | —                                                  | —                    |
-| [ ]  | [UX-01](../specs/functionality.md#11-platform-privacy-and-usability)                | 10, 11, 21        | packages/ui; packages/library                  | Pending                                                | —                                                  | —                    |
+| Done | Requirement                                                                         | Steps             | Planned code area                              | Status                                                 | Code / verification evidence                                       | Blocker              |
+| ---- | ----------------------------------------------------------------------------------- | ----------------- | ---------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------ | -------------------- |
+| [ ]  | [NAV-01](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Shell delivered; later workflows pending               | [Step 10 evidence](#shared-ui-localization-and-navigation-step-10) | —                    |
+| [ ]  | [NAV-02](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Shell delivered; later workflows pending               | [Step 10 evidence](#shared-ui-localization-and-navigation-step-10) | —                    |
+| [ ]  | [NAV-03](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [NAV-04](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [NAV-05](../specs/functionality.md#2-users-surfaces-and-navigation)                 | 10, 11, 16        | packages/library; apps/web; apps/extension     | Shell delivered; later workflows pending               | [Step 10 evidence](#shared-ui-localization-and-navigation-step-10) | —                    |
+| [ ]  | [MODEL-01](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [MODEL-02](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [MODEL-03](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [MODEL-04](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [MODEL-05](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [MODEL-06](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [MODEL-07](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [MODEL-08](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | packages/contracts; packages/library; apps/api | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [PAGE-01](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | apps/extension; apps/api                       | Pending                                                | —                                                                  | —                    |
+| [ ]  | [PAGE-02](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | apps/extension; apps/api                       | Pending                                                | —                                                                  | —                    |
+| [ ]  | [PAGE-03](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | apps/extension; apps/api                       | Pending                                                | —                                                                  | —                    |
+| [ ]  | [PAGE-04](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | apps/extension; apps/api                       | Pending                                                | —                                                                  | —                    |
+| [ ]  | [MATCH-01](../specs/functionality.md#4-page-extraction-and-matching)                | 4, 15, 16         | packages/library; apps/api                     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [MATCH-02](../specs/functionality.md#4-page-extraction-and-matching)                | 4, 15, 16         | packages/library; apps/api                     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [MATCH-03](../specs/functionality.md#4-page-extraction-and-matching)                | 4, 15, 16         | packages/library; apps/api                     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [SEARCH-01](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | packages/library; apps/api                     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [SEARCH-02](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | packages/library; apps/api                     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [SEARCH-03](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | packages/library; apps/api                     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [SEARCH-04](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | packages/library; apps/api                     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [EDIT-01](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | packages/library; apps/api; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [EDIT-02](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | packages/library; apps/api; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [EDIT-03](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | packages/library; apps/api; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [EDIT-04](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | packages/library; apps/api; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [LIB-01](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                                  | —                    |
+| [ ]  | [LIB-02](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                                  | —                    |
+| [ ]  | [LIB-03](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                                  | —                    |
+| [ ]  | [LIB-04](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                                  | —                    |
+| [ ]  | [LIB-05](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                                  | —                    |
+| [ ]  | [LIB-06](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                                  | —                    |
+| [ ]  | [LIB-07](../specs/functionality.md#6-library-browsing)                              | 10, 11            | packages/library                               | Pending                                                | —                                                                  | —                    |
+| [ ]  | [DATA-01](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                                  | —                    |
+| [ ]  | [DATA-02](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                                  | —                    |
+| [ ]  | [DATA-03](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                                  | —                    |
+| [ ]  | [DATA-04](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                                  | —                    |
+| [ ]  | [DATA-05](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                                  | —                    |
+| [ ]  | [DATA-06](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | apps/api; apps/extension; apps/web             | Pending                                                | —                                                                  | —                    |
+| [ ]  | [BACKUP-01](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [BACKUP-02](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [BACKUP-03](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [BACKUP-04](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [BACKUP-05](../specs/functionality.md#8-backup-and-restore)                         | 17                | packages/library; apps/api; apps/extension     | Pending                                                | —                                                                  | —                    |
+| [ ]  | [API-01](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [API-02](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Pending                                                | —                                                                  | —                    |
+| [ ]  | [API-03](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Pending                                                | —                                                                  | —                    |
+| [ ]  | [API-04](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [API-05](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [API-06](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [API-07](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | packages/contracts; apps/api                   | Pending                                                | —                                                                  | —                    |
+| [ ]  | [LANG-01](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Shell delivered; later workflows pending               | [Step 10 evidence](#shared-ui-localization-and-navigation-step-10) | —                    |
+| [ ]  | [LANG-02](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Shell delivered; later workflows pending               | [Step 10 evidence](#shared-ui-localization-and-navigation-step-10) | —                    |
+| [ ]  | [LANG-03](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [LANG-04](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [LANG-05](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [LANG-06](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | packages/library; packages/ui; apps/api        | Contracts/rules delivered; feature integration pending | [Step 3 evidence](#shared-domain-contracts-step-3)                 | Later delivery steps |
+| [ ]  | [PLAT-01](../specs/functionality.md#11-platform-privacy-and-usability)              | 5, 6, 16          | apps/extension; apps/api                       | Pending                                                | —                                                                  | —                    |
+| [ ]  | [PLAT-02](../specs/functionality.md#11-platform-privacy-and-usability)              | 5, 6, 16          | apps/extension; apps/api                       | Pending                                                | —                                                                  | —                    |
+| [ ]  | [PLAT-03](../specs/functionality.md#11-platform-privacy-and-usability)              | 5, 6, 16          | apps/extension; apps/api                       | Pending                                                | —                                                                  | —                    |
+| [ ]  | [UX-01](../specs/functionality.md#11-platform-privacy-and-usability)                | 10, 11, 21        | packages/ui; packages/library                  | Pending                                                | —                                                                  | —                    |
 
 ## Acceptance scenarios
 
@@ -232,25 +232,25 @@ Delivery steps refer to [Implementation Plan](implementation-plan.md). Baseline 
 
 ## Architecture and stack constraints
 
-Each row covers the complete linked section, including its table rows, bullets, and normative paragraphs. Optional Brewfile inclusion and optional injected UI remain conditional; their stated constraints apply if introduced.
+Each row covers the complete linked section, including its table rows, bullets, and normative paragraphs. Technology choices live in Stack; implementation rules live in Conventions, detailed decisions and the relevant product/API specifications. Injected UI constraints apply if introduced.
 
-| Done | Constraint group                                                                                       | Steps      | Planned code area      | Status    | Code / verification evidence                                | Blocker |
-| ---- | ------------------------------------------------------------------------------------------------------ | ---------- | ---------------------- | --------- | ----------------------------------------------------------- | ------- |
-| [ ]  | [Scope](../specs/stack.md#scope)                                                                       | 1, 3       | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Core stack](../specs/stack.md#core-stack)                                                             | 2–10       | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Repository structure](../specs/stack.md#repository-structure)                                         | 2          | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Shared UI components](../specs/stack.md#shared-ui-components)                                         | 10         | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Styling convention](../specs/stack.md#styling-convention)                                             | 10         | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Extension surfaces](../specs/stack.md#extension-surfaces)                                             | 8, 10, 16  | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Data ownership and database usage](../specs/stack.md#data-ownership-and-database-usage)               | 4, 7–9, 11 | Relevant apps/packages | Pending   | —                                                           | —       |
-| [x]  | [Extension persistence and replication](../specs/stack.md#extension-persistence-and-replication)       | 8–9        | Relevant apps/packages | Delivered | [Step 9 evidence](#extension-to-filecab-replication-step-9) | —       |
-| [ ]  | [Website server state](../specs/stack.md#website-server-state)                                         | 6, 11      | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Read-only sharing through unlisted links](../specs/stack.md#read-only-sharing-through-unlisted-links) | 18         | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Temporary UI state and shared packages](../specs/stack.md#temporary-ui-state-and-shared-packages)     | 3, 10–11   | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Identity and catalog integration](../specs/stack.md#identity-and-catalog-integration)                 | 3, 12–15   | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Parser configuration](../specs/stack.md#parser-configuration)                                         | 16         | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Google authentication](../specs/stack.md#google-authentication)                                       | 6          | Relevant apps/packages | Pending   | —                                                           | —       |
-| [ ]  | [Local development on macOS](../specs/stack.md#local-development-on-macos)                             | 2          | Relevant apps/packages | Pending   | —                                                           | —       |
+| Done | Constraint group                                                                                      | Steps      | Planned code area      | Status    | Code / verification evidence                                | Blocker |
+| ---- | ----------------------------------------------------------------------------------------------------- | ---------- | ---------------------- | --------- | ----------------------------------------------------------- | ------- |
+| [ ]  | [Scope](../specs/functionality.md#11-release-scope)                                                   | 1, 3       | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Core stack](../specs/stack.md#core-stack)                                                            | 2–10       | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Repository structure](../specs/conventions.md#repository-structure)                                  | 2          | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Shared UI components](../specs/conventions.md#shared-ui-components)                                  | 10         | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Styling convention](../specs/conventions.md#styling-convention)                                      | 10         | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Extension surfaces](../specs/functionality.md#2-users-surfaces-and-navigation)                       | 8, 10, 16  | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Data ownership and database usage](../specs/conventions.md#data-ownership-and-database-usage)        | 4, 7–9, 11 | Relevant apps/packages | Pending   | —                                                           | —       |
+| [x]  | [Extension persistence and replication](baseline-decisions.md#extension-replication)                  | 8–9        | Relevant apps/packages | Delivered | [Step 9 evidence](#extension-to-filecab-replication-step-9) | —       |
+| [ ]  | [Website server state](../specs/conventions.md#website-server-state)                                  | 6, 11      | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Read-only sharing through unlisted links](../specs/backend.md#capability-unlisted-read-only-sharing) | 18         | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Temporary UI state and shared packages](../specs/conventions.md#local-state-management)              | 3, 10–11   | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Identity and catalog integration](../specs/catalog-spec.md)                                          | 3, 12–15   | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Parser configuration](../specs/backend.md#capability-server-managed-parser-configuration)            | 16         | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Google authentication](../specs/backend.md#capability-accounts-and-sessions)                         | 6          | Relevant apps/packages | Pending   | —                                                           | —       |
+| [ ]  | [Local development on macOS](../README.md#postgresql-and-migrations-macos)                            | 2          | Relevant apps/packages | Pending   | —                                                           | —       |
 
 ## Baseline decision constraints
 
@@ -411,7 +411,7 @@ Implemented and verified locally on 6 November 2026. No production services or d
 - [Storage connection manager](../apps/extension/src/library/database.ts) opens RxDB 17.6.0 with the free Dexie adapter, multi-instance events and the migration-schema plugin. Version zero is the first local format, with an explicit empty strategy map; future upgrades must preserve existing data with versioned migration tests. The fixed `filecab-local` database stores one device-local library independent of the authenticated account. Reference-counted per-page connections handle React StrictMode and overlapping reopen/close safely.
 - [Repository](../apps/extension/src/library/repository.ts) uses origin-scoped Web Locks for reads/writes. Locked reads query committed storage directly, avoiding cross-page broadcast/query-cache delays. Each one-entry write commits its data, next safe-integer revision, millisecond update time and optional Undo state in one document. Snapshot revisions include retained tombstones; no separate counter transaction or mutation outbox exists. Expected local revisions reject stale edits; catalog/source claims are checked under the lock. No-ops retain revision/time and explicit clearing retains null/zero/empty values.
 - [Storage schemas](../apps/extension/src/library/entry.schema.json) retain full typed entries, metadata snapshots, ordered sources and tombstones. A separate settings collection stores category/mode preferences with expected revisions. [Build-time generation](../apps/extension/scripts/build-storage-validators.mjs) compiles full RxDB schemas to standalone AJV validators and converts their helper references to bundled ES modules. The extension uses RxDB's storage-validation wrapper without runtime code generation; shared contracts remain typed models without client request parsers. Reads check the same schemas before exposing stored data.
-- [Local UI](../apps/extension/src/library/local-library.tsx) provides basic manual create/edit/delete/Undo in popup and full page. Success follows persistence; stale/failed saves keep unsaved input, and stale editing offers an explicit Reload entry. Deletion persists a ten-second deadline and previous entry; Undo checks the deletion revision/deadline, restores exact entry data/timestamps and rejects newly conflicting claims. Sign-in/sign-out keep the same library and open editor visible; authentication does not select local storage or upload entries. Future replication requires explicit account linking.
+- [Local UI](../apps/extension/src/library/local-library/local-library.tsx) provides basic manual create/edit/delete/Undo in popup and full page. Success follows persistence; stale/failed saves keep unsaved input, and stale editing offers an explicit Reload entry. Deletion persists a ten-second deadline and previous entry; Undo checks the deletion revision/deadline, restores exact entry data/timestamps and rejects newly conflicting claims. Sign-in/sign-out keep the same library and open editor visible; authentication does not select local storage or upload entries. Future replication requires explicit account linking.
 - [Recovery reader](../apps/extension/src/library/recovery.ts) exports readable raw IndexedDB stores and safe per-store errors without opening a replacement store. Open/read/schema failures show recovery with Retry/raw export, never an empty-library success state. Recovery export is separate from current-format portable backup/import.
 - [Chromium storage tests](../tests/e2e/extension-storage.spec.ts) load the actual production extension in isolated persistent profiles. They verify offline popup/full-page edits, simultaneous creates and different-entry edits with unique revisions, stale input/reload, injected IndexedDB quota failure, exact clearing/no-op/Undo, Undo expiry and claim-conflict rollback, settings scope/revision/durability, shared device storage across authentication changes and direct raw export after deliberate on-disk schema corruption. Chrome's serviceworker-internals reports STOPPED both before and after successful local delete/Undo. Browser restart retains entries, sources, exact notes, the device library and settings. The test-only repository bundle is created during testing and removed afterward.
 - [Auth browser regression](../tests/e2e/extension-auth.spec.ts) verifies that real worker messaging/storage leaves saved entries and unsaved editor input unchanged through mocked login/sign-out. Google/API responses remain mocked in these tests; no new live-provider claim is made.
@@ -449,7 +449,7 @@ record. The preceding server-only status is superseded by this delivery.
 - [Worker bridge](../apps/extension/src/auth/worker.ts) allows only fixed snapshot/pull/push operations from trusted UI pages, serializes them with login/refresh/logout and checks captured owner identity against the current credential. It returns safe errors/data without credentials. Unit and real Chrome tests verify sender restrictions, prototype-name route rejection, account mismatch and logout handling.
 - [Link/reset session](../apps/extension/src/library/sync-session.ts) binds confirmation to owner, local content digest and current server revision. Cancellation makes no writes. The fixed device library remains bound to one account across logout/switches, preventing another account from receiving pending changes. A shared Web Lock drains in-flight replication before reset; all local intent is durably recorded before entry replacement. Interrupted/quota-failed recovery remains paused. Missing server entries become uncommitted local tombstones, and a new generation resumes from the fresh snapshot's revision.
 - [Conflict handler/recovery log](../apps/extension/src/library/sync-recovery.ts) durably preserves differing editable/deletion intent before selecting master state. Absent-master source/identity conflicts produce retained local tombstones with the original proposal saved. Content-derived issue IDs deduplicate retries. [Repository reapplication](../apps/extension/src/library/repository.ts) checks current local revision, binding and identity/claims before deliberately applying saved user fields. A failed log write prevents overwrite. Server-assigned creation/version metadata is preserved during Undo.
-- [Controls](../apps/extension/src/library/sync-controls.tsx) provide preview/confirmation/cancel, truthful active/failure/suspended states, cross-surface manual refresh, durable conflict review/reapply/dismiss and explicit history recovery. One Web Lock selects a syncing surface; open/edit/reconnect and a 30-second open-surface timer trigger synchronization. Authentication changes do not remount or clear the local editor. New binding/issue collections use standalone CSP-compatible validators; existing entry/settings schemas remain version zero without destructive migration.
+- [Controls](../apps/extension/src/library/sync-controls/sync-controls.tsx) provide preview/confirmation/cancel, truthful active/failure/suspended states, cross-surface manual refresh, durable conflict review/reapply/dismiss and explicit history recovery. One Web Lock selects a syncing surface; open/edit/reconnect and a 30-second open-surface timer trigger synchronization. Authentication changes do not remount or clear the local editor. New binding/issue collections use standalone CSP-compatible validators; existing entry/settings schemas remain version zero without destructive migration.
 - [Chromium protocol tests](../tests/e2e/extension-storage.spec.ts) prove explicit/stale-preview adoption, native metadata/browser restart, lost-response retry safety, delete/Undo, server-wins recovery and deliberate reapplication, gap reset before uploads, quota failure before replacement, restartable reset, collapsed feed continuation and missing-master conflict recovery. [Production UI tests](../tests/e2e/extension-auth.spec.ts) verify cancellation/confirmation, multi-surface visibility, preserved drafts and account-switch suspension through the actual worker bridge with HTTP fixtures.
 - [Full-stack test](../tests/replication/extension.test.ts), run with `pnpm test:replication`, loads the production unpacked extension and uses real Chrome worker messaging, credential checks, HTTP guards/DTOs, mutation transactions, PostgreSQL and native RxDB replication. It verifies adoption, offline/server concurrent edits, durable rejection/reapplication and replicated delete/Undo. Only Google identity is synthetic, and the worker's API port is redirected to an isolated test application. CI runs this check after installing Chromium.
 
@@ -506,3 +506,128 @@ Verification: 94 unit tests, 12 contract tests, 38 PostgreSQL integration tests 
 10 Chromium E2E tests pass, as do all builds/typechecks, boundary checks and
 ESLint/Prettier. Existing wire-format assertions verify unchanged serialized
 codes. PostgreSQL verification uses only the isolated test cluster on port 55439.
+
+## Shared UI, localization, and navigation (step 10)
+
+Delivered and verified locally on 7 November 2026. The shared shell uses the
+[light](../specs/mockup-white.png) and [dark](../specs/mockup-dark.png) mockups for
+navigation, surface colors, typography and focus styling. Full card layouts and
+browsing controls remain in step 11; no fixture titles are shown in production.
+
+- `packages/ui` wraps Base UI buttons and modal dialogs; shared SCSS variables
+  support light/dark surfaces and focus states. Responsive rules remain inside
+  their selectors. Base UI supplies modal keyboard handling and focus restoration.
+- `packages/library` owns the shell, category/mode route fallback, interface
+  messages, English fallback and locale-aware plural/number formatting. Shared
+  packages import neither WXT nor client persistence/authentication libraries.
+- Client adapters store only interface preferences: extension storage with a
+  cross-surface write lock, and website localStorage with cross-tab notifications.
+  Explicit locale/theme choices persist independently of library replacement,
+  login and replication. Initial locale uses supported browser-language priority.
+- Website, popup and full extension page use the same shell. Extension editing,
+  account controls and replication messages are translated without remounting
+  editors. Dirty navigation offers Save, Discard and Continue editing; failed
+  saves retain input and block navigation. Browser closure uses beforeunload.
+- Website navigation retains URL query parameters; unknown routes fall back to
+  Anime Library. Catalog and page-detection routes explain current unavailability
+  rather than presenting fake search results. Extension metadata includes en/ru.
+- Chromium tests cover locale/theme propagation and persistence, browser-locale
+  initialization, category filtering, draft retention across locale changes,
+  Save/Discard/Continue, browser Back with unsaved input, Escape/focus restoration, responsive width and simulated
+  200% zoom. Existing offline/restart, authentication and replication tests remain
+  passing. Unit tests cover language priority, Russian plurals 1/2/5/11/21 and
+  unsupported routes.
+
+Verification: 97 unit tests, 12 contract tests and 13 Chromium E2E tests pass;
+all workspace typechecks/builds, boundary checks and ESLint/Prettier pass.
+No database or provider changes were made. Catalog/search/page extraction and
+website library data adapters remain in their planned later steps. Broad product
+rows stay open when later workflows are required; CI execution remains pending.
+
+### Mockup fidelity correction — 7 November 2026
+
+The initial step 10 shell did not implement the supplied mockup's library layout.
+This correction replaces the generic navigation/button treatment with flat
+category/status tabs, icon navigation, a fixed desktop sidebar, bottom language
+selection, and a compact popup header with Page/Search tabs and header actions.
+The current Filecab PNG is used unchanged: the extension loads its packaged
+`wish-list-icon.png`; the shared UI asset is byte-identical and supplies the
+website brand and favicon. Light/dark production browser screenshots were
+reviewed against both mockups.
+
+The extension now renders real local entries through shared `LibraryBrowser`
+poster cards with status, year, personal rating, unknown-total handling and
+progress. The toolbar searches available titles/private notes, filters status,
+rating and genre, sorts entries, switches grid/list layout and paginates twelve
+entries per page. Hidden entries stay excluded until explicitly selected. Missing
+or broken posters use a neutral placeholder. Existing Edit/Delete/Undo,
+replication controls and draft guards remain available; storage/account details
+are placed below library content rather than above the header.
+
+The website uses an online, account-scoped TanStack Query snapshot adapter and
+the same browser presentation. Unauthenticated, loading and failed requests are
+not displayed as a successful empty library; failed snapshots have Retry.
+Snapshot requests are abortable and private queries remain subject to the
+existing account cache clearing. No library data is written to localStorage.
+Website editing, complete filter semantics/preferences/conflict workflows and
+live popup page detection remain in later implementation steps; the correction
+does not claim those capabilities or complete step 11.
+
+Verification: 97 unit tests, 12 contract tests, 16 Chromium E2E tests, all workspace
+typechecks/builds, boundaries and formatting pass. Chromium coverage includes the shared layout,
+snapshot filtering/pagination, poster failure, current icon loading in the real
+extension, and failed snapshot Retry, alongside existing offline/account/replication
+and draft preservation tests. Visual screenshots use synthetic data only in tests;
+production receives only saved local or authenticated server entries.
+
+### Settings mockup and supplied SVG icons — 7 November 2026
+
+The new [Settings reference](../specs/mockup-settings.png) is linked from the spec
+index. Shared Settings now renders Account, Sync and Appearance sections, with
+bordered desktop cards and compact popup sections. Popup Settings has a dedicated
+Back/Settings header and preserves the previous route; the desktop keeps its
+sidebar. Light/Dark segmented buttons retain persisted preference propagation,
+and language selection remains available. Account controls keep their original
+client adapters, logout/all-session behavior and safe diagnostics; available
+account contracts supply only signed-in state, so no example name/email/avatar
+is presented as real profile data.
+
+The extension uses all interface SVGs from its supplied public icons directory.
+Shared website copies of all 23 SVGs match the originals byte for byte. CSS masks
+preserve the supplied shapes and inherit light/dark foreground colors; navigation,
+rating, language, Back, refresh and theme controls no longer redraw those icons.
+Extension asset roots are supplied by the client rather than imported into shared
+packages. The existing PNG brand is preserved.
+
+Settings Sync now calls the active extension replication surface through the
+existing refresh channel. It is unavailable for signed-out, unlinked, mismatched
+or recovery-paused account bindings. Last-success time is populated only after an
+observed successful replication and cleared across account/generation changes;
+there is no fabricated default time. The website action refetches the online
+snapshot and labels its timestamp as a library refresh. Failed snapshot state is
+reported in Settings as well as Library. The shared UI has no RxDB, WXT or query
+library dependency.
+
+Verification: 97 unit tests and 12 contract tests pass; all workspace builds and
+typechecks, formatting and boundary checks pass. All 16 Chromium E2E tests pass,
+with added Settings assertions for disabled guest sync, Back navigation, SVG
+asset loading, theme propagation, actual bound-account replication refresh and
+website snapshot refresh. Light/dark popup, desktop and linked-account Settings
+screenshots were inspected against the new mockup. Existing offline, recovery,
+account-switch, draft and browser-restart checks remain passing.
+
+### Popup Page default and route scope correction — 7 November 2026
+
+The popup now contains only Page, Search and Settings. It opens on Page unless an
+explicit valid popup URL selects Search or Settings; saved full-page/older popup
+modes do not change that default. Legacy Library and invalid popup hashes are
+normalized to Page. The library header action and browser/editor component were
+removed from the popup; the external-link action opens the full extension page.
+Popup navigation no longer overwrites full-page mode preferences.
+
+A headless device-sync component keeps native replication and Settings sync state
+active while the popup is open, without mounting library browsing UI. Library
+CRUD/concurrency tests now use full-page tabs; popup authentication, Settings,
+locale/theme propagation and asset checks remain exercised in the real popup.
+Regression coverage checks saved Library/Search/Settings modes, legacy popup
+Library URLs, absence of library UI/actions and preservation of full-page mode.

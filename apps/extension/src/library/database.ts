@@ -16,7 +16,7 @@ import entrySchema from './entry.schema.json';
 import settingsSchema from './settings.schema.json';
 import bindingSchema from './binding.schema.json';
 import issueSchema from './issue.schema.json';
-import type { SyncBinding, SyncIssue } from './sync-models';
+import type { SyncBinding, SyncIssue } from './models/sync-models';
 import { libraryConflictHandler } from './sync-recovery';
 import { validatorBySchema } from './generated-validators.mjs';
 

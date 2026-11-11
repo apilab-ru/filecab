@@ -1,4 +1,4 @@
-import type { ApiErrorCode, SyncErrorCode } from '../../packages/contracts/src';
+import type { ApiErrorCode, SyncErrorCode } from '../../packages/contracts/src/index';
 import { chromium, expect, test, type BrowserContext } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
@@ -31,7 +31,7 @@ async function launch(profile: string): Promise<{ context: BrowserContext; origi
   return { context, origin: `chrome-extension://${new URL(worker.url()).host}` };
 }
 
-test('offline popup/full-page edits survive worker termination and browser restart; stale edits retain input', async () => {
+test('offline edits across full-page tabs survive worker termination and browser restart; stale edits retain input', async () => {
   test.setTimeout(60000);
   const profile = await mkdtemp(join(tmpdir(), 'filecab-storage-'));
   let { context, origin } = await launch(profile);
@@ -42,7 +42,7 @@ test('offline popup/full-page edits survive worker termination and browser resta
     const errors: string[] = [];
     popup.on('pageerror', (error) => errors.push(error.message));
     full.on('pageerror', (error) => errors.push(error.message));
-    await popup.goto(`${origin}/popup.html`);
+    await popup.goto(`${origin}/full-page.html#/anime/library`);
     await full.goto(`${origin}/full-page.html`);
     await popup.getByRole('button', { name: 'Add manual entry' }).click();
     await popup.getByLabel('Title', { exact: true }).fill('  Offline title  ');
@@ -78,6 +78,7 @@ test('offline popup/full-page edits survive worker termination and browser resta
     await expect(full.getByLabel('Title', { exact: true })).toHaveValue(
       'Unsaved after quota failure',
     );
+    full.once('dialog', (dialog) => void dialog.accept());
     await full.reload();
     await expect(full.locator('.local-library__entry-title')).toHaveText('First committed edit');
     const workers = await context.newPage();
@@ -118,7 +119,7 @@ test('repository commits revisions atomically across instances, shares one datab
     const page = await context.newPage();
     const second = await context.newPage();
     await page.goto(`${origin}/full-page.html`);
-    await second.goto(`${origin}/popup.html`);
+    await second.goto(`${origin}/full-page.html`);
     await expect(page.getByRole('button', { name: 'Add manual entry' })).toBeVisible();
     const url = `${origin}/storage-test.js`;
     const created = await Promise.all(
@@ -298,6 +299,8 @@ test('repository commits revisions atomically across instances, shares one datab
     expect(result.revisionAfterConflict).toBe(result.revisionBeforeConflict);
     await context.setOffline(true);
     await expect(page.locator('.local-library__scope')).toHaveText('Library on this device');
+    await page.getByRole('button', { name: 'TV series', exact: true }).click();
+    await second.getByRole('button', { name: 'TV series', exact: true }).click();
     await expect(page.getByText('Shared device title', { exact: true })).toBeVisible();
     await expect(second.getByText('Shared device title', { exact: true })).toBeVisible();
     await context.close();
@@ -950,6 +953,177 @@ test('collapsed pull pages reach the latest master and missing-master conflicts 
       retained: [{ title: 'Conflicting device create', reason: 'SOURCE', master: null }],
       rejectedCreateDeleted: true,
     });
+  } finally {
+    await context.close();
+    await rm(profile, { recursive: true, force: true });
+  }
+});
+
+test('shared navigation preserves drafts across locale changes and supports save/discard/continue', async () => {
+  const profile = await mkdtemp(join(tmpdir(), 'filecab-interface-'));
+  const { context, origin } = await launch(profile);
+  try {
+    await context.setOffline(true);
+    const full = await context.newPage();
+    const popup = await context.newPage();
+    await full.goto(`${origin}/full-page.html#/anime/library`);
+    await popup.goto(`${origin}/popup.html#/anime/page`);
+    await full.getByRole('button', { name: 'Add manual entry' }).click();
+    await full.getByLabel('Title', { exact: true }).fill('Keep this draft');
+    await popup.getByRole('button', { name: 'Settings', exact: true }).click();
+    await popup.getByLabel('Language', { exact: true }).selectOption('ru');
+    await expect(full.getByLabel('Название', { exact: true })).toHaveValue('Keep this draft');
+    await full.getByRole('button', { name: 'Фильмы', exact: true }).click();
+    const dialog = full.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await full.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible();
+    await expect(full.getByRole('button', { name: 'Фильмы', exact: true })).toBeFocused();
+    await full.getByRole('button', { name: 'Фильмы', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Продолжить редактирование' }).click();
+    await expect(full.getByLabel('Название', { exact: true })).toHaveValue('Keep this draft');
+    await full.getByRole('button', { name: 'Фильмы', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Сохранить', exact: true }).click();
+    await expect(full.getByRole('button', { name: 'Фильмы', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expect(full.locator('.local-library__entry')).toHaveCount(0);
+    await full.getByRole('button', { name: 'Аниме', exact: true }).click();
+    await expect(full.locator('.local-library__entry-title')).toHaveText('Keep this draft');
+    await full.getByRole('button', { name: 'Изменить', exact: true }).click();
+    await full.getByLabel('Название', { exact: true }).fill('Discard this change');
+    await full.evaluate(() => {
+      // Establish a distinct previous route before exercising the browser's Back event pair.
+      history.replaceState(null, '', '#/films/library');
+      history.pushState(null, '', '#/anime/library');
+      history.back();
+    });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Продолжить редактирование' }).click();
+    await expect(full).toHaveURL(/#\/anime\/library$/);
+    await expect(full.getByLabel('Название', { exact: true })).toHaveValue('Discard this change');
+    await full.getByRole('button', { name: 'Настройки', exact: true }).click();
+    await dialog.getByRole('button', { name: 'Не сохранять', exact: true }).click();
+    await full
+      .getByRole('group', { name: 'Оформление' })
+      .getByRole('button', { name: 'Тёмное', exact: true })
+      .click();
+    await expect(popup.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await full.getByRole('button', { name: 'Библиотека', exact: true }).click();
+    await expect(full.locator('.local-library__entry-title')).toHaveText('Keep this draft');
+    await popup.setViewportSize({ width: 720, height: 900 });
+    await popup.evaluate(() => {
+      document.body.style.zoom = '2';
+    });
+    await expect(popup.getByRole('button', { name: 'Назад', exact: true })).toBeVisible();
+    expect(await popup.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
+  } finally {
+    await context.close();
+    await rm(profile, { recursive: true, force: true });
+  }
+});
+
+test('popup uses the existing brand icon, compact header actions and Page/Search tabs', async () => {
+  const profile = await mkdtemp(join(tmpdir(), 'filecab-popup-layout-'));
+  const { context, origin } = await launch(profile);
+  try {
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 380, height: 700 });
+    await page.goto(`${origin}/popup.html`);
+    await expect(page.locator('.popup__mark')).toHaveJSProperty('naturalWidth', 567);
+    await expect(page.locator('.library-browser')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Library', exact: true })).toHaveCount(0);
+    const worker = context.serviceWorkers()[0];
+    for (const mode of ['library', 'search', 'settings']) {
+      await worker.evaluate(async (mode) => {
+        const api = (
+          globalThis as unknown as {
+            chrome: { storage: { local: { set(value: unknown): Promise<void> } } };
+          }
+        ).chrome;
+        await api.storage.local.set({
+          'filecab-interface': { mode, category: 'films', locale: 'en' },
+        });
+      }, mode);
+      await page.goto(`${origin}/popup.html`);
+      await expect(page.getByRole('button', { name: 'Page', exact: true })).toHaveAttribute(
+        'aria-current',
+        'page',
+      );
+    }
+    await page.goto(`${origin}/popup.html#/anime/library`);
+    await expect(page).toHaveURL(/#\/anime\/page$/);
+    await expect(page.locator('.library-browser')).toHaveCount(0);
+
+    await expect(
+      page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button'),
+    ).toHaveCount(2);
+    await expect(page.getByRole('button', { name: 'Page', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Open full page' })).toBeVisible();
+    await page.screenshot({ path: 'test-results/mockup-popup-light.png', fullPage: true });
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    expect(
+      await worker.evaluate(async () => {
+        const api = (
+          globalThis as unknown as {
+            chrome: {
+              storage: { local: { get(key: string): Promise<Record<string, { mode: string }>> } };
+            };
+          }
+        ).chrome;
+
+        return (await api.storage.local.get('filecab-interface'))['filecab-interface'].mode;
+      }),
+    ).toBe('settings');
+
+    await expect(page.getByRole('heading', { name: 'Settings', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sync now', exact: true })).toBeDisabled();
+    await expect(page.getByText('Last successful sync', { exact: false })).toHaveCount(0);
+    await expect(page.getByRole('navigation', { name: 'Main navigation' })).toHaveCount(0);
+    const iconResults = await page.locator('.fc-icon').evaluateAll(async (elements) => {
+      const urls = [
+        ...new Set(
+          elements
+            .map(
+              (element) => getComputedStyle(element).maskImage.match(/url\(["']?(.*?)["']?\)/)?.[1],
+            )
+            .filter(Boolean),
+        ),
+      ];
+
+      return Promise.all(urls.map(async (url) => (await fetch(url!)).ok));
+    });
+    expect(iconResults.length).toBeGreaterThan(2);
+    expect(iconResults.every(Boolean)).toBe(true);
+    await page.screenshot({ path: 'test-results/settings-popup-light.png', fullPage: true });
+    await page
+      .getByRole('group', { name: 'Appearance' })
+      .getByRole('button', { name: 'Dark', exact: true })
+      .click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.screenshot({ path: 'test-results/settings-popup-dark.png', fullPage: true });
+    const full = await context.newPage();
+    await full.setViewportSize({ width: 1100, height: 820 });
+    await full.goto(`${origin}/full-page.html#/anime/settings`);
+    await expect(full.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
+    await full.screenshot({ path: 'test-results/settings-full-dark.png', fullPage: true });
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Page', exact: true })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+      true,
+    );
   } finally {
     await context.close();
     await rm(profile, { recursive: true, force: true });

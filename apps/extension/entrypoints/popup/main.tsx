@@ -1,23 +1,27 @@
+import { Popup } from '../../src/popup/popup';
+import { authRepository } from '../../src/auth/auth-repository';
 import { StrictMode } from 'react';
-import { browser } from 'wxt/browser';
 import { createRoot } from 'react-dom/client';
-import { LocalLibrary } from '../../src/library/local-library';
-import { AuthControls } from '../../src/auth/auth-controls';
+import { browser } from 'wxt/browser';
+import { AuthProvider, ApplicationShell } from '@filecab/library';
+import { extensionPreferences } from '../../src/interface-preferences';
+import { DeviceSync } from '../../src/library/device-sync/device-sync';
 import '../../styles.scss';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <main className="popup">
-      <a
-        className="popup__full-page-link"
-        href={browser.runtime.getURL('/full-page.html')}
-        target="_blank"
-        rel="noopener noreferrer"
+    <AuthProvider repository={authRepository}>
+      <ApplicationShell
+        storage={extensionPreferences}
+        iconsBaseUrl={new URL('.', browser.runtime.getURL('/icons/library.svg')).href}
       >
-        Open full page
-      </a>
-      <AuthControls />
-      <LocalLibrary name="Filecabz" />
-    </main>
+        <Popup
+          iconUrl={browser.runtime.getURL('/wish-list-icon.png')}
+          fullPageUrl={browser.runtime.getURL('/full-page.html')}
+        >
+          <DeviceSync />
+        </Popup>
+      </ApplicationShell>
+    </AuthProvider>
   </StrictMode>,
 );

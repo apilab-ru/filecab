@@ -1,0 +1,67 @@
+.library-browser {
+  &__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 8px;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    background: var(--fc-surface);
+  }
+
+  &__search {
+    display: flex;
+    flex: 1 1 190px;
+    align-items: center;
+    gap: 8px;
+    min-width: 130px;
+    padding: 6px 10px;
+    border: 1px solid var(--fc-border);
+    border-radius: 7px;
+    color: var(--fc-muted);
+  }
+
+  &__search-input {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--fc-text);
+    font: inherit;
+    font-size: 14px;
+
+    &::placeholder {
+      color: var(--fc-muted);
+    }
+  }
+
+  &__views {
+    position: absolute;
+    right: 0;
+    top: -59px;
+    display: flex;
+
+    .fc-button {
+      min-height: 34px;
+      padding: 6px 10px;
+      border-radius: 0;
+    }
+
+    [aria-pressed='true'] {
+      background: var(--fc-selected);
+      color: var(--fc-accent);
+      border-color: var(--fc-accent);
+    }
+  }
+
+  &__add {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+}

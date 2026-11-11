@@ -13,8 +13,10 @@
   "dependencies": {
     "@filecab/contracts": "workspace:*",
     "@filecab/library": "workspace:*",
+    "@filecab/ui": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router-dom": "^7.18.5",
     "rxdb": "17.6.0"
   },
   "devDependencies": {

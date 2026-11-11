@@ -38,13 +38,80 @@ alongside the behavior requirements below.
 
 **NAV-01.** The popup shall offer Page and Search modes, plus links to Library and Settings. The full-page library link shall open the extension's `full-page.html` in a new browser tab. Page shall be the initial mode when a usable HTTP(S) tab exists. Search shall remain available regardless of page parsing success.
 
-**NAV-02.** The full-page library and website shall provide anime, films, and TV routes, each with Library and Catalog Search modes. Library shall be the initial mode. Unknown routes shall redirect to anime without modifying data.
+**NAV-02.** The full-page library and website shall provide anime, films, and TV routes, each with Library and Catalog Search modes. Library shall be the initial mode. The route table shall redirect unknown or legacy paths to their canonical route, with anime Library as the default. Popup Settings Back shall navigate directly to Page, regardless of the route used to open Settings.
 
 **NAV-03.** The website shall support every core library operation without extension APIs. Reading the current browser tab shall be an extension-only enhancement; the website shall offer manual entry and optional URL entry instead.
 
 **NAV-04.** Unavailable active-tab access, restricted URLs, and parser failures shall display a localized explanation and actions to retry, search, or create a manual entry. They shall not masquerade as a successful search with no results.
 
-**NAV-05.** Navigation away from an unsaved editor shall offer Save, Discard, and Continue editing where navigation is controllable. The product shall not imply unsaved popup edits survive closing the popup unless draft recovery is implemented.
+**NAV-05.** Navigation away from an unsaved editor shall be blocked by the router and offer Save, Discard, and Continue editing. Save shall proceed only after successful persistence; Discard shall proceed after discarding the draft; Continue editing shall cancel the blocked navigation. Reloading or closing a tab shall retain browser `beforeunload` protection. The product shall not imply unsaved popup edits survive closing the popup unless draft recovery is implemented.
+
+### 2.1 Library layout
+
+The shared shell SHALL use the existing
+[Filecab icon](../apps/extension/public/wish-list-icon.png) without redrawing it.
+Desktop navigation SHALL use a fixed sidebar, flat navigation rows, bottom-aligned
+language selection, and an unobstructed library header. The popup SHALL use a
+compact brand/header-action row and Page/Search tabs rather than the desktop
+sidebar. Account, language and theme controls SHALL be available in Settings.
+
+The library SHALL render saved entries in responsive poster cards with status,
+year, progress and personal rating, plus a functional search/filter toolbar,
+status tabs, grid/list toggle and pagination. Missing posters SHALL have a neutral
+placeholder and image failures SHALL not hide entry actions. Controls SHALL
+operate on actual available library data; mockup sample titles/counts SHALL NOT
+be bundled as production data. The existing extension edit/delete/Undo and
+synchronization recovery controls SHALL remain accessible. The website SHALL
+read its authenticated complete owner snapshot through its online query adapter;
+unauthenticated and unavailable states SHALL remain explicit.
+
+### 2.2 Settings and supplied icons
+
+The [Settings mockup](mockup-settings.png) defines Account, Sync and Appearance
+cards on the full page and compact sections in the popup. Dark mockup layout is
+current; its light version supplies colors only. Account/sign-in controls SHALL
+appear only inside Settings. At viewport heights of 732 CSS px or greater, the
+full-page library SHALL fit without page-level vertical scrolling. Only the
+results area SHALL scroll. Category tabs and the filter toolbar SHALL stay at
+the top; pagination and separate Sort by and Order controls SHALL stay at the
+bottom without covering results. At 732px, the four-column tile layout SHALL
+show two complete rows, including metadata. Poster height SHALL adapt to the
+results area height rather than change abruptly at a viewport breakpoint. The
+view toggle SHALL align with the category tabs; card titles SHALL retain two
+readable lines and status badges SHALL leave room for the action menu. The first display page SHALL
+contain eight entries. Popup Settings SHALL
+replace Page/Search tabs with a Back/Settings header and the existing Filecab
+brand. Appearance SHALL use accessible Light/Dark segmented buttons; explicit
+locale selection SHALL remain available. Existing account logout/session controls
+and diagnostics SHALL remain accessible without clearing unsaved library edits.
+
+UI icons SHALL use the SVG assets supplied in `apps/extension/public/icons`,
+including navigation, theme, sync, rating and pagination icons, rather than
+redrawn paths or text symbols. Shared copies SHALL retain the supplied SVG data.
+
+Settings SHALL show real account state only. The current account contract exposes
+no display name, email or avatar, so the UI SHALL NOT invent those profile values.
+Sync now SHALL operate only on the explicitly linked matching extension account;
+signed-out/unlinked/suspended states SHALL explain why it is unavailable. Last
+successful sync SHALL be shown only after an observed successful replication,
+with locale-aware dates/times. Website Sync now SHALL refresh its online library
+snapshot and label the time as a refresh, without implying offline replication.
+
+### 2.3 Popup routes
+
+The popup Settings Back button SHALL navigate directly to Page, regardless of the
+route used to open Settings. Navigation SHALL NOT retain a previous route for it.
+The Back button SHALL match the logo's 34px height, use 12px horizontal padding,
+and display a pointer cursor.
+
+The popup SHALL contain only Page, Search and Settings routes. Each opening
+without an explicit valid popup route SHALL start on Page, regardless of saved
+full-page or prior popup mode. Legacy/unknown popup routes, including Library,
+SHALL fall back to Page. The popup SHALL NOT render library browsing or a library
+navigation action. Its existing external-link action SHALL open the full extension
+page in a new tab. Popup route changes SHALL NOT overwrite full-page category/mode
+preferences. Background library synchronization MAY remain active while the popup
+is open, without mounting a library browsing interface.
 
 ## 3. Domain, identity, and validation
 
@@ -180,7 +247,7 @@ The website shall keep non-sensitive browsing filters in URL parameters.
 
 ## 10. English and Russian
 
-**LANG-01.** First use shall choose the first supported browser language by base language (`ru-RU` → `ru`); fallback shall be English. Settings shall allow an explicit English/Russian selection. Persist that selection and update all open interfaces without losing unsaved edits. Browser language changes shall not override an explicit selection. Website and extension interface preferences remain independent; library replication does not synchronize these preferences.
+**LANG-01.** First use shall choose the first supported browser language by base language (`ru-RU` → `ru`); fallback shall be English. Settings shall allow an explicit English/Russian selection. Persist that selection and update all open interfaces without losing unsaved edits. Browser language changes shall not override an explicit selection. Website and extension interface preferences remain independent; library replication does not synchronize these preferences. The application shell shall provide its platform preference storage to the interface-preferences hook through context, and the hook shall initialize its preference store without storage arguments.
 
 **LANG-02.** All application-owned labels, accessible names, messages, validation, dialogs, notifications, and browser-supported extension metadata shall have complete English/Russian translations. Stored categories/statuses shall remain stable keys. Missing UI translations shall fall back to English, never raw keys or provider errors. Counts shall use correct plural forms; dates/numbers shall use locale-aware presentation.
 

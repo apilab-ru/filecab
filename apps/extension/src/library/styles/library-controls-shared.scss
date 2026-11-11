@@ -1,0 +1,28 @@
+.local-library {
+  &__message {
+    margin: 0.75rem 0;
+  }
+
+  &__actions,
+  &__undo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  &__button {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font: inherit;
+    color: var(--fc-text);
+    background: var(--fc-input);
+    border: 1px solid var(--fc-border);
+    border-radius: var(--fc-radius);
+  }
+
+  &__error {
+    color: var(--fc-danger);
+  }
+}

@@ -1,0 +1,125 @@
+.settings-content {
+  display: grid;
+  flex: 1;
+  gap: 20px;
+  max-width: 760px;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+
+  .popup & {
+    gap: 0;
+  }
+}
+
+.settings-card {
+  padding: 20px;
+  border: 1px solid var(--fc-border);
+  border-radius: 12px;
+  background: var(--fc-settings-card);
+
+  .popup & {
+    background: var(--fc-surface);
+    padding: 18px 20px;
+    border: 0;
+    border-bottom: 1px solid var(--fc-border);
+    border-radius: 0;
+  }
+
+  &__title {
+    margin: 0 0 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--fc-border);
+    font-size: 21px;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+
+    .popup & {
+      margin-bottom: 12px;
+      padding: 0;
+      border: 0;
+      font-size: 18px;
+    }
+  }
+}
+
+.settings-sync {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+
+  .popup & {
+    padding: 12px;
+    border: 1px solid var(--fc-border);
+    border-radius: 10px;
+  }
+
+  &__button {
+    min-width: 220px;
+
+    &:disabled {
+      background: var(--fc-border);
+      border-color: var(--fc-border);
+      color: var(--fc-muted);
+      opacity: 1;
+    }
+
+    .popup & {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+  }
+
+  &__success {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 13px;
+
+    .fc-icon {
+      color: #20b733;
+    }
+  }
+
+  &__message {
+    flex: 1 1 100%;
+    margin: 0;
+    color: var(--fc-muted);
+    font-size: 13px;
+
+    .popup & {
+      text-align: center;
+    }
+  }
+}
+
+.settings-appearance {
+  display: flex;
+  padding: 2px;
+  border: 1px solid var(--fc-border);
+  border-radius: 9px;
+  background: var(--fc-input);
+
+  .fc-button {
+    flex: 1;
+    gap: 10px;
+    min-height: 40px;
+    border-color: transparent;
+    background: transparent;
+  }
+
+  [aria-pressed='true'] {
+    color: var(--fc-accent);
+    border-color: var(--fc-accent);
+    background: var(--fc-selected);
+  }
+
+  :root[data-theme='dark'] & [aria-pressed='true'] {
+    background: #3451cd;
+    color: #fff;
+    border-color: #6084ff;
+  }
+}

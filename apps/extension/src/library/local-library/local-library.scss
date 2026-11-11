@@ -1,0 +1,12 @@
+.local-library {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+
+  &__browser {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+}

@@ -66,6 +66,7 @@ test('extension worker reports preflight failures and completes a mocked login t
         return new Response(JSON.stringify({ schemaVersion: 1, ownerId: 'fixture-owner' }));
       };
     });
+    await page.goto(`chrome-extension://${extensionId}/full-page.html#/anime/library`);
     await page.getByRole('button', { name: 'Add manual entry' }).click();
     await page.getByLabel('Title', { exact: true }).fill('Guest remains local');
     await page.getByRole('button', { name: 'Save locally' }).click();
@@ -221,6 +222,37 @@ test('link confirmation starts production replication and account changes suspen
     await expect(page.getByText('Account synchronization is up to date.')).toBeVisible();
     await worker.evaluate(() => {
       const previous = globalThis.fetch;
+      Object.assign(globalThis, { settingsRefreshPulls: 0 });
+      globalThis.fetch = async (input, init) => {
+        if (new URL(String(input)).pathname.endsWith('/pull'))
+          (globalThis as unknown as { settingsRefreshPulls: number }).settingsRefreshPulls++;
+
+        return previous(input, init);
+      };
+    });
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await expect(page.getByText('Last successful sync:', { exact: false })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Sync now', exact: true })).toBeEnabled();
+    await page.getByRole('button', { name: 'Sync now', exact: true }).click();
+    await expect
+      .poll(() =>
+        worker.evaluate(
+          () => (globalThis as unknown as { settingsRefreshPulls: number }).settingsRefreshPulls,
+        ),
+      )
+      .toBeGreaterThan(0);
+    await page
+      .getByRole('group', { name: 'Appearance' })
+      .getByRole('button', { name: 'Dark', exact: true })
+      .click();
+    await page.screenshot({
+      path: 'test-results/settings-extension-linked-dark.png',
+      fullPage: true,
+    });
+    await page.getByRole('button', { name: 'Library', exact: true }).click();
+
+    await worker.evaluate(() => {
+      const previous = globalThis.fetch;
       globalThis.fetch = async (input, init) => {
         if (new URL(String(input)).pathname.endsWith('/pull'))
           return new Response('private upstream rejection', {
@@ -247,7 +279,7 @@ test('link confirmation starts production replication and account changes suspen
       (globalThis as unknown as { restoreSyncFetch(): void }).restoreSyncFetch(),
     );
     const popup = await context.newPage();
-    await popup.goto(`${origin}/popup.html`);
+    await popup.goto(`${origin}/full-page.html#/anime/library`);
     await expect(popup.locator('.local-library__entry-title')).toHaveText(
       'Production linked entry',
     );

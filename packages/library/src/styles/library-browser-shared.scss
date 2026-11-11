@@ -1,0 +1,13 @@
+.library-browser {
+  &__select {
+    min-width: 0;
+    max-width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--fc-border);
+    border-radius: 7px;
+    background: var(--fc-input);
+    color: var(--fc-text);
+    font: inherit;
+    font-size: 13px;
+  }
+}

@@ -1,0 +1,121 @@
+@use '@filecab/library/styles/shell-shared.scss' as shell;
+
+.popup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  width: 380px;
+  max-width: 100%;
+  min-width: 320px;
+  min-height: 440px;
+  background: var(--fc-surface);
+
+  &__brand {
+    @include shell.brand;
+  }
+
+  &__mark {
+    @include shell.mark;
+  }
+
+  &__icon-button,
+  &__external {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-height: 32px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--fc-text);
+    border-radius: 4px;
+
+    &:focus-visible {
+      outline: 2px solid var(--fc-accent);
+      outline-offset: 2px;
+    }
+  }
+
+  &__header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &__sidebar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    gap: 0;
+    padding: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--fc-border);
+  }
+
+  &__header {
+    @include shell.header;
+
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--fc-border);
+  }
+
+  &__navigation {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+    padding: 0 16px;
+
+    @media (max-width: 760px) {
+      flex-wrap: wrap;
+    }
+
+    .fc-button {
+      flex: 1;
+      justify-content: center;
+      gap: 12px;
+      margin: 0;
+      padding: 10px;
+      border: 0;
+      border-bottom: 3px solid transparent;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    [aria-current='page'] {
+      border-bottom-color: var(--fc-accent);
+      color: var(--fc-accent);
+      font-weight: 650;
+    }
+  }
+
+  &__main {
+    position: relative;
+    min-width: 0;
+    display: block;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 16px;
+  }
+
+  &__back {
+    justify-content: flex-start;
+    gap: 12px;
+    height: 34px;
+    min-height: 34px;
+    padding: 0 12px;
+    border: 0;
+    background: transparent;
+    font-size: 20px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+}
+
+.popup__title {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: -0.5px;
+}

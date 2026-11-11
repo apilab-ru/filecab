@@ -1,0 +1,39 @@
+.auth-controls {
+  &__diagnostic {
+    margin: 0.5rem 0;
+    font-size: 0.8rem;
+  }
+
+  &__failure {
+    flex-basis: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  &__summary {
+    cursor: pointer;
+    font: inherit;
+    color: var(--fc-text);
+    background: var(--fc-input);
+    border: 1px solid var(--fc-border);
+    border-radius: var(--fc-radius);
+  }
+
+  &__connection {
+    margin: 0.5rem 0 0;
+    font-size: 0.8rem;
+  }
+
+  &__label {
+    margin-top: 0.5rem;
+    font-weight: 600;
+  }
+
+  &__value {
+    margin: 0.125rem 0 0;
+  }
+
+  &__error {
+    flex-basis: 100%;
+    color: var(--fc-danger);
+  }
+}
