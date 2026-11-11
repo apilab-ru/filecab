@@ -165,6 +165,17 @@ Delivery steps refer to [Implementation Plan](implementation-plan.md). Baseline 
 | [ ]  | [Client and API boundaries](../specs/catalog-spec.md#client-and-api-boundaries)                           | 12   | apps/api catalog; packages/contracts | Pending | —                            | —       |
 | [ ]  | [Verification](../specs/catalog-spec.md#verification)                                                     | 12   | apps/api catalog; packages/contracts | Pending | —                            | —       |
 
+12.a core code has been delivered in `apps/api/src/catalog/` and
+`packages/contracts/src/models/index.ts`: capability discovery and category defaults,
+single-provider search dispatch with capability rejection, separate internal-ID and
+provider-reference detail routes, verified-reference identity upserts, safe partial
+metadata enrichment, and explicit continuation limitation fields. Catalog persistence
+now stores granularity in `CatalogItem` through migration
+`20261111000000_catalog_granularity`. Contracts and API typechecks pass. The catalog
+requirement rows above remain unchecked until provider adapters and deterministic
+identity/pagination fixtures establish their full behavior; no provider is advertised
+or available through the search service yet.
+
 ## External list synchronization
 
 | Done | Requirement                                                                                                            | Step | Planned code area                             | Status  | Code / verification evidence | Blocker |

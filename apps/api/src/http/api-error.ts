@@ -13,6 +13,7 @@ const HTTP_ERRORS: Record<number, [ApiErrorCode, string]> = {
   413: [ApiErrorCode.PayloadTooLarge, 'Request body exceeds the size limit'],
   415: [ApiErrorCode.UnsupportedMediaType, 'JSON content type required'],
   429: [ApiErrorCode.RateLimited, 'Too many requests'],
+  502: [ApiErrorCode.InvalidResponse, 'Catalog provider returned an invalid response'],
   503: [ApiErrorCode.ServiceUnavailable, 'Service temporarily unavailable'],
 };
 

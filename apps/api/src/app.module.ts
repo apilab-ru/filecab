@@ -11,6 +11,9 @@ import { AUTH_ENVIRONMENT, GOOGLE_IDENTITY } from './auth/credentials';
 import { GoogleOAuthProvider, type GoogleIdentityProvider } from './auth/google';
 import { HealthController } from './health/health.controller';
 import { DATABASE_READINESS, PostgresReadiness, type DatabaseReadiness } from './health/readiness';
+import { CatalogController } from './catalog/catalog.controller';
+import { CatalogIdentityService } from './catalog/catalog-identity.service';
+import { CatalogSearchService } from './catalog/catalog-search.service';
 
 @Module({})
 export class AppModule {
@@ -21,7 +24,13 @@ export class AppModule {
   ): DynamicModule {
     return {
       module: AppModule,
-      controllers: [HealthController, AuthController, LibraryController, ReplicationController],
+      controllers: [
+        HealthController,
+        AuthController,
+        LibraryController,
+        ReplicationController,
+        CatalogController,
+      ],
       providers: [
         { provide: AUTH_ENVIRONMENT, useValue: environment },
         {
@@ -31,6 +40,15 @@ export class AppModule {
         AuthService,
         AuthGuard,
         LibraryInputGuard,
+        {
+          provide: CatalogSearchService,
+          useFactory: () => new CatalogSearchService(),
+        },
+        {
+          provide: CatalogIdentityService,
+          inject: [AuthService],
+          useFactory: (auth: AuthService) => new CatalogIdentityService(auth.database),
+        },
         {
           provide: LibraryMutationService,
           inject: [AuthService],

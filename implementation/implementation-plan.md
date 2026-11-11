@@ -175,12 +175,30 @@ Exit: manual library workflows work without catalog providers; different-entry e
 
 Depends on steps 3–5 and the provider-role decision in step 1.
 
-- [ ] Add capability discovery, explicit category defaults/provider selection, normalized search/details, and separate internal-ID versus provider-reference resolution operations.
-- [ ] Persist stable catalog identities, verified crosswalk provenance, translations, nullable metadata, genre IDs/mappings, and declared versus available episode counts. Never merge installments by title or numerical equality.
-- [ ] Implement bounded continuation/lookahead and consumed-upstream position tracking; invalidate cursor mappings when request identity changes. Omit inexact totals and return explicit limitations when continuation cannot be established.
-- [ ] Add provider/locale/query/filter/order/page/schema-aware metadata caches, freshness/provenance, explicit stale fallback, and safe enrichment that cannot overwrite user fields or erase known metadata from missing fields.
-- [ ] Add upstream validation, response-size/time/concurrency/retry budgets, throttling/Retry-After, and distinct structured provider errors.
-- [ ] Implement protected genre refresh with verified mappings and preserved unknown source labels; public GET must not refresh data.
+### 12.a Implement catalog core
+
+- [x] Add provider capability contracts and deployment defaults; keep unverified or unwired providers unavailable.
+- [x] Implement normalized catalog details and distinct internal-ID/provider-reference resolution operations.
+- [x] Persist stable catalog identities and verified reference provenance with concurrency-safe upserts; preserve known metadata on partial refreshes.
+- [x] Implement provider-independent search orchestration and bounded continuation contracts for adapters, including explicit limitations when continuation cannot be established.
+
+Exit: code delivered; automated identity-race and adapter-continuation verification remains pending. Catalog provider operations remain unavailable until the verified adapters in steps 13–14 are wired.
+
+### 12.b Implement catalog cache
+
+- [ ] Add provider/locale/query/category/filter/order/page/schema-aware metadata and search caches with freshness and provenance.
+- [ ] Add explicit stale fallback and invalidate pagination mappings when request identity changes; never cache owner-private fields or hide valid empty results/removals.
+- [ ] Bound cache storage and continuation/lookahead state.
+
+Exit: deterministic checks establish cache isolation, stale labeling, request-key separation, and cursor invalidation.
+
+### 12.c Implement genre administration
+
+- [ ] Add protected operator-only genre refresh with verified provider mappings and stable internal IDs.
+- [ ] Preserve unknown provider labels and mapping conflicts; keep public genre reads side-effect free.
+- [ ] Add provider response validation and configured size/time/concurrency/retry/throttling budgets with structured errors.
+
+Exit: only authenticated operator actions refresh genres; public reads do not write; unknown labels and conflicting mappings remain reviewable.
 
 Exit: deterministic tests cover identity/upsert races, pagination, locale retention, mapping conflicts, provider failure versus valid empty results, and cache isolation from private data.
 

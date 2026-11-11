@@ -124,11 +124,13 @@ export type CatalogLookup =
 /** Specifies a provider search and its presentation locale. */
 export interface CatalogSearchRequest {
   category: Category;
-  provider: string;
+  provider?: string;
   query: string;
   locale: Locale;
   page: number;
   pageSize: number;
+  filters?: Record<string, string | number | boolean>;
+  order?: string;
 }
 
 /** Returns a catalog page with continuation and an optional exact total. */
@@ -139,6 +141,32 @@ export interface CatalogSearchResponse {
   results: CatalogRecord[];
   hasMore: boolean;
   total?: number;
+  limitation?: 'none' | 'lookahead-exhausted' | 'unsupported-filter' | 'upstream-unavailable';
+}
+
+/** Describes an operation and filters that an enabled catalog provider supports. */
+export interface CatalogProviderCapability {
+  provider: string;
+  categories: Category[];
+  operations: ('search' | 'details' | 'resolve-reference' | 'genres')[];
+  filters: string[];
+  ordering: string[];
+  referenceNamespaces: string[];
+  languages: Locale[];
+}
+
+/** Reports deployment defaults and only capabilities supplied by active adapters. */
+export interface CatalogCapabilities {
+  schemaVersion: 1;
+  defaults: Record<Category, string>;
+  providers: CatalogProviderCapability[];
+}
+
+/** Describes why a normalized search cannot promise ordinary continuation. */
+export interface CatalogContinuation {
+  hasMore: boolean;
+  upstreamPosition: string | null;
+  limitation: 'none' | 'lookahead-exhausted' | 'unsupported-filter' | 'upstream-unavailable';
 }
 
 /** Returns genre labels for the requested locale. */

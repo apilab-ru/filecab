@@ -50,6 +50,13 @@ trusted explicit references or verified crosswalks with attribution. Numeric equ
 a lone candidate, similar titles or franchise relations are not proof. Conflicting
 references remain resolution conflicts; unverified references do not establish identity.
 
+Catalog operations keep internal identity and provider identity explicit: internal
+details are addressed by `catalogId`, while provider resolution uses the complete
+`{ namespace, entity, id }` tuple. Capability discovery reports deployment defaults and
+only operations actually enabled by a verified, wired adapter. Search adapters return
+normalized records through a shared provider contract; provider IDs are never accepted as
+internal IDs.
+
 ### Details and safe enrichment
 
 Separate internal details from provider resolution; never use raw provider IDs as internal

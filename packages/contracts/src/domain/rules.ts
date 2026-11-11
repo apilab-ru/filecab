@@ -6,6 +6,7 @@ import type {
   Genre,
   LocalizedText,
   ProviderReference,
+  ProviderRating,
   Snapshot,
   Provenance,
   RemoteListIdentity,
@@ -25,6 +26,69 @@ export function emptySnapshot(): Snapshot {
     availableEpisodeCount: null,
     providerRatings: [],
     references: [],
+  };
+}
+
+/** Safely enriches metadata while retaining fields omitted from a partial refresh. */
+export function mergeCatalogSnapshots(existing: Snapshot, incoming: Snapshot): Snapshot {
+  const mergeLocalized = (known: LocalizedText[], fresh: LocalizedText[]) => {
+    const merged = new Map(
+      known.map((text) => [`${text.language}\u0000${text.provenance.source}`, text]),
+    );
+
+    for (const text of fresh) merged.set(`${text.language}\u0000${text.provenance.source}`, text);
+
+    return [...merged.values()];
+  };
+  const mergeGenres = (known: Genre[], fresh: Genre[]) => {
+    const merged = new Map(known.map((genre) => [genre.genreId, genre]));
+
+    for (const genre of fresh) {
+      const existingGenre = merged.get(genre.genreId);
+
+      merged.set(
+        genre.genreId,
+        existingGenre
+          ? {
+              ...existingGenre,
+              ...genre,
+              labels: mergeLocalized(existingGenre.labels, genre.labels),
+            }
+          : genre,
+      );
+    }
+
+    return [...merged.values()];
+  };
+  const mergeReferences = (known: ProviderReference[], fresh: ProviderReference[]) => {
+    const merged = new Map(known.map((reference) => [referenceKey(reference), reference]));
+
+    for (const reference of fresh) merged.set(referenceKey(reference), reference);
+
+    return [...merged.values()];
+  };
+  const mergeRatings = (known: ProviderRating[], fresh: ProviderRating[]) => {
+    const merged = new Map(known.map((rating) => [rating.provenance.source, rating]));
+
+    for (const rating of fresh) merged.set(rating.provenance.source, rating);
+
+    return [...merged.values()];
+  };
+
+  return {
+    originalTitle: incoming.originalTitle ?? existing.originalTitle,
+    titles: mergeLocalized(existing.titles, incoming.titles),
+    descriptions: mergeLocalized(existing.descriptions, incoming.descriptions),
+    posterUrl: incoming.posterUrl ?? existing.posterUrl,
+    year: incoming.year ?? existing.year,
+    genres: incoming.genres.length
+      ? mergeGenres(existing.genres, incoming.genres)
+      : existing.genres,
+    format: incoming.format ?? existing.format,
+    episodeCount: incoming.episodeCount ?? existing.episodeCount,
+    availableEpisodeCount: incoming.availableEpisodeCount ?? existing.availableEpisodeCount,
+    providerRatings: mergeRatings(existing.providerRatings, incoming.providerRatings),
+    references: mergeReferences(existing.references, incoming.references),
   };
 }
 

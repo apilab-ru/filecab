@@ -1,4 +1,4 @@
-export * from './models';
+export * from './models/index';
 export * from './domain/rules';
 export * from './models/category';
 export * from './models/status';

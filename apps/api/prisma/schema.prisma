@@ -63,6 +63,7 @@ model Session {
 model CatalogItem {
   id           String               @id @db.Uuid
   category     String
+  granularity  String               @default("unknown")
   /// Shared-contract Snapshot: localized metadata, references, genres and provider scores.
   snapshot     Json
   references   CatalogReference[]
