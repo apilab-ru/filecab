@@ -7,6 +7,17 @@ Keep one React component per source file. Place each component in its own file a
 
 Keep component styles in separate stylesheets alongside the components that use them, and import those styles from the corresponding component. Keep shared and global styles in dedicated stylesheets. Avoid duplicating rules and remove styles and imports that are no longer used. Preserve existing styling, responsive behavior, CSS specificity, cascade order, and style precedence when moving rules.
 
+### Component Style Colocation
+
+- Keep component-specific styles colocated with their React components.
+- Each component should have its own stylesheet (e.g., `ComponentName.tsx` → `ComponentName.scss`) imported directly into the component.
+- Do not place component-specific styles in global stylesheets.
+- Global stylesheets should contain only resets, typography, design tokens, CSS variables, and truly application-wide styles.
+- When refactoring, move existing component-specific CSS rules into the corresponding component stylesheets.
+- Avoid duplicating CSS rules. Extract genuinely shared styles into dedicated shared stylesheets when necessary.
+- Preserve existing appearance, responsive behavior, and functionality, including CSS specificity, cascade order, and style precedence.
+- Prefer locally scoped class names to avoid collisions. Importing a regular CSS or SCSS file does not automatically scope its styles.
+
 Do not use Zod or add it as a dependency anywhere in the repository. Use class-validator/class-transformer for server request validation. Shared contracts use typed models directly, without runtime parsers or client validation.
 
 Separate top-level `const` (including `declare const`), `enum`, `type`, and `interface` declarations from the next declaration with a blank line. Add a short JSDoc comment before each interface explaining its purpose.

@@ -1,0 +1,38 @@
+.fc-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fc-space);
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 1px solid var(--fc-border);
+  border-radius: var(--fc-radius);
+  background: var(--fc-surface);
+  color: var(--fc-text);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--fc-selected);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--fc-accent);
+    outline-offset: 3px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.fc-button--primary {
+  background: #3451cd;
+  border-color: #3451cd;
+  color: #fff;
+
+  &:hover {
+    background: #2945bc;
+  }
+}

@@ -1,3 +1,5 @@
+import './icon.scss';
+
 import { useContext } from 'react';
 import { IconBase } from '../models/icon-context';
 import { IconName } from '../models/icon-name';

@@ -1,3 +1,5 @@
+import './confirm-dialog.scss';
+
 import type { ConfirmDialogProps } from './model-confirm-dialog';
 import { Dialog } from '@base-ui/react/dialog';
 

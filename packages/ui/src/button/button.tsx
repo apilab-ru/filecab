@@ -1,3 +1,5 @@
+import './button.scss';
+
 import { Button as BaseButton } from '@base-ui/react/button';
 import type { ButtonProps } from './model-button';
 

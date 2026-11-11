@@ -20,11 +20,14 @@ Prefer module-level constant lookup maps over nested ternary operators when sele
 
 # Style rules
 
+Place each React component in its own named folder, with a source file named for the component (for example, `library-browser/library-browser.tsx`). Never declare a React component in an `index.ts` or `index.tsx` file; use index files only to re-export modules. Put shared model declarations (enums, model constants, interfaces, and types used across modules) in a `models/` directory. Put a model used by only one component in that component's folder in a file prefixed with `model-` (for example, `model-library-browser.ts`).
+
 These rules apply to styles throughout the repository.
 
 1. Keep mobile and other responsive overrides inside the corresponding selector block, alongside its base declarations. Do not collect mobile overrides in a separate media-query section at the end of the stylesheet.
 2. Separate style groups with a blank line: between selector blocks, before nested selectors or media queries, and after nested blocks when another group follows.
 3. Prefer class selectors over element selectors. Add descriptive classes to template elements instead of styling tags such as `h1`, `p`, or `button`. Use element selectors only when a class-based approach would be impractical, such as global resets or styling markup outside the application's control.
+4. Keep component styles in separate stylesheets alongside the components that use them, and import those styles from the corresponding component. Keep shared and global styles in dedicated stylesheets. Avoid duplicating rules and remove styles and imports that are no longer used. Preserve existing styling, responsive behavior, CSS specificity, cascade order, and style precedence when moving rules.
 
 For example:
 
@@ -62,6 +65,17 @@ For example:
   }
 }
 ```
+
+### Component Style Colocation
+
+- Keep component-specific styles colocated with their React components.
+- Each component should have its own stylesheet (e.g., `ComponentName.tsx` → `ComponentName.scss`) imported directly into the component.
+- Do not place component-specific styles in global stylesheets.
+- Global stylesheets should contain only resets, typography, design tokens, CSS variables, and truly application-wide styles.
+- When refactoring, move existing component-specific CSS rules into the corresponding component stylesheets.
+- Avoid duplicating CSS rules. Extract genuinely shared styles into dedicated shared stylesheets when necessary.
+- Preserve existing appearance, responsive behavior, and functionality, including CSS specificity, cascade order, and style precedence.
+- Prefer locally scoped class names to avoid collisions. Importing a regular CSS or SCSS file does not automatically scope its styles.
 
 # Testing rules
 

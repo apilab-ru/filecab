@@ -1,3 +1,5 @@
+import './panel.scss';
+
 import type { PropsWithChildren } from 'react';
 
 /** Groups related content in a themed surface. */
