@@ -4,7 +4,7 @@ import './full-page.scss';
 
 import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router-dom';
 import { Category } from '@filecab/contracts';
-import { Button, Icon, IconName, FILECAB_ICON_URL } from '@filecab/ui';
+import { Button, Icon, IconName, FILECAB_ICON_URL, Select } from '@filecab/ui';
 import { FULL_MODES, MODE_LABELS, NAV_ICONS } from '../application-shell/model-application-shell';
 import { useInterfacePreferences } from '../hooks/use-interface-preferences';
 import { LibraryMode } from '../models/library-mode';
@@ -62,15 +62,17 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
           <span className="full-page__language-label">{t('language')}</span>
           <span className="full-page__language-control">
             <Icon name={IconName.Globe} />
-            <select
+            <Select
               className="interface-select"
               aria-label={t('language')}
+              placeholder={t('language')}
               value={locale}
-              onChange={(event) => setLocale(event.target.value)}
-            >
-              <option value="en">English</option>
-              <option value="ru">Русский</option>
-            </select>
+              onValueChange={setLocale}
+              options={[
+                { value: 'en', label: 'English' },
+                { value: 'ru', label: 'Русский' },
+              ]}
+            />
           </span>
         </label>
       </aside>

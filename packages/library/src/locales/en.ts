@@ -43,7 +43,7 @@ export const EN = {
   linkSummary:
     'Link {{local}} on this device with {{remote}} in your account. Overlapping entries: {{conflicts, number}}.',
   library: 'Library',
-  catalog: 'Search catalog',
+  catalog: 'Catalog',
   settings: 'Settings',
   anime: 'Anime',
   films: 'Films',

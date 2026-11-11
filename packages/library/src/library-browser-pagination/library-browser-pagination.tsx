@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import '../styles/library-browser-shared.scss';
 import './library-browser-pagination.scss';
 
-import { Button, Icon, IconName } from '@filecab/ui';
+import { Button, Icon, IconName, Select } from '@filecab/ui';
 import { LibraryOrder, LibrarySort } from '../models/library-sort';
 import { PAGE_SIZE, SORT_ORDER_LABELS } from '../library-browser/model-library-browser';
 import type { LibraryBrowserPaginationProps } from './model-library-browser-pagination';
@@ -36,29 +36,33 @@ export function LibraryBrowserPagination({
       </span>
       <label className="library-browser__ordering">
         <span>{t('sortBy')}</span>
-        <select
+        <Select
           className="library-browser__select"
           aria-label={t('sortBy')}
+          placeholder={t('sortBy')}
           value={sort}
-          onChange={(event) => onSortChange(event.target.value as LibrarySort)}
-        >
-          <option value={LibrarySort.Updated}>{t('recentlyUpdated')}</option>
-          <option value={LibrarySort.Title}>{t('Title')}</option>
-          <option value={LibrarySort.Rating}>{t('Rating')}</option>
-          <option value={LibrarySort.Year}>{t('year')}</option>
-        </select>
+          onValueChange={onSortChange}
+          options={[
+            { value: LibrarySort.Updated, label: t('recentlyUpdated') },
+            { value: LibrarySort.Title, label: t('Title') },
+            { value: LibrarySort.Rating, label: t('Rating') },
+            { value: LibrarySort.Year, label: t('year') },
+          ]}
+        />
       </label>
       <label className="library-browser__ordering">
         <span>{t('order')}</span>
-        <select
+        <Select
           className="library-browser__select"
           aria-label={t('order')}
+          placeholder={t('order')}
           value={order}
-          onChange={(event) => onOrderChange(event.target.value as LibraryOrder)}
-        >
-          <option value={LibraryOrder.Ascending}>{t(SORT_ORDER_LABELS[sort].ascending)}</option>
-          <option value={LibraryOrder.Descending}>{t(SORT_ORDER_LABELS[sort].descending)}</option>
-        </select>
+          onValueChange={onOrderChange}
+          options={[
+            { value: LibraryOrder.Ascending, label: t(SORT_ORDER_LABELS[sort].ascending) },
+            { value: LibraryOrder.Descending, label: t(SORT_ORDER_LABELS[sort].descending) },
+          ]}
+        />
       </label>
       <nav className="library-browser__pages" aria-label={t('pagination')}>
         <Button

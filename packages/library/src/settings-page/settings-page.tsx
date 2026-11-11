@@ -3,7 +3,7 @@ import { AuthControls } from '../auth-controls/auth-controls';
 import '../styles/interface-controls.scss';
 import './settings-page.scss';
 
-import { Button, Icon, IconName } from '@filecab/ui';
+import { Button, Icon, IconName, Select } from '@filecab/ui';
 import { useInterfacePreferences } from '../hooks/use-interface-preferences';
 import { useSyncSettings } from '../hooks/use-sync-settings';
 import { Theme } from '../models/theme';
@@ -66,15 +66,17 @@ export function SettingsPage({ popup }: SettingsPageProps) {
         <section className="settings-card settings-card--language">
           <label className="interface-preference">
             {t('language')}
-            <select
+            <Select
               className="interface-select"
               aria-label={t('language')}
+              placeholder={t('language')}
               value={locale}
-              onChange={(event) => setLocale(event.target.value)}
-            >
-              <option value="en">English</option>
-              <option value="ru">Русский</option>
-            </select>
+              onValueChange={setLocale}
+              options={[
+                { value: 'en', label: 'English' },
+                { value: 'ru', label: 'Русский' },
+              ]}
+            />
           </label>
         </section>
       )}

@@ -1,5 +1,6 @@
 export { Panel } from './panel/panel';
 export { Button } from './button/button';
+export { Select } from './select/select';
 export { ConfirmDialog } from './confirm-dialog/confirm-dialog';
 export { Icon } from './icon/icon';
 export { IconProvider } from './icon-provider/icon-provider';

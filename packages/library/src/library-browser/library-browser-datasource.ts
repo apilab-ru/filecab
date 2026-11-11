@@ -25,7 +25,7 @@ export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowse
     },
   ] = useLocalStore(() => ({
     query: '',
-    status: '',
+    status: null as string | null,
     rating: '',
     genre: '',
     sort: LibrarySort.Updated,
@@ -107,7 +107,7 @@ export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowse
     setQuery: (value: string) => changeFilter(() => setQuery(value)),
     setRating: (value: string) => changeFilter(() => setRating(value)),
     setSort: (value: LibrarySort) => changeFilter(() => setSort(value)),
-    setStatus: (value: string) => changeFilter(() => setStatus(value)),
+    setStatus: (value: string | null) => changeFilter(() => setStatus(value)),
     sort,
     start,
     status,

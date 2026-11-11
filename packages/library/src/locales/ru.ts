@@ -46,7 +46,7 @@ export const RU = {
   linkSummary:
     'Подключение: {{local}} на устройстве и {{remote}} в аккаунте. Совпадения: {{conflicts, number}}.',
   library: 'Библиотека',
-  catalog: 'Поиск в каталоге',
+  catalog: 'Каталог',
   settings: 'Настройки',
   anime: 'Аниме',
   films: 'Фильмы',

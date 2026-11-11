@@ -1,0 +1,80 @@
+.fc-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 1px solid var(--fc-border);
+  border-radius: var(--fc-radius);
+  background: var(--fc-input);
+  color: var(--fc-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &[data-placeholder] {
+    color: var(--fc-text);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--fc-accent);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.fc-select__icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background-color: var(--fc-muted);
+  mask: url('/icons/chevron-down.svg') center / contain no-repeat;
+  transition: transform 150ms ease;
+
+  &[data-popup-open] {
+    transform: rotate(180deg);
+  }
+}
+
+.fc-select__positioner {
+  z-index: 20;
+}
+
+.fc-select__popup {
+  min-width: var(--anchor-width);
+  max-height: min(var(--available-height), 320px);
+  overflow-y: auto;
+  padding: 4px 4px 0;
+  border: 1px solid var(--fc-border);
+  border-radius: var(--fc-radius);
+  background: var(--fc-surface);
+  color: var(--fc-text);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+  font-size: 14px;
+}
+
+.fc-select__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 32px;
+  padding: 6px 8px;
+  border-radius: calc(var(--fc-radius) - 2px);
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+
+  &[data-highlighted] {
+    background: var(--fc-selected);
+  }
+}
+
+.fc-select__indicator {
+  color: var(--fc-accent);
+}

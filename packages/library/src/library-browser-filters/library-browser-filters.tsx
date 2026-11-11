@@ -4,7 +4,7 @@ import '../styles/library-browser-shared.scss';
 import './library-browser-filters.scss';
 
 import { genreLabelFor, Status } from '@filecab/contracts';
-import { Button, Icon, IconName } from '@filecab/ui';
+import { Button, Icon, IconName, Select } from '@filecab/ui';
 import { LibraryLayout } from '../models/library-layout';
 import { RATING_OPTIONS } from '../library-browser/model-library-browser';
 import type { LibraryBrowserFiltersProps } from './model-library-browser-filters';
@@ -40,45 +40,45 @@ export function LibraryBrowserFilters({
           onChange={(event) => onQueryChange(event.target.value)}
         />
       </label>
-      <select
+      <Select
         className="library-browser__select"
         aria-label={t('Status')}
+        disabled={!available}
         value={status}
-        onChange={(event) => onStatusChange(event.target.value)}
-      >
-        <option value="">{t('Status')}</option>
-        {Object.values(Status).map((value) => (
-          <option key={value} value={value}>
-            {t(value)}
-          </option>
-        ))}
-      </select>
-      <select
+        onValueChange={onStatusChange}
+        placeholder={t('Status')}
+        options={[
+          { value: null, label: 'All' },
+          ...Object.values(Status).map((value) => ({ value, label: t(value) })),
+        ]}
+      />
+      <Select
         className="library-browser__select"
         aria-label={t('Rating')}
+        disabled={!available}
         value={rating}
-        onChange={(event) => onRatingChange(event.target.value)}
-      >
-        <option value="">{t('Rating')}</option>
-        {RATING_OPTIONS.map((value) => (
-          <option key={value} value={value}>
-            {value}+
-          </option>
-        ))}
-      </select>
-      <select
+        onValueChange={(value) => onRatingChange(value === null ? '' : String(value))}
+        placeholder={t('Rating')}
+        options={[
+          { value: '', label: t('Rating') },
+          ...RATING_OPTIONS.map((value) => ({ value: String(value), label: `${value}+` })),
+        ]}
+      />
+      <Select
         className="library-browser__select"
         aria-label={t('genres')}
+        disabled={!available}
         value={genre}
-        onChange={(event) => onGenreChange(event.target.value)}
-      >
-        <option value="">{t('genres')}</option>
-        {genres.map((item) => (
-          <option key={item.genreId} value={item.genreId}>
-            {genreLabelFor(item, locale).text}
-          </option>
-        ))}
-      </select>
+        onValueChange={(value) => onGenreChange(value === null ? '' : String(value))}
+        placeholder={t('genres')}
+        options={[
+          { value: '', label: t('genres') },
+          ...genres.map((item) => ({
+            value: String(item.genreId),
+            label: genreLabelFor(item, locale).text,
+          })),
+        ]}
+      />
       <div className="library-browser__views">
         <Button
           aria-label={t('listView')}
