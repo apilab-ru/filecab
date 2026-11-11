@@ -7,6 +7,7 @@ import {
   type CatalogSearchResponse,
 } from '@filecab/contracts';
 import { ApiException } from '../http/api-error';
+import { CatalogCacheService } from './catalog-cache.service';
 
 export const CATALOG_DEFAULT_PROVIDERS: CatalogCapabilities['defaults'] = {
   [Category.Anime]: 'smotret',
@@ -17,17 +18,21 @@ export const CATALOG_DEFAULT_PROVIDERS: CatalogCapabilities['defaults'] = {
 /** Defines the normalized search boundary that verified provider adapters implement. */
 export interface CatalogSearchAdapter {
   capability: CatalogProviderCapability;
+  schemaVersion: number;
   search(request: CatalogSearchRequest & { provider: string }): Promise<CatalogSearchResponse>;
 }
 
 /** Selects one provider and enforces its advertised catalog capabilities. */
 export class CatalogSearchService {
-  constructor(private readonly adapters: readonly CatalogSearchAdapter[] = []) {}
+  constructor(
+    private readonly adapters: readonly CatalogSearchAdapter[] = [],
+    private readonly cache?: CatalogCacheService,
+  ) {}
 
   /** Reports defaults alongside only wired provider capabilities. */
   capabilities(): CatalogCapabilities {
     return {
-      schemaVersion: 1,
+      schemaVersion: 1 as const,
       defaults: CATALOG_DEFAULT_PROVIDERS,
       providers: this.adapters.map((adapter) => adapter.capability),
     };
@@ -64,7 +69,46 @@ export class CatalogSearchService {
         'Selected catalog provider does not support this request',
       );
 
-    const response = await adapter.search({ ...request, provider });
+    const effectiveRequest = { ...request, provider };
+    let fresh;
+
+    try {
+      fresh = await this.cache?.getSearch(effectiveRequest, false, adapter.schemaVersion);
+    } catch {
+      // Cache availability must not prevent a live provider request.
+    }
+
+    if (fresh)
+      return {
+        ...fresh.response,
+        stale: false,
+        cachedAt: fresh.fetchedAt.toISOString(),
+      };
+
+    let response: CatalogSearchResponse;
+
+    try {
+      response = await adapter.search(effectiveRequest);
+    } catch (error) {
+      if (error instanceof ApiException && !error.retryable) throw error;
+
+      let stale;
+
+      try {
+        stale = await this.cache?.getSearch(effectiveRequest, true, adapter.schemaVersion);
+      } catch {
+        // The original provider failure remains authoritative when cache storage is unavailable.
+      }
+
+      if (stale)
+        return {
+          ...stale.response,
+          stale: true,
+          cachedAt: stale.fetchedAt.toISOString(),
+        };
+
+      throw error;
+    }
 
     if (
       response.schemaVersion !== 1 ||
@@ -90,12 +134,20 @@ export class CatalogSearchService {
       return true;
     });
 
-    return {
+    const normalizedResponse = {
       ...response,
-      schemaVersion: 1,
+      schemaVersion: 1 as const,
       locale: request.locale,
       page: request.page,
       results,
     };
+
+    try {
+      await this.cache?.storeSearch(effectiveRequest, normalizedResponse, adapter.schemaVersion);
+    } catch {
+      // A valid provider response remains usable when cache persistence fails.
+    }
+
+    return normalizedResponse;
   }
 }

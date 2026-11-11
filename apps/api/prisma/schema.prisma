@@ -61,14 +61,45 @@ model Session {
 
 /// Shared catalog identity, independent of any owner library or provider ID.
 model CatalogItem {
-  id           String               @id @db.Uuid
-  category     String
-  granularity  String               @default("unknown")
+  id            String                 @id @db.Uuid
+  category      String
+  granularity   String                 @default("unknown")
   /// Shared-contract Snapshot: localized metadata, references, genres and provider scores.
-  snapshot     Json
-  references   CatalogReference[]
-  translations CatalogTranslation[]
-  entries      LibraryEntry[]
+  snapshot      Json
+  references    CatalogReference[]
+  translations  CatalogTranslation[]
+  metadataCache CatalogMetadataCache[]
+  entries       LibraryEntry[]
+}
+
+/// Bounded provider search pages, keyed by a canonical effective request hash.
+model CatalogSearchCache {
+  requestKey     String   @id
+  identityKey    String
+  page           Int
+  response       Json
+  fetchedAt      DateTime @db.Timestamptz(3)
+  expiresAt      DateTime @db.Timestamptz(3)
+  staleUntil     DateTime @db.Timestamptz(3)
+  lastAccessedAt DateTime @db.Timestamptz(3)
+
+  @@index([identityKey, fetchedAt])
+  @@index([expiresAt])
+}
+
+/// Locale-specific normalized metadata cached independently of private library fields.
+model CatalogMetadataCache {
+  catalogId  String      @db.Uuid
+  catalog    CatalogItem @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  locale     String
+  schema     Int
+  record     Json
+  provenance Json
+  fetchedAt  DateTime    @db.Timestamptz(3)
+  expiresAt  DateTime    @db.Timestamptz(3)
+
+  @@id([catalogId, locale, schema])
+  @@index([expiresAt])
 }
 
 /// Namespaced provider identity mapped to one internal catalog item.

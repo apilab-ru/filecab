@@ -142,6 +142,8 @@ export interface CatalogSearchResponse {
   hasMore: boolean;
   total?: number;
   limitation?: 'none' | 'lookahead-exhausted' | 'unsupported-filter' | 'upstream-unavailable';
+  stale?: boolean;
+  cachedAt?: string;
 }
 
 /** Describes an operation and filters that an enabled catalog provider supports. */

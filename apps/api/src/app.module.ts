@@ -14,6 +14,7 @@ import { DATABASE_READINESS, PostgresReadiness, type DatabaseReadiness } from '.
 import { CatalogController } from './catalog/catalog.controller';
 import { CatalogIdentityService } from './catalog/catalog-identity.service';
 import { CatalogSearchService } from './catalog/catalog-search.service';
+import { CatalogCacheService } from './catalog/catalog-cache.service';
 
 @Module({})
 export class AppModule {
@@ -41,8 +42,14 @@ export class AppModule {
         AuthGuard,
         LibraryInputGuard,
         {
+          provide: CatalogCacheService,
+          inject: [AuthService],
+          useFactory: (auth: AuthService) => new CatalogCacheService(auth.database),
+        },
+        {
           provide: CatalogSearchService,
-          useFactory: () => new CatalogSearchService(),
+          inject: [CatalogCacheService],
+          useFactory: (cache: CatalogCacheService) => new CatalogSearchService([], cache),
         },
         {
           provide: CatalogIdentityService,

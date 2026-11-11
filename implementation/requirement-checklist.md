@@ -176,6 +176,17 @@ requirement rows above remain unchecked until provider adapters and deterministi
 identity/pagination fixtures establish their full behavior; no provider is advertised
 or available through the search service yet.
 
+12.b cache code is delivered in `apps/api/src/catalog/catalog-cache.service.ts` with
+PostgreSQL search-page and locale metadata tables from migration
+`20261111010000_catalog_cache`. Canonical request hashes isolate provider, locale, query,
+category, filters, ordering, page size/page, contract version and adapter schema version.
+Fresh search results are reused for 15 minutes; retryable upstream failures can return
+an explicitly stale-labeled page for up to 24 hours. Successful empty pages replace
+cached pages. Metadata projections retain provider provenance and exclude owner fields;
+cache limits are 5,000 search pages globally, 20 per request identity and 10,000 metadata
+rows. Typecheck, Prisma schema validation, ESLint and Prettier pass; deterministic cache
+behavior checks remain pending, so the broader catalog requirement rows stay unchecked.
+
 ## External list synchronization
 
 | Done | Requirement                                                                                                            | Step | Planned code area                             | Status  | Code / verification evidence | Blocker |

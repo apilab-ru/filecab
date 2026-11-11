@@ -186,11 +186,11 @@ Exit: code delivered; automated identity-race and adapter-continuation verificat
 
 ### 12.b Implement catalog cache
 
-- [ ] Add provider/locale/query/category/filter/order/page/schema-aware metadata and search caches with freshness and provenance.
-- [ ] Add explicit stale fallback and invalidate pagination mappings when request identity changes; never cache owner-private fields or hide valid empty results/removals.
-- [ ] Bound cache storage and continuation/lookahead state.
+- [x] Add provider/locale/query/category/filter/order/page/schema-aware metadata and search caches with freshness and provenance.
+- [x] Add explicit stale fallback and isolate pagination mappings by full request identity; never cache owner-private fields or hide valid empty results/removals.
+- [x] Bound cache storage and continuation/lookahead state.
 
-Exit: deterministic checks establish cache isolation, stale labeling, request-key separation, and cursor invalidation.
+Exit: implementation is delivered; deterministic checks for cache isolation, stale labeling, request-key separation, and cursor invalidation remain pending.
 
 ### 12.c Implement genre administration
 

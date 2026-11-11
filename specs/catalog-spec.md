@@ -93,7 +93,13 @@ never a public GET with write effects.
 Validate responses; bound timeouts, sizes, retries and concurrency. Honor throttling and
 Retry-After; keep secrets server-side and never rotate keys to evade limits.
 Cache keys include provider, reference/query, category, locale, filters, ordering,
-pagination and adapter/schema version as applicable. Exclude private fields.
+pagination and adapter/schema version as applicable. Search-cache identity includes
+page size and isolates pages whenever any request input changes. Successful empty
+pages replace cached pages; a failed refresh may return an expired page only with an
+explicit stale marker and cache timestamp. Search pages remain fresh for 15 minutes
+and eligible for stale fallback for up to 24 hours. Bound search cache storage to
+5,000 pages globally and 20 pages per request identity; bound locale metadata snapshots
+to 10,000 rows with a 24-hour freshness window. Exclude private fields.
 Identify stale fallback; do not mask empty results or explicit removals.
 Distinguish unavailable, credentials, quota, capability, missing-record, malformed-response,
 timeout and mapping-conflict errors without leaking secrets or upstream payloads.

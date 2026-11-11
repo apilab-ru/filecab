@@ -56,6 +56,15 @@ export class CatalogRecordDto implements CatalogRecord {
   })
   granularity!: CatalogRecord['granularity'];
   @ApiProperty({ type: () => SnapshotDto }) snapshot!: CatalogRecord['snapshot'];
+  @ApiPropertyOptional({ type: String, format: 'date-time' }) cachedAt?: string;
+}
+
+/** Validates the optional locale projection for internal catalog details. */
+export class CatalogDetailsQueryDto {
+  @ApiPropertyOptional({ enum: Locale })
+  @IsOptional()
+  @IsEnum(Locale)
+  locale?: Locale;
 }
 
 /** Validates one bounded normalized search request at the HTTP boundary. */
@@ -127,4 +136,11 @@ export class CatalogSearchResponseDto implements CatalogSearchResponse {
     enum: ['none', 'lookahead-exhausted', 'unsupported-filter', 'upstream-unavailable'],
   })
   limitation?: CatalogSearchResponse['limitation'];
+  @ApiPropertyOptional({
+    type: Boolean,
+    description: 'True when served from an expired cache entry',
+  })
+  stale?: boolean;
+  @ApiPropertyOptional({ type: String, format: 'date-time' })
+  cachedAt?: string;
 }

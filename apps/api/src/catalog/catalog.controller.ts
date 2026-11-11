@@ -10,8 +10,10 @@ import { AuthService } from '../auth/auth.service';
 import { ApiException } from '../http/api-error';
 import { ApiErrorDto } from '../http/openapi.dto';
 import { RequestDtoPipe } from '../http/validation';
+import { CatalogCacheService } from './catalog-cache.service';
 import {
   CatalogCapabilitiesDto,
+  CatalogDetailsQueryDto,
   CatalogRecordDto,
   CatalogSearchRequestDto,
   CatalogSearchResponseDto,
@@ -28,6 +30,7 @@ export class CatalogController {
   constructor(
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(CatalogSearchService) private readonly catalog: CatalogSearchService,
+    @Inject(CatalogCacheService) private readonly cache: CatalogCacheService,
   ) {}
 
   @Get('capabilities')
@@ -68,10 +71,28 @@ export class CatalogController {
     summary: 'Read normalized catalog details by internal catalog ID',
     description: 'GET /api/v1/catalog/items/{catalogId}.',
   })
+  @ApiQuery({ name: 'locale', enum: ['en', 'ru'], required: false })
   @ApiResponse({ status: 200, type: CatalogRecordDto })
   async details(
     @Param('catalogId', new ParseUUIDPipe({ version: 'all' })) catalogId: string,
-  ): Promise<CatalogRecord> {
+    @Query(new RequestDtoPipe(CatalogDetailsQueryDto)) query: CatalogDetailsQueryDto,
+  ): Promise<CatalogRecord & { cachedAt?: string }> {
+    if (query.locale) {
+      let cached;
+
+      try {
+        cached = await this.cache.getMetadata(catalogId, query.locale);
+      } catch {
+        // Cache availability must not block the canonical catalog detail read.
+      }
+
+      if (cached)
+        return {
+          ...cached.record,
+          cachedAt: cached.fetchedAt.toISOString(),
+        };
+    }
+
     const item = await this.auth.database.catalogItem.findUnique({ where: { id: catalogId } });
 
     if (!item) throw new ApiException(404, ApiErrorCode.NotFound, 'Catalog record not found');
