@@ -18,6 +18,7 @@ import { CatalogCacheService } from './catalog/catalog-cache.service';
 import { CatalogGenreAdminController } from './catalog/catalog-genre-admin.controller';
 import { CatalogGenreService } from './catalog/catalog-genre.service';
 import { SmotretAnimeAdapter } from './catalog/smotret-anime.adapter';
+import { KinopoiskDevAdapter } from './catalog/kinopoisk-dev.adapter';
 
 @Module({})
 export class AppModule {
@@ -54,16 +55,27 @@ export class AppModule {
           provide: CatalogSearchService,
           inject: [CatalogCacheService, CatalogIdentityService],
           useFactory: (cache: CatalogCacheService, identity: CatalogIdentityService) => {
-            const adapters = environment.providers.smotret.enabled
-              ? [
-                  new SmotretAnimeAdapter(
-                    environment.providers.smotret.origin,
-                    environment.catalog,
-                    identity,
-                    'Filecab catalog integration',
-                  ),
-                ]
-              : [];
+            const adapters = [
+              ...(environment.providers.smotret.enabled
+                ? [
+                    new SmotretAnimeAdapter(
+                      environment.providers.smotret.origin,
+                      environment.catalog,
+                      identity,
+                      'Filecab catalog integration',
+                    ),
+                  ]
+                : []),
+              ...(environment.providers.kinopoisk.enabled && environment.providers.kinopoisk.apiKey
+                ? [
+                    new KinopoiskDevAdapter(
+                      environment.providers.kinopoisk.origin,
+                      environment.providers.kinopoisk.apiKey,
+                      identity,
+                    ),
+                  ]
+                : []),
+            ];
 
             return new CatalogSearchService(adapters, cache);
           },

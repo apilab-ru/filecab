@@ -655,7 +655,7 @@ export class SmotretAnimeAdapter implements CatalogSearchAdapter {
             this.fetcher(new URL(`/api${path}`, this.origin), {
               headers: { accept: 'application/json', 'user-agent': this.userAgent },
               signal: controller.signal,
-              redirect: 'error',
+              redirect: 'follow',
             }),
             new Promise<never>((_resolve, reject) => {
               timeout = setTimeout(() => {

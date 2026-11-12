@@ -19,7 +19,7 @@ owns shared catalog rules; integration specs add provider-specific constraints.
 ### Routing and selection
 
 Allow an explicit enabled provider; otherwise use deployment defaults:
-`anime=smotret`, `films=kinopoisk-dev`, `tv=kinopoisk-dev`.
+`anime=smotret`, `films=kinopoisk`, `tv=kinopoisk`.
 A disabled default returns unavailable, without silent switching. Search uses one
 provider; users may choose another after failure. Automatic aggregation is optional.
 Provider selection never changes Filecab login, ownership or extension replication.

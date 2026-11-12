@@ -10,7 +10,7 @@ Streaming, provider accounts and watchlist synchronization are out of scope.
 
 ### Configuration and scope
 
-Use provider key `kinopoisk-dev` but the Kinopoisk title-reference namespace.
+Use provider key `kinopoisk` but the Kinopoisk title-reference namespace.
 Configure origin/version and server-only documented authentication; requested origin
 is `https://api.kinopoisk.dev`. Verified replacement origins must preserve existing
 identity mappings. Do not substitute `kinopoiskapiunofficial.tech`. Google login
@@ -69,6 +69,21 @@ after category filtering/deduplication; totals must describe eligible Filecab re
 Short filtered pages are not necessarily the end. Follow shared continuation rules and
 invalidate mappings when request identity changes.
 
+Kinopoisk uses bounded replay from upstream page 1 for each display page: read fixed
+50-record pages, classify and deduplicate series by KinoPoisk title ID, then slice the
+requested display page. Read at most 20 upstream pages and stop once one additional
+eligible result establishes `hasMore`. No continuation state is shared across requests.
+When the bound prevents establishing continuation, return `lookahead-exhausted` and
+omit exact totals; a short filtered page alone does not establish the end.
+
+### Agreed simplified scope
+
+Additional TMDB movie/TV verification, filter-value validation and nested provider DTO
+validation are excluded from step 14. Existing namespace separation and category
+classification remain. Kinopoisk uses fixed request timeout/payload limits; configurable
+request budgets and Retry-After handling are excluded from this step. These exceptions
+override the corresponding shared catalog/provider requirements for this adapter.
+
 ### Localization and enrichment
 
 Use requested `en|ru` for available fields and shared fallbacks. Do not invent a language
@@ -96,3 +111,39 @@ mapping, post-filter pagination, auth failures and locale fallback.
 
 Record verified paths, headers, query serialization and payload fixtures in the adapter
 design for the selected version. Do not infer compatibility from an older adapter.
+
+### Documentation review (12 November 2026)
+
+Response verification: bounded authenticated v1.4 discovery and text-search reads both
+returned numeric release years. Validate a present `year` as a positive integer, while
+allowing missing or null values; do not require a string or coerce malformed text.
+
+Runtime correction: a direct probe of `api.kinopoisk.dev` returned HTTP 301 to
+`api.poiskkino.dev`. The replacement is documented at
+https://api.poiskkino.dev/documentation. A bounded authenticated v1.4 discovery request
+to the replacement returned HTTP 200 with the configured key. The default and local
+configured origin now use `https://api.poiskkino.dev`. Both catalog adapters follow HTTP
+redirects using the Fetch implementation's redirect limit and the existing request timeout.
+This probe does not verify
+the adapter's remaining normalization and pagination contracts.
+
+The current official reference pages document v1.4 text search at
+`GET /v1.4/movie/search` with required `query`, `page`, and `limit` parameters; filtered
+discovery at `GET /v1.4/movie` with page/limit, repeated `type`, `selectFields`, and
+documented filters including `externalId.imdb`, `externalId.tmdb`, `year`, `rating.kp`,
+and `genres.name`; and detail reads at `GET /v1.4/movie/{id}`. The documentation shows
+`X-API-KEY` header authentication, and detail responses document 401, 403, and 404.
+The configured key has now passed bounded discovery and text-search reads. This does
+not establish the account's complete entitlement, quotas, or usage conditions. Detail
+and genre contracts still need independent verification. The adapter remains opt-in via `KINOPOISK_ENABLED` and
+`KINOPOISK_API_KEY`.
+
+The initial adapter supports text search and year/format discovery, with category
+classification for `movie`/`cartoon` and `tv-series`/`animated-series`. It intentionally
+does not advertise genre filtering or ordering until a verified mapping and operation
+contract are established. Anime and unknown provider types are excluded. IMDb IDs remain
+strings; TMDB references are scoped to `movie` or `tv`; `kpHD` values are never treated
+as title IDs. No season endpoint or complete episode policy is enabled, so episode totals
+remain unknown. Seventeen deterministic tests cover release years, selected failures and bounded
+pagination; the remaining contract scenarios are recorded
+in the step 14 readiness review before it can be marked complete.

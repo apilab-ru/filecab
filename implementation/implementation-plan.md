@@ -31,7 +31,7 @@ Reviewed 8 November 2026 against the current working tree and recorded delivery 
 | 11   | Partial: shared browser and website reads exist; complete the sequence above.                                                                                                      | `gpt-6.1-sol`     | High      | Shared client behavior, layout and mutation correctness need coordinated changes.                |
 | 12   | Pending: capability contracts, identity/cache boundaries and bounded continuation before provider wiring.                                                                          | `gpt-6-astra`     | High      | Cross-provider identity, pagination and safe enrichment have interacting invariants.             |
 | 13   | Partial: verified public API scope and configured mirror, implemented bounded search/detail/reference adapter; deterministic provider fixtures and verified genre mappings remain. | `gpt-6.1-sol`     | High      | Bounded adapter work once step 12 establishes the common rules.                                  |
-| 14   | Pending: verify Kinopoisk contracts, classification and operation-specific capabilities.                                                                                           | `gpt-6.1-sol`     | High      | Provider-specific filtering and pagination need careful implementation and fixtures.             |
+| 14   | Partial: v1.4 documented endpoints and a gated initial adapter are recorded; finish fixtures, operation-specific pagination/filtering, and live account verification.              | `gpt-6.1-sol`     | High      | Provider-specific filtering and pagination need careful implementation and fixtures.             |
 | 15   | Pending: connect real catalog search, editors and explicit reconciliation.                                                                                                         | `gpt-6.1-sol`     | High      | Async UI state, cancellation and identity reconciliation span both clients.                      |
 | 16   | Pending: declarative extraction/configuration with exact host and permission boundaries.                                                                                           | `gpt-6-astra`     | High      | Remote configuration, hostile page content and identity evidence require architectural judgment. |
 | 17   | Pending: atomic current-format backup/restore and recoverable confirmation.                                                                                                        | `gpt-6-astra`     | High      | Replacement, concurrency and replication must preserve durable data under failure.               |
@@ -219,13 +219,40 @@ Exit: search, details and Smotret/MAL reference lookup are wired only when `SMOT
 Depends on step 12. Covers all requirements in integration-kinopoisk-spec.md.
 
 - [ ] Verify the selected API version/origin, authentication, usage conditions, and separate text-search/discovery/detail/genre contracts before activation.
-- [ ] Keep adapter key `kinopoisk-dev` separate from canonical Kinopoisk references; separate numeric title IDs, HD IDs, IMDb strings, and scoped TMDB IDs.
+- [ ] Keep adapter key `kinopoisk` separate from canonical Kinopoisk references; separate numeric title IDs, HD IDs, IMDb strings, and scoped TMDB IDs.
 - [ ] Enforce films = movie/cartoon and TV = tv-series/animated-series, with explicit handling of anime/unknown types and verified `isSeries` consistency checks.
 - [ ] Advertise filters/order per operation; implement continuation-aware category filtering or explicitly reject unsupported combinations. Never forward inaccurate provider totals after filtering.
 - [ ] Normalize nullable posters, attributed provider scores, truthful title languages, canonical catalog links, genres, and episode totals only with known complete coverage.
 - [ ] Test reference scope, text/filter combinations, classification, post-filter pagination, locale fallback, credentials, quotas, and incomplete season data.
 
 Exit: film and TV results are distinct and credentials remain server-side; manual library operations survive adapter failure.
+
+### Readiness review — updated after agreed scope reduction
+
+Step 14 remains partial overall. The user excluded additional TMDB movie/TV checks,
+filter-value and nested provider DTO validation, configurable request budgets and
+Retry-After handling. These items are not completion blockers for the agreed scope.
+
+- [x] Correct pagination without dropping lookahead records. Each display request
+      replays fixed 50-record upstream pages, filters category, deduplicates title IDs,
+      and slices the requested page. Eligible lookahead alone establishes `hasMore`;
+      mixed provider totals are omitted. No shared continuation state can mix requests.
+      Adapter cache schema version is bumped to 2 so older search pages are not reused.
+- [x] Bound replay to 20 upstream pages and expose `lookahead-exhausted` if the bound
+      prevents establishing continuation. Mutable provider results can still shift between
+      requests; this approach does not claim upstream snapshot isolation.
+- [x] Add pagination regressions for display/upstream boundaries, sparse category
+      matches, duplicates, unknown totals, empty/end pages, query/category isolation,
+      classification, structured discovery and bounded scans. Together with year and
+      failure diagnostics, 17 adapter tests and API typecheck pass.
+
+Remaining work outside this pagination change: verify independent detail/genre
+contracts and usage conditions, resolve series catalog URLs and score attribution
+without external IDs, verify genre mappings/operation capabilities, and cover locale,
+nullable media and incomplete-season metadata. Additional title-ID revalidation after
+lookup remains unverified. These items are not claimed complete by passing the
+pagination tests. Live discovery/text-search probes returned HTTP 200 with the
+configured key, and numeric-year response validation is corrected.
 
 ## 15. Connect catalog search, add, and reconciliation interfaces
 

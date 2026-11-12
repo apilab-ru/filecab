@@ -12,7 +12,7 @@ The extension uses one fixed-name, device-local RxDB/Dexie database and supports
 
 Progress is a nonnegative JavaScript-safe integer. Exceeding a known positive total produces a warning and remains saveable. Unknown/zero provider totals normalize to null. No progress action automatically changes viewing status.
 
-Catalog defaults are `anime=smotret`, `films=kinopoisk-dev`, and `tv=kinopoisk-dev`, expressed explicitly in deployment configuration. Activation still requires provider verification. A disabled default produces an unavailable-provider error rather than silent switching. Shikimori is exclusively a personal-list connection, not a general catalog or genre provider. Catalog availability never gates manual library CRUD.
+Catalog defaults are `anime=smotret`, `films=kinopoisk`, and `tv=kinopoisk`, expressed explicitly in deployment configuration. Activation still requires provider verification. A disabled default produces an unavailable-provider error rather than silent switching. Shikimori is exclusively a personal-list connection, not a general catalog or genre provider. Catalog availability never gates manual library CRUD.
 
 ## Viewing-source normalization
 
