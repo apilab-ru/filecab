@@ -17,6 +17,7 @@ import { CatalogGenreService } from './catalog-genre.service';
 import {
   CatalogCapabilitiesDto,
   CatalogDetailsQueryDto,
+  CatalogProviderDetailsQueryDto,
   CatalogRecordDto,
   CatalogSearchRequestDto,
   CatalogSearchResponseDto,
@@ -122,6 +123,59 @@ export class CatalogController {
       granularity: item.granularity as CatalogRecord['granularity'],
       snapshot: item.snapshot as unknown as CatalogRecord['snapshot'],
     };
+  }
+
+  @Get('providers/:namespace/:entity/:id')
+  @ApiParam({ name: 'namespace', type: String, example: 'smotret' })
+  @ApiParam({ name: 'entity', type: String, example: 'series' })
+  @ApiParam({ name: 'id', type: String, example: '30414' })
+  @ApiQuery({ name: 'locale', enum: ['en', 'ru'], required: true })
+  @ApiOperation({
+    summary: 'Resolve provider details and persist a stable internal catalog identity',
+    description:
+      'GET /api/v1/catalog/providers/{namespace}/{entity}/{id}?locale=en. Only enabled adapters and their documented reference namespaces are accepted.',
+  })
+  @ApiResponse({ status: 200, type: CatalogRecordDto })
+  @ApiResponse({ status: 400, type: ApiErrorDto, description: 'Unsupported provider reference' })
+  @ApiResponse({ status: 404, type: ApiErrorDto, description: 'Provider record not found' })
+  @ApiResponse({ status: 409, type: ApiErrorDto, description: 'Provider reference is ambiguous' })
+  @ApiResponse({ status: 429, type: ApiErrorDto, description: 'Provider request budget exceeded' })
+  @ApiResponse({ status: 502, type: ApiErrorDto, description: 'Provider response was invalid' })
+  @ApiResponse({ status: 503, type: ApiErrorDto, description: 'Provider operation unavailable' })
+  @ApiResponse({ status: 504, type: ApiErrorDto, description: 'Provider request timed out' })
+  providerDetails(
+    @Param('namespace') namespace: string,
+    @Param('entity') entity: string,
+    @Param('id') id: string,
+    @Query(new RequestDtoPipe(CatalogProviderDetailsQueryDto))
+    query: CatalogProviderDetailsQueryDto,
+  ): Promise<CatalogRecord> {
+    return this.catalog.resolveReference(namespace, entity, id, query.locale);
+  }
+
+  @Get('provider-items/:provider/:id')
+  @ApiParam({ name: 'provider', type: String, example: 'smotret' })
+  @ApiParam({ name: 'id', type: String, example: '30414' })
+  @ApiQuery({ name: 'locale', enum: ['en', 'ru'], required: true })
+  @ApiOperation({
+    summary: 'Read provider-owned details and persist a stable internal catalog identity',
+    description:
+      'GET /api/v1/catalog/provider-items/{provider}/{id}?locale=en. This operation uses the provider detail contract and does not accept an internal catalog ID.',
+  })
+  @ApiResponse({ status: 200, type: CatalogRecordDto })
+  @ApiResponse({ status: 400, type: ApiErrorDto, description: 'Invalid provider record ID' })
+  @ApiResponse({ status: 404, type: ApiErrorDto, description: 'Provider record not found' })
+  @ApiResponse({ status: 429, type: ApiErrorDto, description: 'Provider request budget exceeded' })
+  @ApiResponse({ status: 502, type: ApiErrorDto, description: 'Provider response was invalid' })
+  @ApiResponse({ status: 503, type: ApiErrorDto, description: 'Provider details are unavailable' })
+  @ApiResponse({ status: 504, type: ApiErrorDto, description: 'Provider request timed out' })
+  providerItem(
+    @Param('provider') provider: string,
+    @Param('id') id: string,
+    @Query(new RequestDtoPipe(CatalogProviderDetailsQueryDto))
+    query: CatalogProviderDetailsQueryDto,
+  ): Promise<CatalogRecord> {
+    return this.catalog.details(provider, id, query.locale);
   }
 
   @Get('references/:namespace/:entity/:id')

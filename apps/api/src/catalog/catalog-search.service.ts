@@ -5,6 +5,8 @@ import {
   type CatalogProviderCapability,
   type CatalogSearchRequest,
   type CatalogSearchResponse,
+  type CatalogRecord,
+  type Locale,
 } from '@filecab/contracts';
 import { ApiException } from '../http/api-error';
 import { CatalogCacheService } from './catalog-cache.service';
@@ -20,6 +22,13 @@ export interface CatalogSearchAdapter {
   capability: CatalogProviderCapability;
   schemaVersion: number;
   search(request: CatalogSearchRequest & { provider: string }): Promise<CatalogSearchResponse>;
+  resolveReference?(
+    namespace: string,
+    entity: string,
+    id: string,
+    locale: Locale,
+  ): Promise<CatalogRecord>;
+  details?(id: string, locale: Locale): Promise<CatalogRecord>;
 }
 
 /** Selects one provider and enforces its advertised catalog capabilities. */
@@ -149,5 +158,42 @@ export class CatalogSearchService {
     }
 
     return normalizedResponse;
+  }
+
+  /** Resolves one provider reference only through the adapter that owns its namespace. */
+  async resolveReference(
+    namespace: string,
+    entity: string,
+    id: string,
+    locale: Locale,
+  ): Promise<CatalogRecord> {
+    const adapter = this.adapters.find((candidate) =>
+      candidate.capability.referenceNamespaces.includes(namespace),
+    );
+
+    if (!adapter?.resolveReference || !adapter.capability.operations.includes('resolve-reference'))
+      throw new ApiException(
+        503,
+        ApiErrorCode.ProviderUnavailable,
+        'Provider reference lookup is unavailable',
+        true,
+      );
+
+    return adapter.resolveReference(namespace, entity, id, locale);
+  }
+
+  /** Reads provider details only when the selected adapter advertises that operation. */
+  async details(provider: string, id: string, locale: Locale): Promise<CatalogRecord> {
+    const adapter = this.adapters.find((candidate) => candidate.capability.provider === provider);
+
+    if (!adapter?.details || !adapter.capability.operations.includes('details'))
+      throw new ApiException(
+        503,
+        ApiErrorCode.ProviderUnavailable,
+        'Provider details are unavailable',
+        true,
+      );
+
+    return adapter.details(id, locale);
   }
 }

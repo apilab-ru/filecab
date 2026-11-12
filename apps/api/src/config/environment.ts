@@ -222,6 +222,18 @@ export function validateEnvironment(env: Environment) {
     shikimori,
   };
 
+  try {
+    const smotretOrigin = new URL(providers.smotret.origin);
+
+    if (
+      !['smotret-anime.org', 'smotret-anime.online'].includes(smotretOrigin.hostname) ||
+      smotretOrigin.port
+    )
+      invalid.add('SMOTRET_API_ORIGIN');
+  } catch {
+    invalid.add('SMOTRET_API_ORIGIN');
+  }
+
   if (invalid.size) throw new EnvironmentValidationError([...invalid].sort());
 
   return {

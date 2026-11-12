@@ -81,5 +81,49 @@ mapping, records without cross-provider IDs, persistence completion and continua
 ## Provider documentation
 
 - [API documentation](https://smotret-anime.org/api-docs)
+- [OpenAPI description](https://smotret-anime.org/api/openapi.yaml)
+- [Usage conditions](https://smotret-anime.org/docs/terms)
 
-Record the verified mirror, parameters and safe response fixtures in the adapter design.
+### Verified catalog surface (12 November 2026)
+
+The selected origin is the configured `SMOTRET_API_ORIGIN`, defaulting to
+`https://smotret-anime.online`. The official OpenAPI document is served by
+`smotret-anime.org`; a bounded public `GET /api/series?limit=1&fields=...`
+request to both `.org` and the configured `.online` origin returned the documented
+`{ data: [...] }` envelope and the same sample series ID. This confirms the current
+configured host for the observed API surface only; mirrors must not be switched or
+treated as generally interchangeable without further ID verification.
+
+The documented public catalog operations are `GET /api/series` and
+`GET /api/series/{id}`; they do not require credentials. Search accepts `query`,
+`myAnimeListId`, `type`, `year`, `season`, `isActive`, `isAiring`, `chips`, `order=id`,
+`limit`, and `offset`. Filecab supports only the documented exact fields
+`myAnimeListId`, `type`, `year`, and `season`, and order `id`; it does not forward
+arbitrary `chips` content. Provider limit is 1000; Filecab requests at most 50 results
+and uses `(page - 1) * pageSize` with one bounded lookahead row. The API asks clients
+to identify their application in `User-Agent`. Catalog routes are public; user data
+and playback/embed APIs require an access token and are outside this integration.
+
+Filecab exposes provider reads as `GET /api/v1/catalog/search`,
+`GET /api/v1/catalog/provider-items/smotret/{id}?locale=en|ru`, and
+`GET /api/v1/catalog/providers/{namespace}/{entity}/{id}?locale=en|ru`. Each accepted
+record is persisted through the shared identity service before its internal catalog ID
+is returned.
+
+The documented `Series` schema exposes IDs, title translations, type, year, season,
+declared episode total, poster URLs and MAL ID/score. One bounded live detail read also
+returned `descriptions`, `genres` and `episodes`, but the OpenAPI schema does not define
+these fields or promise episode completeness. Filecab accepts them only as optional,
+validated detail fields; absence leaves metadata unknown. Returned provider genres keep
+their Smotret IDs and labels as provider-scoped candidates until an operator verifies a
+mapping; the genre capability and genre filter remain disabled. Available episode count
+counts only listed narrative episode types, while `numberOfEpisodes` remains the
+provider-declared total. Search results do not establish a Shikimori mapping: IDs parsed
+from provider links remain unverified. MAL IDs from `myAnimeListId` are retained as
+unverified references during ordinary search; exact MAL lookup can verify a reference
+only when the returned record contains that exact ID.
+
+The site's terms prohibit unauthorized bulk collection and automation that bypasses
+the API or its limits. This adapter uses documented API routes only, sends a descriptive
+User-Agent, and applies Filecab timeout, payload, retry, concurrency and page-size
+budgets. No credentials are configured or needed for these public catalog operations.

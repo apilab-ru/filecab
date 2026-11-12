@@ -17,6 +17,7 @@ import { CatalogSearchService } from './catalog/catalog-search.service';
 import { CatalogCacheService } from './catalog/catalog-cache.service';
 import { CatalogGenreAdminController } from './catalog/catalog-genre-admin.controller';
 import { CatalogGenreService } from './catalog/catalog-genre.service';
+import { SmotretAnimeAdapter } from './catalog/smotret-anime.adapter';
 
 @Module({})
 export class AppModule {
@@ -51,8 +52,21 @@ export class AppModule {
         },
         {
           provide: CatalogSearchService,
-          inject: [CatalogCacheService],
-          useFactory: (cache: CatalogCacheService) => new CatalogSearchService([], cache),
+          inject: [CatalogCacheService, CatalogIdentityService],
+          useFactory: (cache: CatalogCacheService, identity: CatalogIdentityService) => {
+            const adapters = environment.providers.smotret.enabled
+              ? [
+                  new SmotretAnimeAdapter(
+                    environment.providers.smotret.origin,
+                    environment.catalog,
+                    identity,
+                    'Filecab catalog integration',
+                  ),
+                ]
+              : [];
+
+            return new CatalogSearchService(adapters, cache);
+          },
         },
         {
           provide: CatalogGenreService,

@@ -67,6 +67,13 @@ export class CatalogDetailsQueryDto {
   locale?: Locale;
 }
 
+/** Requires the presentation locale for provider-owned detail and reference reads. */
+export class CatalogProviderDetailsQueryDto {
+  @ApiProperty({ enum: Locale })
+  @IsEnum(Locale)
+  locale!: Locale;
+}
+
 /** Validates one bounded normalized search request at the HTTP boundary. */
 export class CatalogSearchRequestDto implements CatalogSearchRequest {
   @ApiProperty({ enum: Category })
