@@ -1,6 +1,6 @@
 # Filecab — Implementation Plan
 
-Status: reviewed 8 November 2026. Steps 1–10 are delivered, with recent mockup corrections awaiting final browser verification. Step 11 is partially implemented; steps 12–21 remain pending. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
+Status: reviewed 8 November 2026. Steps 1–10 are delivered, with recent mockup corrections awaiting final browser verification. Step 11 is partially implemented; steps 12–21 have individual delivery status below. Step 14 is delivered for its documented adapter scope, with genre crosswalk and account-entitlement limits recorded. Extension Google sign-in is user-confirmed; separate live website consent verification remains pending. Checkboxes indicate completed delivery work, not unverified implementation claims.
 
 ## Baseline and scope
 
@@ -26,19 +26,19 @@ Reviewed 8 November 2026 against the current working tree and recorded delivery 
 
 ### Recommendations for every remaining numbered step
 
-| Step | Current assessment / next deliverable                                                                                                                                              | Recommended model | Reasoning | Why                                                                                              |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------- | ------------------------------------------------------------------------------------------------ |
-| 11   | Partial: shared browser and website reads exist; complete the sequence above.                                                                                                      | `gpt-6.1-sol`     | High      | Shared client behavior, layout and mutation correctness need coordinated changes.                |
-| 12   | Pending: capability contracts, identity/cache boundaries and bounded continuation before provider wiring.                                                                          | `gpt-6-astra`     | High      | Cross-provider identity, pagination and safe enrichment have interacting invariants.             |
-| 13   | Partial: verified public API scope and configured mirror, implemented bounded search/detail/reference adapter; deterministic provider fixtures and verified genre mappings remain. | `gpt-6.1-sol`     | High      | Bounded adapter work once step 12 establishes the common rules.                                  |
-| 14   | Pending: verify Kinopoisk contracts, classification and operation-specific capabilities.                                                                                           | `gpt-6.1-sol`     | High      | Provider-specific filtering and pagination need careful implementation and fixtures.             |
-| 15   | Pending: connect real catalog search, editors and explicit reconciliation.                                                                                                         | `gpt-6.1-sol`     | High      | Async UI state, cancellation and identity reconciliation span both clients.                      |
-| 16   | Pending: declarative extraction/configuration with exact host and permission boundaries.                                                                                           | `gpt-6-astra`     | High      | Remote configuration, hostile page content and identity evidence require architectural judgment. |
-| 17   | Pending: atomic current-format backup/restore and recoverable confirmation.                                                                                                        | `gpt-6-astra`     | High      | Replacement, concurrency and replication must preserve durable data under failure.               |
-| 18   | Pending: token lifecycle and anonymous allowlisted read-only projection.                                                                                                           | `gpt-6.1-sol`     | High      | Focused backend/UI delivery with explicit privacy and revocation tests.                          |
-| 19   | Pending: external-sync baselines, durable jobs, reconciliation and uncertain-write handling.                                                                                       | `gpt-6-astra`     | High      | Most demanding remaining distributed-state workflow; design invariants before implementation.    |
-| 20   | Pending: verify Shikimori OAuth/list semantics, then adapter and resolution settings.                                                                                              | `gpt-6-astra`     | High      | Token rotation, remote races, field policy and destructive actions interact.                     |
-| 21   | Pending: requirement audit, release checks and operational recovery evidence.                                                                                                      | `gpt-6-astra`     | High      | Cross-system verification must distinguish automated fixtures from live availability.            |
+| Step | Current assessment / next deliverable                                                                                                                                                               | Recommended model | Reasoning | Why                                                                                              |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | --------- | ------------------------------------------------------------------------------------------------ |
+| 11   | Partial: shared browser and website reads exist; complete the sequence above.                                                                                                                       | `gpt-6.1-sol`     | High      | Shared client behavior, layout and mutation correctness need coordinated changes.                |
+| 12   | Pending: capability contracts, identity/cache boundaries and bounded continuation before provider wiring.                                                                                           | `gpt-6-astra`     | High      | Cross-provider identity, pagination and safe enrichment have interacting invariants.             |
+| 13   | Partial: verified public API scope and configured mirror, implemented bounded search/detail/reference adapter; deterministic provider fixtures and verified genre mappings remain.                  | `gpt-6.1-sol`     | High      | Bounded adapter work once step 12 establishes the common rules.                                  |
+| 14   | Delivered for the documented adapter scope: live details/dictionary/filter probes and normalization fixtures pass; internal genre crosswalks and production account entitlement remain unavailable. | `gpt-6.1-sol`     | High      | Provider-specific filtering and pagination need careful implementation and fixtures.             |
+| 15   | Pending: connect real catalog search, editors and explicit reconciliation.                                                                                                                          | `gpt-6.1-sol`     | High      | Async UI state, cancellation and identity reconciliation span both clients.                      |
+| 16   | Pending: declarative extraction/configuration with exact host and permission boundaries.                                                                                                            | `gpt-6-astra`     | High      | Remote configuration, hostile page content and identity evidence require architectural judgment. |
+| 17   | Pending: atomic current-format backup/restore and recoverable confirmation.                                                                                                                         | `gpt-6-astra`     | High      | Replacement, concurrency and replication must preserve durable data under failure.               |
+| 18   | Pending: token lifecycle and anonymous allowlisted read-only projection.                                                                                                                            | `gpt-6.1-sol`     | High      | Focused backend/UI delivery with explicit privacy and revocation tests.                          |
+| 19   | Pending: external-sync baselines, durable jobs, reconciliation and uncertain-write handling.                                                                                                        | `gpt-6-astra`     | High      | Most demanding remaining distributed-state workflow; design invariants before implementation.    |
+| 20   | Pending: verify Shikimori OAuth/list semantics, then adapter and resolution settings.                                                                                                               | `gpt-6-astra`     | High      | Token rotation, remote races, field policy and destructive actions interact.                     |
+| 21   | Pending: requirement audit, release checks and operational recovery evidence.                                                                                                                       | `gpt-6-astra`     | High      | Cross-system verification must distinguish automated fixtures from live availability.            |
 
 Use `gpt-6-luna` with High reasoning for isolated, well-specified follow-ups such as message-key updates or evidence-table maintenance after behavior is settled. Keep implementation/review ownership with the model recommended for the enclosing step. Use Terra for screenshot interpretation; use Sol for the corresponding multi-file code changes. Recheck official model guidance when executing this plan later.
 
@@ -137,14 +137,15 @@ Exit satisfied: real unpacked Chromium tests verify offline CRUD across popup/fu
 
 Depends on steps 6–8.
 
-- [x] Implement the installed RxDB protocol's checkpoint pull and assumed-master-state push, deterministic owner-scoped batches, deletion representation, and documented invalid-write/conflict behavior.
-- [x] Use RxDB replication metadata rather than a second client mutation outbox. Cover all server mutation paths with the transactional change feed.
-- [x] Keep the server document on stale-version conflicts while durably retaining rejected local intent for visible, deliberate reapplication.
-- [x] Trigger synchronization on opening, edits, reconnect, and manual refresh; isolate account/schema state and show pending/failure/conflict status.
-- [x] Retain tombstones/history for at least 90 days; implement `SYNC_RESET_REQUIRED` recovery that preserves pending intent and prevents resurrection.
-- [x] Add explicit device-library linking/adoption preview and confirmation with retry-safe imports. Keep the local library visible on login/logout; never silently upload it, replace it or send one account’s pending changes to another account.
-
-Exit satisfied: PostgreSQL HTTP integration tests, real Chromium/native RxDB tests and a production-extension-to-real-API/PostgreSQL test exercise concurrent commits, retry/restart, delete/restore, mixed batches, account switching, explicit guest adoption, stale checkpoints and durable conflict/reset recovery. History and tombstones are retained indefinitely. The device library binds to one account; other accounts suspend its replication rather than rebind pending data. See [step 9 evidence](requirement-checklist.md#extension-to-filecab-replication-step-9). Google consent remains separately verified as recorded in step 6; the new full-stack test uses synthetic Google identity with real sessions, HTTP and PostgreSQL.
+- [x] Implement RxDB pull/push replication with checkpoints and conflict handling.
+- [x] Track server changes and deletions.
+- [x] Preserve local changes on conflicts and sync failures.
+- [x] Trigger sync on open, edit, reconnect, and manual refresh.
+- [x] Show sync status, errors, and conflicts.
+- [x] Implement reset recovery without data loss.
+- [x] Add explicit library linking with preview and confirmation.
+- [x] Isolate account data and prevent accidental uploads.
+- [x] Cover replication with integration, Chromium, and full-stack tests.
 
 ## 10. Build shared UI, localization, and navigation
 
@@ -216,16 +217,28 @@ Exit: search, details and Smotret/MAL reference lookup are wired only when `SMOT
 
 ## 14. Implement Kinopoisk film/TV catalog adapter
 
-Depends on step 12. Covers all requirements in integration-kinopoisk-spec.md.
+Depends on step 12.
 
-- [ ] Verify the selected API version/origin, authentication, usage conditions, and separate text-search/discovery/detail/genre contracts before activation.
-- [ ] Keep adapter key `kinopoisk-dev` separate from canonical Kinopoisk references; separate numeric title IDs, HD IDs, IMDb strings, and scoped TMDB IDs.
-- [ ] Enforce films = movie/cartoon and TV = tv-series/animated-series, with explicit handling of anime/unknown types and verified `isSeries` consistency checks.
-- [ ] Advertise filters/order per operation; implement continuation-aware category filtering or explicitly reject unsupported combinations. Never forward inaccurate provider totals after filtering.
-- [ ] Normalize nullable posters, attributed provider scores, truthful title languages, canonical catalog links, genres, and episode totals only with known complete coverage.
-- [ ] Test reference scope, text/filter combinations, classification, post-filter pagination, locale fallback, credentials, quotas, and incomplete season data.
+- [x] Implement film/TV classification and filtering.
+- [x] Implement pagination, deduplication, and `hasMore`.
+- [x] Limit pagination scans to 20 upstream pages.
+- [x] Fix year validation and update cache schema.
+- [x] Verify API access and search requests.
+- [x] Pass adapter tests and typecheck.
+- [x] Verify detail/genre endpoints and published API usage conditions; distinguish account entitlement from successful read access.
+- [x] Fix series URLs, rating attribution/zero sentinels, and provider-scoped genre normalization; preserve unknown labels without claiming canonical mappings.
+- [x] Verify structured year/format/provider-score filters and year/score sorting; reject combinations unsupported by text search.
+- [x] Handle locale fallback, missing posters, and incomplete season data without inventing translations or totals.
+- [x] Verify title IDs after lookup and revalidate external identifiers on detail responses before persistence.
 
-Exit: film and TV results are distinct and credentials remain server-side; manual library operations survive adapter failure.
+Exit: the documented opt-in v1.4 adapter scope is delivered. Forty-four Kinopoisk tests,
+API typecheck/build and workspace boundaries pass. Live adapter reads verify film/series
+details, English title preference, IMDb lookup and filtered/ordered discovery; direct
+HTTP probes verify the genre dictionary. Provider-scoped candidates are stable, but
+canonical internal genre crosswalks and genre filtering remain unavailable under step 12.
+Episode totals remain unknown. Published demo usage limits are recorded; successful
+requests do not establish this account's production entitlement. See
+[step 14 evidence](requirement-checklist.md#kinopoisk-catalog-adapter).
 
 ## 15. Connect catalog search, add, and reconciliation interfaces
 

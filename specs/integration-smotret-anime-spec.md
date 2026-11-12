@@ -13,7 +13,8 @@ Use provider `smotret`, entity `series`. Configure approved origins, optional cr
 limits and timeouts server-side; `https://smotret-anime.online` is an example origin.
 Mirrors share identity only after verifying they use the same series IDs. Use HTTPS;
 disable credential-bearing access without a validated secure endpoint. Never fetch
-arbitrary user-provided origins.
+arbitrary user-provided origins. Follow HTTP redirects using the Fetch implementation's
+redirect limit within the configured request timeout.
 
 ### Series search
 

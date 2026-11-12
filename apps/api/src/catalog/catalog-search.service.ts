@@ -13,8 +13,8 @@ import { CatalogCacheService } from './catalog-cache.service';
 
 export const CATALOG_DEFAULT_PROVIDERS: CatalogCapabilities['defaults'] = {
   [Category.Anime]: 'smotret',
-  [Category.Films]: 'kinopoisk-dev',
-  [Category.Tv]: 'kinopoisk-dev',
+  [Category.Films]: 'kinopoisk',
+  [Category.Tv]: 'kinopoisk',
 };
 
 /** Defines the normalized search boundary that verified provider adapters implement. */

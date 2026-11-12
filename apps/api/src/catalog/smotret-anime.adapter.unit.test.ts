@@ -1,7 +1,6 @@
 import { ApiErrorCode, Locale } from '@filecab/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiEnvironment } from '../config/environment';
-import { ApiException } from '../http/api-error';
 import { SmotretAnimeAdapter } from './smotret-anime.adapter';
 
 const origin = 'https://smotret-anime.online';
@@ -43,7 +42,7 @@ function fixture(fetcher: typeof fetch) {
 }
 
 /** Returns a JSON response matching the public Smotret API envelope. */
-function jsonResponse(body: unknown, status = 200, headers?: HeadersInit): Response {
+function jsonResponse(body: unknown, status = 200, headers?: Record<string, string>): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'content-type': 'application/json', ...headers },
@@ -76,7 +75,7 @@ describe('SmotretAnimeAdapter fixtures', () => {
     expect(observed[0].episodeCount).toBeNull();
     expect(observed[0].availableEpisodeCount).toBeNull();
     expect(
-      observed[0].references.map(({ namespace, id, provenance }) => [
+      observed[0].references.map(({ namespace, id, provenance }: any) => [
         namespace,
         id,
         provenance.verified,
@@ -89,7 +88,12 @@ describe('SmotretAnimeAdapter fixtures', () => {
   });
 
   it('uses offset pagination and bounded lookahead after identity deduplication', async () => {
-    const fetcher = vi.fn(async () => jsonResponse({ data: [series(1), series(1), series(2)] }));
+    let requestedUrl = '';
+    const fetcher: typeof fetch = async (input) => {
+      requestedUrl = String(input);
+
+      return jsonResponse({ data: [series(1), series(1), series(2)] });
+    };
     const { adapter, observed } = fixture(fetcher);
 
     const result = await adapter.search({
@@ -103,7 +107,7 @@ describe('SmotretAnimeAdapter fixtures', () => {
       order: 'id',
     } as any);
 
-    const requestUrl = new URL(fetcher.mock.calls[0][0] as URL);
+    const requestUrl = new URL(requestedUrl);
     expect(requestUrl.searchParams.get('offset')).toBe('4');
     expect(requestUrl.searchParams.get('limit')).toBe('3');
     expect(requestUrl.searchParams.get('year')).toBe('2024');
@@ -154,7 +158,7 @@ describe('SmotretAnimeAdapter fixtures', () => {
   ])('maps %s to its structured provider error', async (_name, status, code) => {
     const { adapter } = fixture(async () => jsonResponse({}, Number(status)));
 
-    await expect(adapter.details('1', Locale.En)).rejects.toMatchObject<ApiException>({
+    await expect(adapter.details('1', Locale.En)).rejects.toMatchObject({
       code,
     });
   });
