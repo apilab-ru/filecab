@@ -53,6 +53,9 @@ file independently of the working directory; existing environment variables take
 precedence. Startup fails with field names only if configuration is invalid.
 Integrations default to disabled and require no real Google/provider credentials.
 Google login is available when its OAuth credentials are configured. Catalog and external-list provider workflows remain in their planned implementation steps.
+Optional API error reporting uses `SENTRY_DSN`; leave it empty to disable Sentry. The
+API reports server errors with HTTP method and route template; request bodies,
+parameter values, headers, user, breadcrumb and extra data are excluded.
 
 Use separate database names ending in `_dev` and `_test` for development and test;
 production must use neither suffix. Production requires HTTPS web/callback

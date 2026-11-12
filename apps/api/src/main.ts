@@ -1,3 +1,4 @@
+import './instrumentation/sentry';
 import 'reflect-metadata';
 import { loadEnvironment, startupFailureMessage } from './config/environment';
 import { createApiApplication } from './http/application';

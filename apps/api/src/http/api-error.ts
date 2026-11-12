@@ -3,6 +3,8 @@ import { Catch, HttpException, type ArgumentsHost, type ExceptionFilter } from '
 import type { Request, Response } from 'express';
 import { RequestValidationError } from '../contracts/entry-patch.dto';
 import { MutationError } from '../library/mutation.service';
+import * as Sentry from '@sentry/nestjs';
+import type { ProviderDiagnostic } from '../models/provider-diagnostic';
 
 const HTTP_ERRORS: Record<number, [ApiErrorCode, string]> = {
   400: [ApiErrorCode.ValidationError, 'Invalid request'],
@@ -33,6 +35,7 @@ export class ApiException extends HttpException {
     readonly retryable = false,
     readonly issues?: ValidationIssue[],
     readonly retryAfterSeconds?: number,
+    readonly providerDiagnostic?: ProviderDiagnostic,
   ) {
     super(safeMessage, httpStatus);
   }
@@ -115,8 +118,44 @@ export class ApiExceptionFilter implements ExceptionFilter {
   catch(error: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
 
+    if (isReportableError(error))
+      Sentry.withScope((scope) => {
+        const safe = publicError(error);
+        const request = host.switchToHttp().getRequest<Request>();
+        const method = ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(
+          request.method,
+        )
+          ? request.method
+          : 'OTHER';
+        const route = typeof request.route?.path === 'string' ? request.route.path : 'unmatched';
+        scope.setTag('correlation_id', String(response.getHeader('X-Correlation-ID')));
+        scope.setContext('api_request', { method, route });
+        scope.setTag('api_error_code', safe.code);
+        scope.setContext('api_error', {
+          code: safe.code,
+          status: safe.httpStatus,
+          message: safe.safeMessage,
+        });
+
+        if (error instanceof ApiException && error.providerDiagnostic) {
+          scope.setContext('provider_failure', { ...error.providerDiagnostic });
+          scope.setTag('provider', error.providerDiagnostic.provider);
+        }
+
+        Sentry.captureException(error);
+      });
+
     if (!response.headersSent) sendApiError(error, response);
   }
+}
+
+/** Reports only server failures while leaving expected client errors out of Sentry. */
+function isReportableError(error: unknown): boolean {
+  if (error instanceof ApiException) return error.httpStatus >= 500;
+
+  if (error instanceof HttpException) return error.getStatus() >= 500;
+
+  return true;
 }
 
 /** Records only operational fields; request paths, content, credentials and exceptions are omitted. */

@@ -279,6 +279,18 @@ HTTPS and restrict operator actions. Redact credentials, codes, tokens, notes an
 contents from logs. Liveness is provider-independent; readiness checks the database.
 Separate development/production credentials and storage; test migration/backup recovery.
 
+The API may report server failures to Sentry when `SENTRY_DSN` is configured. Capture
+only unexpected errors and responses with status 5xx. Do not report expected client
+errors. Events omit request bodies, headers, parameter values, user identity, arbitrary extras and breadcrumbs;
+controlled API error messages and codes remain available alongside stack traces. Unknown
+exception messages are replaced with a generic description. Provider diagnostics retain
+only origin, operation, failure stage, elapsed time, upstream status and a bounded network
+error code; URLs with queries, response bodies and headers are excluded. A missing DSN
+disables reporting without affecting API startup.
+
+Sentry events include the incoming HTTP method and Express route template so failures
+can be traced to an endpoint without exposing path parameter values or query text.
+
 ### Swagger API documentation
 
 Generate OpenAPI with `@nestjs/swagger`: UI `/api/docs`, JSON `/api/docs-json`.

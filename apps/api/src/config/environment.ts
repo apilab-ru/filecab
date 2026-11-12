@@ -98,6 +98,24 @@ export function validateEnvironment(env: Environment) {
     .split(',')
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
+  const sentryDsn = env.SENTRY_DSN?.trim() || undefined;
+
+  if (sentryDsn) {
+    try {
+      const parsed = new URL(sentryDsn);
+
+      if (
+        parsed.protocol !== 'https:' ||
+        !parsed.username ||
+        parsed.password ||
+        !/^o\d+\.ingest(?:\.us)?\.sentry\.io$/.test(parsed.hostname) ||
+        !/^\/\d+\/?$/.test(parsed.pathname)
+      )
+        invalid.add('SENTRY_DSN');
+    } catch {
+      invalid.add('SENTRY_DSN');
+    }
+  }
 
   if (
     catalogOperatorAccountIds.some(
@@ -216,7 +234,7 @@ export function validateEnvironment(env: Environment) {
     },
     kinopoisk: {
       enabled: kinopoiskEnabled,
-      origin: integrationUrl('KINOPOISK_API_ORIGIN', 'https://api.kinopoisk.dev'),
+      origin: integrationUrl('KINOPOISK_API_ORIGIN', 'https://api.poiskkino.dev'),
       apiKey: kinopoiskEnabled ? required('KINOPOISK_API_KEY') : undefined,
     },
     shikimori,
@@ -248,6 +266,7 @@ export function validateEnvironment(env: Environment) {
     auth,
     catalog,
     providers,
+    sentryDsn,
   };
 }
 
