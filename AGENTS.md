@@ -2,6 +2,10 @@
 
 [Important rules for making changes](specs/index.md)
 
+# Specs
+
+Use ASD-STE100 for all specs.
+
 # Validation rules
 
 Do not use Zod or add it as a dependency anywhere in the repository. Use class-validator/class-transformer for server request validation. Shared contracts use typed models directly, without runtime parsers or client validation.
