@@ -32,7 +32,7 @@ describe target behavior, not implementation status.
 
 ## Mockups
 
-[Dark layout](mockup-dark.png) · [Light colors](mockup-white.png) · [Settings](mockup-settings.png)
+[Dark layout](mockup-dark.png) · [Light colors](mockup-light.png) · [Settings](mockup-settings.png)
 
 Use the supplied [SVG icons](../apps/extension/public/icons) and
 [Filecab logo](../apps/extension/public/wish-list-icon.png).

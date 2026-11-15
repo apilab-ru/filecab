@@ -37,7 +37,7 @@ Defaults below define target behavior, not implementation status.
 ## 2. Users, surfaces, and navigation
 
 Visual references: [dark theme mockup](mockup-dark.png) defines the current
-layout; [light theme mockup](mockup-white.png) supplies colors only. Use these
+layout; [light theme mockup](mockup-light.png) supplies colors only. Use these
 alongside the behavior requirements below.
 
 **NAV-01.** Offer popup Page/Search and Settings, plus an external full-page link opening a new tab. Start on Page; keep Search usable when parsing fails.
@@ -171,7 +171,7 @@ Category must be `anime`, `films`, or `tv`. Catalog subtype is separate: an anim
 
 **LIB-04.** Hide hidden entries/counts by default. Explicit status selection replaces implicit hidden exclusion; provide an accessible Hidden filter.
 
-**LIB-05.** Sort added/modified date, displayed title, year, rating or status in either direction. Default: added descending, 20 entries; sizes 12/20/50/100. Titles follow locale; unknown values sort last both ways and ties use entry ID.
+**LIB-05.** Sort added/modified date, displayed title, year, rating, status or episode count in either direction. Default: added descending, 20 entries; sizes 12/20/50/100. Titles follow locale; unknown values sort last both ways and ties use entry ID.
 
 **LIB-06.** Persist filters/sort/page size per category and Library/Catalog mode. Query/filter/sort/category/size changes reset page one; deletion clamps the page. Offer Previous/Next/Last only when pagination data supports them.
 
