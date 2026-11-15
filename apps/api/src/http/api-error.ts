@@ -20,6 +20,8 @@ const HTTP_ERRORS: Record<number, [ApiErrorCode, string]> = {
   504: [ApiErrorCode.TransportError, 'Upstream request timed out'],
 };
 
+const REPORTED_RESPONSES = new WeakSet<Response>();
+
 const MUTATION_HTTP_STATUSES = {
   [ApiErrorCode.NotFound]: 404,
   [ApiErrorCode.Conflict]: 409,
@@ -84,8 +86,47 @@ function publicError(error: unknown): ApiException {
   return new ApiException(httpStatus, code, message, httpStatus === 429 || httpStatus >= 500);
 }
 
+/** Reports server failures with safe endpoint and provider diagnostics. */
+function reportApiError(error: unknown, response: Response, request?: Request): void {
+  if (isReportableError(error) && !REPORTED_RESPONSES.has(response)) {
+    REPORTED_RESPONSES.add(response);
+    Sentry.withScope((scope) => {
+      const safe = publicError(error);
+      const method = ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(
+        request?.method ?? '',
+      )
+        ? request?.method
+        : 'OTHER';
+      const route = typeof request?.route?.path === 'string' ? request?.route.path : 'unmatched';
+      scope.setTag('correlation_id', String(response.getHeader('X-Correlation-ID')));
+      scope.setContext('api_request', { method, route });
+      scope.setTag('api_error_code', safe.code);
+      scope.setContext('api_error', {
+        code: safe.code,
+        status: safe.httpStatus,
+        message: safe.safeMessage,
+      });
+
+      if (error instanceof ApiException && error.providerDiagnostic) {
+        scope.setContext('provider_failure', { ...error.providerDiagnostic });
+        scope.setTag('provider', error.providerDiagnostic.provider);
+      }
+
+      Sentry.captureException(error);
+    });
+  }
+}
+
 /** Writes the common envelope for controller, middleware and body-parser failures. */
-export function sendApiError(error: unknown, response: Response): void {
+export function sendApiError(
+  error: unknown,
+  response: Response,
+  request: Request | undefined = response.req,
+): void {
+  reportApiError(error, response, request);
+
+  if (response.headersSent) return;
+
   const safe = publicError(error);
   const body: ApiError = {
     schemaVersion: 1,
@@ -118,44 +159,13 @@ export class ApiExceptionFilter implements ExceptionFilter {
   catch(error: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
 
-    if (isReportableError(error))
-      Sentry.withScope((scope) => {
-        const safe = publicError(error);
-        const request = host.switchToHttp().getRequest<Request>();
-        const method = ['GET', 'HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(
-          request.method,
-        )
-          ? request.method
-          : 'OTHER';
-        const route = typeof request.route?.path === 'string' ? request.route.path : 'unmatched';
-        scope.setTag('correlation_id', String(response.getHeader('X-Correlation-ID')));
-        scope.setContext('api_request', { method, route });
-        scope.setTag('api_error_code', safe.code);
-        scope.setContext('api_error', {
-          code: safe.code,
-          status: safe.httpStatus,
-          message: safe.safeMessage,
-        });
-
-        if (error instanceof ApiException && error.providerDiagnostic) {
-          scope.setContext('provider_failure', { ...error.providerDiagnostic });
-          scope.setTag('provider', error.providerDiagnostic.provider);
-        }
-
-        Sentry.captureException(error);
-      });
-
-    if (!response.headersSent) sendApiError(error, response);
+    sendApiError(error, response, host.switchToHttp().getRequest<Request>());
   }
 }
 
 /** Reports only server failures while leaving expected client errors out of Sentry. */
 function isReportableError(error: unknown): boolean {
-  if (error instanceof ApiException) return error.httpStatus >= 500;
-
-  if (error instanceof HttpException) return error.getStatus() >= 500;
-
-  return true;
+  return publicError(error).httpStatus >= 500;
 }
 
 /** Records only operational fields; request paths, content, credentials and exceptions are omitted. */

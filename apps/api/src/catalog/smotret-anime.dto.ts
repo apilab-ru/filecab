@@ -68,7 +68,7 @@ export class SmotretSeriesDto {
 
   @IsOptional()
   @IsInt()
-  @Min(1)
+  @Min(0)
   myAnimeListId?: number;
 
   @IsOptional()

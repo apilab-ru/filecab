@@ -112,3 +112,80 @@ describe('Kinopoisk provider failure diagnostics', () => {
     });
   });
 });
+
+describe('Kinopoisk unknown release years', () => {
+  it('normalizes zero years in details and retains a TV match across mixed search pages', async () => {
+    const observe = vi
+      .fn<CatalogIdentityService['observe']>()
+      .mockImplementation(async (category, granularity, snapshot) => ({
+        schemaVersion: 1,
+        catalogId: snapshot.references[0].id,
+        category,
+        granularity,
+        snapshot,
+      }));
+    const first = Array.from({ length: 50 }, (_, index) => ({
+      id: index + 1,
+      type: 'movie',
+      year: 2020,
+    }));
+    const unknown = { id: 51, type: 'movie', year: 0 };
+    const series = {
+      id: 52,
+      type: 'tv-series',
+      isSeries: true,
+      name: 'Fixture series',
+      year: 2023,
+    };
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ page: 1, limit: 50, total: 52, docs: first })),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ page: 2, limit: 50, total: 52, docs: [unknown, series] })),
+      )
+      .mockResolvedValueOnce(new Response(JSON.stringify(unknown)));
+    const adapter = new KinopoiskDevAdapter(
+      'https://api.poiskkino.dev',
+      'private-key',
+      { observe } as unknown as CatalogIdentityService,
+      fetcher,
+    );
+    const response = await adapter.search({
+      provider: 'kinopoisk',
+      category: Category.Tv,
+      locale: Locale.Ru,
+      query: 'Fixture series',
+      page: 1,
+      pageSize: 12,
+    });
+    expect(response.results).toHaveLength(1);
+    expect(response.results[0].snapshot.year).toBe(2023);
+    expect(response.results[0].category).toBe(Category.Tv);
+    expect((await adapter.details('51', Locale.Ru)).snapshot.year).toBeNull();
+  });
+
+  it('attaches bounded safe field paths to rejected provider schema data', async () => {
+    const adapter = new KinopoiskDevAdapter(
+      'https://api.poiskkino.dev',
+      'private-key',
+      {} as CatalogIdentityService,
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ id: 1, type: 'movie', year: -1, description: 'private-payload' }),
+          ),
+        ),
+    );
+    await expect(adapter.details('1', Locale.En)).rejects.toMatchObject({
+      providerDiagnostic: {
+        provider: 'kinopoisk',
+        operation: 'details',
+        stage: 'schema',
+        validationFields: ['year'],
+      },
+    });
+  });
+});

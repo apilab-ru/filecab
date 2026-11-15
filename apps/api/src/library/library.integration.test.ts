@@ -744,3 +744,77 @@ test('concurrent replicated writes serialize assumed-state checks and publish on
     hasMore: false,
   });
 });
+
+test('catalog association HTTP preview validates input and confirms canonical metadata with preserved UUID', async () => {
+  const catalogId = randomUUID();
+  catalogIds.push(catalogId);
+  const manual = await create({
+    userTitle: 'Manual association',
+    progress: 12,
+    comment: 'Private note',
+  });
+  const { emptySnapshot } = await import('@filecab/contracts');
+  const snapshot = { ...emptySnapshot(), year: 2022 };
+  await auth.database.catalogItem.create({
+    data: { id: catalogId, category: 'anime', snapshot: JSON.parse(JSON.stringify(snapshot)) },
+  });
+  const input = {
+    entryId: manual.entryId,
+    expectedVersion: manual.serverVersion,
+    catalogId,
+    fields: {},
+  };
+  expect((await request('/catalog/preview', 'POST', { ...input, snapshot: {} })).status).toBe(400);
+  const response = await request('/catalog/preview', 'POST', input);
+  expect(response.status).toBe(200);
+  const preview = (await response.json()) as LibraryMutationPreview;
+  expect(preview.changes[0].before.catalogId).toBeNull();
+  expect(preview.changes[0].proposed).toMatchObject({
+    entryId: manual.entryId,
+    catalogId,
+    comment: 'Private note',
+    progress: 12,
+    snapshot,
+  });
+  expect(
+    (
+      await request(
+        '/catalog/apply',
+        'POST',
+        { ...input, previewToken: preview.previewToken },
+        other,
+      )
+    ).status,
+  ).toBe(404);
+  const applied = await request('/catalog/apply', 'POST', {
+    ...input,
+    previewToken: preview.previewToken,
+  });
+  expect(applied.status).toBe(200);
+  const result = (await applied.json()) as LibraryMutationResult;
+  expect(result.entries[0]).toMatchObject({
+    entryId: manual.entryId,
+    createdAt: manual.createdAt,
+    catalogId,
+    snapshot,
+  });
+  expect(
+    (await request('/catalog/apply', 'POST', { ...input, previewToken: preview.previewToken }))
+      .status,
+  ).toBe(409);
+});
+
+test('an explicit website owner precondition cannot write through a different authenticated account', async () => {
+  const response = await fetch(`${base}/entries`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${first.accessToken}`,
+      'Content-Type': 'application/json',
+      'X-Filecab-Owner': other.ownerId,
+    },
+    body: JSON.stringify({ category: 'anime', userTitle: 'Must not be committed' }),
+  });
+  expect(response.status).toBe(409);
+  const snapshot = (await (await request('')).json()) as OwnerSnapshot;
+  expect(snapshot.entries.some((entry) => entry.userTitle === 'Must not be committed')).toBe(false);
+});

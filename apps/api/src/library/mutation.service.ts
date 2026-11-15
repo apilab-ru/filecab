@@ -1,5 +1,9 @@
 import {
   ApiErrorCode,
+  associateCatalog,
+  mergeCatalogSnapshots,
+  type CatalogAssociationRequest,
+  type CatalogRecord,
   ConflictReason,
   emptySnapshot,
   type ReplicationRow,
@@ -267,7 +271,8 @@ export class LibraryMutationService {
 
         if (
           current &&
-          (current.catalogId !== proposed.catalogId || current.createdAt !== proposed.createdAt)
+          ((current.catalogId !== null && current.catalogId !== proposed.catalogId) ||
+            current.createdAt !== proposed.createdAt)
         )
           throw new MutationError(ApiErrorCode.ValidationError);
 
@@ -276,9 +281,12 @@ export class LibraryMutationService {
           ? await tx.catalogItem.findUnique({ where: { id: proposed.catalogId } })
           : null;
         const snapshot =
-          current?.snapshot ??
-          (catalog?.snapshot as unknown as Snapshot | undefined) ??
-          emptySnapshot();
+          current && current.catalogId === proposed.catalogId
+            ? current.snapshot
+            : mergeCatalogSnapshots(
+                current?.snapshot ?? emptySnapshot(),
+                (catalog?.snapshot as unknown as Snapshot | undefined) ?? emptySnapshot(),
+              );
 
         if (!isDeepStrictEqual(snapshot, proposed.snapshot))
           throw new MutationError(ApiErrorCode.ValidationError);
@@ -519,6 +527,82 @@ export class LibraryMutationService {
       const second = await this.publish(tx, ownerId, { ...proposed[1], updatedAt });
 
       return [first, second];
+    });
+  }
+
+  /** Previews or commits an association using canonical metadata and owner-locked versions. */
+  async associate(
+    ownerId: string,
+    input: CatalogAssociationRequest,
+    previewToken?: string,
+  ): Promise<LibraryMutationPreview | ServerEntry[]> {
+    return this.transaction(ownerId, async (tx) => {
+      if (!this.previews || Boolean(input.mergeEntryId) !== Boolean(input.mergeExpectedVersion))
+        throw new MutationError(ApiErrorCode.Conflict);
+
+      const current = await this.load(tx, ownerId, input.entryId, input.expectedVersion);
+      const other = input.mergeEntryId
+        ? await this.load(tx, ownerId, input.mergeEntryId, input.mergeExpectedVersion!)
+        : undefined;
+      const catalog = await tx.catalogItem.findUnique({ where: { id: input.catalogId } });
+
+      if (!catalog) throw new MutationError(ApiErrorCode.NotFound);
+
+      const claimed = await tx.libraryEntry.findFirst({
+        where: { ownerId, catalogId: input.catalogId, deleted: false, id: { not: input.entryId } },
+      });
+
+      if (claimed && claimed.id !== input.mergeEntryId)
+        throw new MutationError(ApiErrorCode.Conflict);
+
+      let proposed;
+      try {
+        proposed = associateCatalog(
+          current,
+          {
+            schemaVersion: 1,
+            catalogId: catalog.id,
+            category: catalog.category,
+            granularity: catalog.granularity,
+            snapshot: catalog.snapshot,
+          } as unknown as CatalogRecord,
+          other,
+          input.fields,
+        ) as ServerEntry[];
+      } catch {
+        throw new MutationError(ApiErrorCode.Conflict);
+      }
+      proposed.forEach(validateEntry);
+      const before = [current, ...(other ? [other] : [])];
+
+      if (previewToken === undefined)
+        return this.previews.create(
+          ownerId,
+          'catalog-association',
+          { input, catalog: catalog.snapshot },
+          before,
+          proposed,
+        );
+
+      this.previews.verify(
+        previewToken,
+        ownerId,
+        'catalog-association',
+        { input, catalog: catalog.snapshot },
+        before,
+      );
+
+      if (!other && isDeepStrictEqual(current, proposed[0])) return [current];
+
+      const updatedAt = new Date(
+        Math.max(Date.now(), ...before.map((entry) => Date.parse(entry.updatedAt))),
+      ).toISOString();
+      const tombstone = proposed[1]
+        ? await this.publish(tx, ownerId, { ...proposed[1], updatedAt })
+        : undefined;
+      const survivor = await this.publish(tx, ownerId, { ...proposed[0], updatedAt });
+
+      return [survivor, ...(tombstone ? [tombstone] : [])];
     });
   }
 

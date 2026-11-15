@@ -11,7 +11,7 @@ import {
   type Snapshot,
 } from '@filecab/contracts';
 import { plainToInstance } from 'class-transformer';
-import { validateSync } from 'class-validator';
+import { validateSync, type ValidationError } from 'class-validator';
 import { createHash } from 'node:crypto';
 import { ApiException } from '../http/api-error';
 import { CatalogIdentityService } from './catalog-identity.service';
@@ -80,6 +80,45 @@ const CATALOG_PATHS = { [Category.Films]: 'film', [Category.Tv]: 'series' };
 const KINOPOISK_UPSTREAM_PAGE_SIZE = 50;
 
 const KINOPOISK_MAX_SCAN_PAGES = 20;
+
+/** Extracts bounded schema field paths without retaining response values or targets. */
+function validationFields(errors: ValidationError[], prefix = ''): string[] {
+  return errors
+    .flatMap((error) => {
+      const path = `${prefix}${error.property ?? 'response'}`;
+
+      return [
+        ...(error.constraints ? [path] : []),
+        ...validationFields(error.children ?? [], `${path}.`),
+      ];
+    })
+    .slice(0, 10);
+}
+
+/** Attaches safe schema diagnostics to a rejected provider response. */
+function schemaFailure(
+  origin: string,
+  operation: 'search' | 'discovery' | 'details',
+  started: number,
+  fields: string[],
+) {
+  return new ApiException(
+    502,
+    ApiErrorCode.InvalidResponse,
+    'Kinopoisk returned an invalid catalog response',
+    true,
+    undefined,
+    undefined,
+    {
+      provider: 'kinopoisk',
+      origin: new URL(origin).origin,
+      operation,
+      stage: 'schema',
+      elapsedMs: Math.round(performance.now() - started),
+      validationFields: fields,
+    },
+  );
+}
 
 /** Converts a provider genre name into a stable provider-scoped candidate identity. */
 function genreCandidate(name: string, retrievedAt: string, source: string) {
@@ -233,11 +272,14 @@ function normalizeMovie(
 
 /** Implements the documented Kinopoisk Dev v1.4 title search, discovery and detail endpoints. */
 export class KinopoiskDevAdapter implements CatalogSearchAdapter {
-  readonly schemaVersion = 3;
+  readonly schemaVersion = 4;
   readonly capability: CatalogProviderCapability = {
     provider: 'kinopoisk',
     categories: [Category.Films, Category.Tv],
     operations: ['search', 'details', 'resolve-reference'],
+    browse: true,
+    searchFilters: [],
+    searchOrdering: [],
     filters: ['year', 'format', 'providerRating'],
     ordering: Object.keys(ORDERING),
     referenceNamespaces: ['kinopoisk', 'imdb', 'tmdb'],
@@ -321,7 +363,10 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
 
     for (let page = 1; page <= KINOPOISK_MAX_SCAN_PAGES; page += 1) {
       parameters.set('page', String(page));
-      const envelope = this.validateEnvelope(await this.request(`${path}?${parameters}`));
+      const envelope = this.validateEnvelope(
+        await this.request(`${path}?${parameters}`),
+        request.query.trim() ? 'search' : 'discovery',
+      );
 
       if (
         envelope.page !== page ||
@@ -419,7 +464,10 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     const parameters = new URLSearchParams({ page: '1', limit: '2', [field]: id });
     for (const fieldName of ['id', 'type', 'name', 'alternativeName', 'externalId'])
       parameters.append('selectFields', fieldName);
-    const envelope = this.validateEnvelope(await this.request(`/v1.4/movie?${parameters}`));
+    const envelope = this.validateEnvelope(
+      await this.request(`/v1.4/movie?${parameters}`),
+      'discovery',
+    );
     const matches = envelope.docs.filter((movie) =>
       field.endsWith('.imdb')
         ? movie.externalId?.imdb === id
@@ -489,48 +537,40 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     return this.classify(movie) === category;
   }
 
-  /** Validates the response envelope and every movie using the shared DTO rules. */
-  private validateEnvelope(value: unknown) {
+  /** Validates the response envelope and records safe field diagnostics on failure. */
+  private validateEnvelope(value: unknown, operation: 'search' | 'discovery') {
+    const started = performance.now();
+
     if (typeof value !== 'object' || value === null || Array.isArray(value))
-      throw new ApiException(
-        502,
-        ApiErrorCode.InvalidResponse,
-        'Kinopoisk returned an invalid catalog response',
-        true,
-      );
+      throw schemaFailure(this.origin, operation, started, ['response']);
 
-    const result: KinopoiskMoviesResponseDto = plainToInstance(KinopoiskMoviesResponseDto, value);
+    const result = plainToInstance(KinopoiskMoviesResponseDto, value);
+    const errors = validateSync(result, {
+      forbidUnknownValues: true,
+      validationError: { target: false, value: false },
+    });
 
-    if (validateSync(result, { forbidUnknownValues: true }).length)
-      throw new ApiException(
-        502,
-        ApiErrorCode.InvalidResponse,
-        'Kinopoisk returned an invalid catalog response',
-        true,
-      );
+    if (errors.length)
+      throw schemaFailure(this.origin, operation, started, validationFields(errors));
 
     return result;
   }
 
-  /** Validates one detail response. */
+  /** Validates one detail response and records safe field diagnostics on failure. */
   private validateMovie(value: unknown) {
+    const started = performance.now();
+
     if (typeof value !== 'object' || value === null || Array.isArray(value))
-      throw new ApiException(
-        502,
-        ApiErrorCode.InvalidResponse,
-        'Kinopoisk returned an invalid catalog response',
-        true,
-      );
+      throw schemaFailure(this.origin, 'details', started, ['response']);
 
-    const result: KinopoiskMovieDto = plainToInstance(KinopoiskMovieDto, value);
+    const result = plainToInstance(KinopoiskMovieDto, value);
+    const errors = validateSync(result, {
+      forbidUnknownValues: true,
+      validationError: { target: false, value: false },
+    });
 
-    if (validateSync(result, { forbidUnknownValues: true }).length)
-      throw new ApiException(
-        502,
-        ApiErrorCode.InvalidResponse,
-        'Kinopoisk returned an invalid catalog response',
-        true,
-      );
+    if (errors.length)
+      throw schemaFailure(this.origin, 'details', started, validationFields(errors));
 
     return result;
   }
@@ -576,7 +616,7 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
       response = await this.fetcher(url, {
         headers: { accept: 'application/json', 'X-API-KEY': this.apiKey },
         redirect: 'follow',
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(30_000),
       });
     } catch (error) {
       const cause = error instanceof Error ? error.cause : undefined;

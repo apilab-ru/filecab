@@ -179,6 +179,7 @@ export function validateEnvironment(env: Environment) {
   };
   const catalog = {
     operatorAccountIds: catalogOperatorAccountIds,
+    searchCacheTtlSeconds: duration('CATALOG_SEARCH_CACHE_TTL_SECONDS', 86_400, 2_592_000),
     budgets: {
       timeoutMs: duration('CATALOG_PROVIDER_TIMEOUT_MS', 5000, 30000),
       maxResponseBytes: duration('CATALOG_PROVIDER_MAX_RESPONSE_BYTES', 262144, 1048576),

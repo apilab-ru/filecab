@@ -41,3 +41,24 @@ test('Sentry identifies the incoming endpoint without private query, headers, bo
   expect(JSON.stringify(sentry.setContext.mock.calls)).not.toContain('private-');
   expect(sentry.captureException).toHaveBeenCalledTimes(1);
 });
+
+test('middleware server errors are reported once and expected client errors are not reported', async () => {
+  const { sendApiError } = await import('./api-error');
+  sentry.captureException.mockClear();
+  const response = {
+    headersSent: true,
+    getHeader: () => 'correlation-fixture',
+    req: { method: 'POST' },
+  };
+  const failure = new ApiException(
+    502,
+    ApiErrorCode.InvalidResponse,
+    'Provider response is invalid',
+  );
+  sendApiError(failure, response as never);
+  sendApiError(failure, response as never);
+  sendApiError(new ApiException(400, ApiErrorCode.ValidationError, 'Invalid request'), {
+    ...response,
+  } as never);
+  expect(sentry.captureException).toHaveBeenCalledTimes(1);
+});

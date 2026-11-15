@@ -124,3 +124,39 @@ export class ApplyReassignmentDto extends ReassignSourceDto {
   @MaxLength(256)
   previewToken!: string;
 }
+
+/** Validates a version-bound catalog association and optional donor selection. */
+export class CatalogAssociationDto extends ExpectedVersionDto {
+  @ApiProperty({ type: String, format: 'uuid' })
+  @IsUUID('all')
+  entryId!: string;
+
+  @ApiProperty({ type: String, format: 'uuid' })
+  @IsUUID('all')
+  catalogId!: string;
+
+  @ApiPropertyOptional({ type: String, format: 'uuid' })
+  @ValidateIf((_, value) => value !== undefined)
+  @IsUUID('all')
+  mergeEntryId?: string;
+
+  @ApiPropertyOptional({ type: String })
+  @ValidateIf((_, value) => value !== undefined)
+  @Matches(/^[1-9][0-9]{0,127}$/)
+  mergeExpectedVersion?: string;
+
+  @ApiProperty({ type: () => EntryPatchDto })
+  @IsDefined()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => EntryPatchDto)
+  fields!: EntryPatchDto;
+}
+
+/** Confirms the exact catalog association preview. */
+export class ApplyCatalogAssociationDto extends CatalogAssociationDto {
+  @ApiProperty({ type: String, maxLength: 256 })
+  @IsString()
+  @MaxLength(256)
+  previewToken!: string;
+}

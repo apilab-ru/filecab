@@ -49,7 +49,8 @@ export class AppModule {
         {
           provide: CatalogCacheService,
           inject: [AuthService],
-          useFactory: (auth: AuthService) => new CatalogCacheService(auth.database),
+          useFactory: (auth: AuthService) =>
+            new CatalogCacheService(auth.database, environment.catalog.searchCacheTtlSeconds),
         },
         {
           provide: CatalogSearchService,

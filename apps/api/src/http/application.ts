@@ -108,7 +108,7 @@ export function configureApiApplication(
     origin: [...origins],
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Filecab-Request'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Filecab-Request', 'X-Filecab-Owner'],
     exposedHeaders: ['X-Correlation-ID'],
     maxAge: 600,
   });

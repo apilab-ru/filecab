@@ -1,4 +1,4 @@
-import { ApiErrorCode, Locale } from '@filecab/contracts';
+import { ApiErrorCode, Category, Locale } from '@filecab/contracts';
 import { describe, expect, it, vi } from 'vitest';
 import type { ApiEnvironment } from '../config/environment';
 import { SmotretAnimeAdapter } from './smotret-anime.adapter';
@@ -85,6 +85,63 @@ describe('SmotretAnimeAdapter fixtures', () => {
       ['myanimelist', '12', false],
       ['shikimori', '12', false],
     ]);
+  });
+
+  it.each([-1, 8])(
+    'keeps default search usable when a series has no MAL ID (score %s)',
+    async (score) => {
+      let requestedUrl = '';
+      const { adapter, observed } = fixture(async (input) => {
+        requestedUrl = String(input);
+
+        return jsonResponse({
+          data: [
+            series(2, { myAnimeListId: 1384 }),
+            series(4, { myAnimeListId: 0, myAnimeListScore: score }),
+          ],
+        });
+      });
+      const result = await adapter.search({
+        provider: 'smotret',
+        category: Category.Anime,
+        locale: Locale.En,
+        query: '',
+        page: 1,
+        pageSize: 12,
+        filters: {},
+      });
+
+      expect(result.results).toHaveLength(2);
+      expect(result.hasMore).toBe(false);
+      expect(new URL(requestedUrl).searchParams.has('query')).toBe(false);
+      expect(observed[1].references).toEqual([
+        expect.objectContaining({
+          namespace: 'smotret',
+          id: '4',
+          provenance: expect.objectContaining({ verified: true }),
+        }),
+      ]);
+      expect(observed[1].providerRatings).toEqual([]);
+    },
+  );
+
+  it('rejects a negative MAL ID before persisting any search results', async () => {
+    const { adapter, identity } = fixture(async () =>
+      jsonResponse({ data: [series(4, { myAnimeListId: -1 })] }),
+    );
+
+    await expect(
+      adapter.search({
+        provider: 'smotret',
+        category: Category.Anime,
+        locale: Locale.En,
+        query: '',
+        page: 1,
+        pageSize: 12,
+        filters: {},
+      }),
+    ).rejects.toMatchObject({ code: ApiErrorCode.InvalidResponse });
+    expect(identity.observe).not.toHaveBeenCalled();
   });
 
   it('uses offset pagination and bounded lookahead after identity deduplication', async () => {

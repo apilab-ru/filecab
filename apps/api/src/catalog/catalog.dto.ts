@@ -28,6 +28,9 @@ export class CatalogProviderCapabilityDto implements CatalogProviderCapability {
   categories!: CatalogProviderCapability['categories'];
   @ApiProperty({ type: [String], enum: ['search', 'details', 'resolve-reference', 'genres'] })
   operations!: CatalogProviderCapability['operations'];
+  @ApiPropertyOptional({ type: Boolean }) browse?: boolean;
+  @ApiPropertyOptional({ type: [String] }) searchFilters?: string[];
+  @ApiPropertyOptional({ type: [String] }) searchOrdering?: string[];
   @ApiProperty({ type: [String] }) filters!: string[];
   @ApiProperty({ type: [String] }) ordering!: string[];
   @ApiProperty({ type: [String] }) referenceNamespaces!: string[];

@@ -43,7 +43,7 @@ export class KinopoiskMovieDto {
   @IsOptional() @IsString() name?: string | null;
   @IsOptional() @IsString() alternativeName?: string | null;
   @IsOptional() @IsString() description?: string | null;
-  @IsOptional() @IsInt() @Min(1) year?: number | null;
+  @IsOptional() @IsInt() @Min(0) year?: number | null;
   @IsOptional() @IsObject() poster?: { url?: string | null } | null;
   @IsOptional() @IsObject() rating?: KinopoiskRatingDto | null;
   @IsOptional() @IsObject() externalId?: KinopoiskExternalIdDto | null;

@@ -26,6 +26,7 @@ import { randomUUID } from 'node:crypto';
 import type { Request } from 'express';
 import {
   ApiBearerAuth,
+  ApiHeader,
   ApiCookieAuth,
   ApiBody,
   ApiOperation,
@@ -47,6 +48,8 @@ import {
   MergeEntriesDto,
   ReassignSourceDto,
   ApplyMergeDto,
+  CatalogAssociationDto,
+  ApplyCatalogAssociationDto,
   ApplyReassignmentDto,
 } from './library.dto';
 import {
@@ -95,6 +98,12 @@ export class LibraryInputGuard implements CanActivate {
 }
 
 @ApiTags('Owner library')
+@ApiHeader({
+  name: 'X-Filecab-Owner',
+  required: false,
+  description:
+    'Optional account precondition. Must match the authenticated owner; does not select an owner.',
+})
 @ApiBearerAuth()
 @ApiCookieAuth()
 @ApiResponse({
@@ -215,6 +224,38 @@ export class LibraryController {
     @Body(new RequestDtoPipe(ExpectedVersionDto)) input: ExpectedVersionDto,
   ): Promise<ServerEntry> {
     return this.mutations.setDeleted(account.ownerId, entryId, input.expectedVersion, false);
+  }
+
+  @Post('catalog/preview')
+  @HttpCode(200)
+  @ApiBody({ type: CatalogAssociationDto })
+  @ApiResponse({ status: 200, type: MutationPreviewDto })
+  async previewCatalog(
+    @CurrentAccount() account: AuthIdentity,
+    @Body(new RequestDtoPipe(CatalogAssociationDto)) input: CatalogAssociationDto,
+  ): Promise<LibraryMutationPreview> {
+    return (await this.mutations.associate(account.ownerId, {
+      ...input,
+      fields: { ...input.fields },
+    })) as LibraryMutationPreview;
+  }
+
+  @Post('catalog/apply')
+  @HttpCode(200)
+  @ApiBody({ type: ApplyCatalogAssociationDto })
+  @ApiResponse({ status: 200, type: MutationResultDto })
+  async applyCatalog(
+    @CurrentAccount() account: AuthIdentity,
+    @Body(new RequestDtoPipe(ApplyCatalogAssociationDto)) input: ApplyCatalogAssociationDto,
+  ): Promise<LibraryMutationResult> {
+    const { previewToken, ...request } = input;
+    const entries = (await this.mutations.associate(
+      account.ownerId,
+      { ...request, fields: { ...request.fields } },
+      previewToken,
+    )) as ServerEntry[];
+
+    return { schemaVersion: 1, entries };
   }
 
   @Post('merges/preview')

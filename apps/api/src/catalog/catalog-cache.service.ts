@@ -8,7 +8,6 @@ import type {
 } from '@filecab/contracts';
 import type { Prisma, PrismaClient } from '../generated/prisma/client';
 
-const SEARCH_FRESH_MS = 15 * 60 * 1000;
 const SEARCH_STALE_MS = 24 * 60 * 60 * 1000;
 const SEARCH_CACHE_MAX_ROWS = 5000;
 const SEARCH_CACHE_MAX_PAGES_PER_IDENTITY = 20;
@@ -48,7 +47,10 @@ function metadataProvenance(snapshot: Snapshot): Provenance[] {
 
 /** Stores bounded search pages and locale-specific normalized metadata snapshots. */
 export class CatalogCacheService {
-  constructor(private readonly database: PrismaClient) {}
+  constructor(
+    private readonly database: PrismaClient,
+    private readonly searchTtlSeconds: number,
+  ) {}
 
   /** Reads a fresh locale-specific metadata projection without owner-private fields. */
   async getMetadata(
@@ -120,8 +122,8 @@ export class CatalogCacheService {
             page: request.page,
             response: cachedResponse as unknown as Prisma.InputJsonValue,
             fetchedAt: now,
-            expiresAt: new Date(now.getTime() + SEARCH_FRESH_MS),
-            staleUntil: new Date(now.getTime() + SEARCH_STALE_MS),
+            expiresAt: new Date(now.getTime() + this.searchTtlSeconds * 1000),
+            staleUntil: new Date(now.getTime() + this.searchTtlSeconds * 1000 + SEARCH_STALE_MS),
             lastAccessedAt: now,
           },
           update: {
@@ -129,8 +131,8 @@ export class CatalogCacheService {
             page: request.page,
             response: cachedResponse as unknown as Prisma.InputJsonValue,
             fetchedAt: now,
-            expiresAt: new Date(now.getTime() + SEARCH_FRESH_MS),
-            staleUntil: new Date(now.getTime() + SEARCH_STALE_MS),
+            expiresAt: new Date(now.getTime() + this.searchTtlSeconds * 1000),
+            staleUntil: new Date(now.getTime() + this.searchTtlSeconds * 1000 + SEARCH_STALE_MS),
             lastAccessedAt: now,
           },
         });

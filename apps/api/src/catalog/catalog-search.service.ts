@@ -62,15 +62,26 @@ export class CatalogSearchService {
 
     const capability = adapter.capability;
     const unsupportedFilter = Object.keys(request.filters ?? {}).some(
-      (filter) => !capability.filters.includes(filter),
+      (filter) =>
+        !(
+          request.query.trim()
+            ? (capability.searchFilters ?? capability.filters)
+            : capability.filters
+        ).includes(filter),
     );
 
     if (
+      (!request.query.trim() && !capability.browse) ||
       !capability.categories.includes(request.category) ||
       !capability.operations.includes('search') ||
       !capability.languages.includes(request.locale) ||
       unsupportedFilter ||
-      (request.order !== undefined && !capability.ordering.includes(request.order))
+      (request.order !== undefined &&
+        !(
+          request.query.trim()
+            ? (capability.searchOrdering ?? capability.ordering)
+            : capability.ordering
+        ).includes(request.order))
     )
       throw new ApiException(
         400,

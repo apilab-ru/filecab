@@ -54,6 +54,12 @@ export class AuthGuard implements CanActivate {
       bearer ? AuthClient.Extension : AuthClient.Website,
     );
 
+    if (
+      request.get('X-Filecab-Owner') &&
+      request.get('X-Filecab-Owner') !== request[AUTH_CONTEXT]!.ownerId
+    )
+      throw new ApiException(409, ApiErrorCode.Conflict, 'Account changed; reload before retrying');
+
     return true;
   }
 }

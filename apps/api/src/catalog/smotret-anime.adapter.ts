@@ -303,7 +303,8 @@ function normalizeSeries(
       availableEpisodeCount: detailed ? availableEpisodeCount(series) : null,
       providerRatings:
         score !== undefined &&
-        series.myAnimeListId !== undefined &&
+        typeof series.myAnimeListId === 'number' &&
+        series.myAnimeListId > 0 &&
         Number.isFinite(score) &&
         score >= 0 &&
         score <= 10
@@ -400,11 +401,12 @@ function wait(milliseconds: number): Promise<void> {
 
 /** Implements the documented public Smotret catalog API with bounded requests. */
 export class SmotretAnimeAdapter implements CatalogSearchAdapter {
-  readonly schemaVersion = 1;
+  readonly schemaVersion = 2;
   readonly capability: CatalogProviderCapability = {
     provider: 'smotret',
     categories: [Category.Anime],
     operations: ['search', 'details', 'resolve-reference'],
+    browse: true,
     filters: [...SMOTRET_SEARCH_FILTERS],
     ordering: ['id'],
     referenceNamespaces: ['smotret', 'myanimelist'],
