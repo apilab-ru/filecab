@@ -215,3 +215,127 @@ describe('Kinopoisk pagination', () => {
     expect(url.searchParams.getAll('type')).toEqual(['movie', 'cartoon']);
   });
 });
+
+describe('Kinopoisk ordered discovery page budget', () => {
+  it('requests only display rows plus lookahead and keeps continuation across smaller upstream pages', async () => {
+    const movies = Array.from({ length: 30 }, (_, index) => ({
+      id: index + 1,
+      type: 'movie',
+      year: 2020,
+    }));
+    const fetcher = vi.fn<typeof fetch>().mockImplementation(async (input) => {
+      const url = new URL(String(input));
+      const page = Number(url.searchParams.get('next') ?? '1');
+      const limit = Number(url.searchParams.get('limit'));
+
+      return new Response(
+        JSON.stringify({
+          limit,
+          hasNext: page * limit < movies.length,
+          next: page * limit < movies.length ? String(page + 1) : null,
+          docs: movies.slice((page - 1) * limit, page * limit),
+        }),
+      );
+    });
+    const observe = vi
+      .fn<CatalogIdentityService['observe']>()
+      .mockImplementation(async (category, granularity, snapshot) => ({
+        schemaVersion: 1,
+        catalogId: snapshot.references[0].id,
+        category,
+        granularity,
+        snapshot,
+      }));
+    const adapter = new KinopoiskDevAdapter(
+      'https://api.poiskkino.dev',
+      'private-key',
+      { observe } as unknown as CatalogIdentityService,
+      fetcher,
+    );
+    for (const page of [1, 2, 3]) {
+      const result = await adapter.search({
+        provider: 'kinopoisk',
+        category: Category.Films,
+        query: '',
+        page,
+        pageSize: 12,
+        locale: Locale.En,
+        order: 'year-desc',
+      });
+      expect(result.results.map((record) => record.catalogId)).toEqual(
+        movies.slice((page - 1) * 12, page * 12).map((movie) => String(movie.id)),
+      );
+      expect(result.hasMore).toBe(page < 3);
+    }
+    for (const [input] of fetcher.mock.calls) {
+      const url = new URL(String(input));
+      expect(url.pathname).toBe('/v1.5/movie');
+      expect(url.searchParams.has('page')).toBe(false);
+      expect(url.searchParams.has('withCount')).toBe(false);
+      expect(url.searchParams.get('limit')).toBe('13');
+      expect(url.searchParams.getAll('sortField')).toEqual(['year']);
+    }
+  });
+});
+
+it.each([
+  { docs: [{ id: 1, type: 'movie' }], limit: 13, hasNext: true, next: null },
+  { docs: [], limit: 13, hasNext: true, next: 'cursor-fixture' },
+])('rejects unusable cursor continuation before persistence', async (envelope) => {
+  const observe = vi.fn<CatalogIdentityService['observe']>();
+  const fetcher = vi
+    .fn<typeof fetch>()
+    .mockImplementation(async () => new Response(JSON.stringify(envelope)));
+  const adapter = new KinopoiskDevAdapter(
+    'https://api.poiskkino.dev',
+    'private-key',
+    { observe } as unknown as CatalogIdentityService,
+    fetcher,
+  );
+  await expect(
+    adapter.search({
+      provider: 'kinopoisk',
+      category: Category.Films,
+      locale: Locale.En,
+      query: '',
+      page: 1,
+      pageSize: 12,
+      order: 'year-desc',
+    }),
+  ).rejects.toMatchObject({ httpStatus: 502 });
+  expect(observe).not.toHaveBeenCalled();
+});
+
+it('rejects a repeated provider cursor instead of looping or committing partial results', async () => {
+  const observe = vi.fn<CatalogIdentityService['observe']>();
+  const fetcher = vi.fn<typeof fetch>().mockImplementation(
+    async () =>
+      new Response(
+        JSON.stringify({
+          limit: 13,
+          hasNext: true,
+          next: 'same-cursor',
+          docs: [{ id: 1, type: 'movie' }],
+        }),
+      ),
+  );
+  const adapter = new KinopoiskDevAdapter(
+    'https://api.poiskkino.dev',
+    'private-key',
+    { observe } as unknown as CatalogIdentityService,
+    fetcher,
+  );
+  await expect(
+    adapter.search({
+      provider: 'kinopoisk',
+      category: Category.Films,
+      locale: Locale.En,
+      query: '',
+      page: 1,
+      pageSize: 12,
+      order: 'year-desc',
+    }),
+  ).rejects.toMatchObject({ httpStatus: 502 });
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  expect(observe).not.toHaveBeenCalled();
+});

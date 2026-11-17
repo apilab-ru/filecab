@@ -243,8 +243,8 @@ describe('Kinopoisk normalization and reference contracts', () => {
 });
 
 describe('Kinopoisk operation-specific controls', () => {
-  it('serializes verified discovery filters and stable ordering', async () => {
-    const { adapter, fetcher } = fixture({ page: 1, limit: 50, docs: [] });
+  it('serializes discovery filters without an expensive secondary sort', async () => {
+    const { adapter, fetcher } = fixture({ limit: 3, docs: [], hasNext: false });
     await adapter.search(
       request({
         filters: { year: 2014, format: 'movie', providerRating: '8-10' },
@@ -253,12 +253,24 @@ describe('Kinopoisk operation-specific controls', () => {
     );
     const url = new URL(String(fetcher.mock.calls[0][0]));
 
-    expect(url.pathname).toBe('/v1.4/movie');
+    expect(url.pathname).toBe('/v1.5/movie');
     expect(url.searchParams.get('year')).toBe('2014');
     expect(url.searchParams.getAll('type')).toEqual(['movie']);
     expect(url.searchParams.get('rating.kp')).toBe('8-10');
-    expect(url.searchParams.getAll('sortField')).toEqual(['rating.kp', 'id']);
-    expect(url.searchParams.getAll('sortType')).toEqual(['-1', '1']);
+    expect(url.searchParams.getAll('sortField')).toEqual(['rating.kp']);
+    expect(url.searchParams.getAll('sortType')).toEqual(['-1']);
+  });
+
+  it.each([
+    ['year-asc', 'year', '1'],
+    ['year-desc', 'year', '-1'],
+    ['rating-desc', 'rating.kp', '-1'],
+  ])('sends only the supported primary sort for %s', async (order, field, direction) => {
+    const { adapter, fetcher } = fixture({ limit: 3, docs: [], hasNext: false });
+    await adapter.search(request({ order }));
+    const url = new URL(String(fetcher.mock.calls[0][0]));
+    expect(url.searchParams.getAll('sortField')).toEqual([field]);
+    expect(url.searchParams.getAll('sortType')).toEqual([direction]);
   });
 
   it.each<Partial<CatalogSearchRequest>>([
@@ -266,6 +278,7 @@ describe('Kinopoisk operation-specific controls', () => {
     { query: 'title', order: 'year-asc' },
     { filters: { genre: 'unknown' } },
     { order: 'personal-rating' },
+    { order: 'rating-asc' },
   ])('rejects unsupported combinations before fetching: %j', async (options) => {
     const { adapter, fetcher } = fixture();
 

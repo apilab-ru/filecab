@@ -16,7 +16,11 @@ import { createHash } from 'node:crypto';
 import { ApiException } from '../http/api-error';
 import { CatalogIdentityService } from './catalog-identity.service';
 import type { CatalogSearchAdapter } from './catalog-search.service';
-import { KinopoiskMovieDto, KinopoiskMoviesResponseDto } from './kinopoisk-dev.dto';
+import {
+  KinopoiskMovieDto,
+  KinopoiskMoviesResponseDto,
+  KinopoiskCursorResponseDto,
+} from './kinopoisk-dev.dto';
 
 const TYPES: Record<Category.Films | Category.Tv, readonly string[]> = {
   [Category.Films]: ['movie', 'cartoon'],
@@ -33,7 +37,6 @@ const FORMATS: Record<string, Format> = {
 const ORDERING: Record<string, readonly [string, string]> = {
   'year-asc': ['year', '1'],
   'year-desc': ['year', '-1'],
-  'rating-asc': ['rating.kp', '1'],
   'rating-desc': ['rating.kp', '-1'],
 };
 
@@ -270,9 +273,9 @@ function normalizeMovie(
   return { category, granularity, snapshot };
 }
 
-/** Implements the documented Kinopoisk Dev v1.4 title search, discovery and detail endpoints. */
+/** Implements versioned Kinopoisk search, cursor discovery and detail endpoints. */
 export class KinopoiskDevAdapter implements CatalogSearchAdapter {
-  readonly schemaVersion = 4;
+  readonly schemaVersion = 7;
   readonly capability: CatalogProviderCapability = {
     provider: 'kinopoisk',
     categories: [Category.Films, Category.Tv],
@@ -315,8 +318,11 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     )
       throw new ApiException(400, ApiErrorCode.ValidationError, 'Kinopoisk request is unsupported');
 
+    const upstreamPageSize = request.order
+      ? Math.min(KINOPOISK_UPSTREAM_PAGE_SIZE, request.pageSize + 1)
+      : KINOPOISK_UPSTREAM_PAGE_SIZE;
     const parameters = new URLSearchParams({
-      limit: String(KINOPOISK_UPSTREAM_PAGE_SIZE),
+      limit: String(upstreamPageSize),
     });
     let path: string;
 
@@ -324,7 +330,7 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
       path = '/v1.4/movie/search';
       parameters.set('query', request.query.trim());
     } else {
-      path = '/v1.4/movie';
+      path = request.order ? '/v1.5/movie' : '/v1.4/movie';
       parameters.append('type', types[0]);
       parameters.append('type', types[1]);
       parameters.append('selectFields', 'id');
@@ -351,8 +357,6 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
         const [field, direction] = ORDERING[request.order];
         parameters.append('sortField', field);
         parameters.append('sortType', direction);
-        parameters.append('sortField', 'id');
-        parameters.append('sortType', '1');
       }
     }
 
@@ -361,35 +365,65 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     const end = start + request.pageSize;
     let exhausted = false;
 
-    for (let page = 1; page <= KINOPOISK_MAX_SCAN_PAGES; page += 1) {
-      parameters.set('page', String(page));
-      const envelope = this.validateEnvelope(
-        await this.request(`${path}?${parameters}`),
-        request.query.trim() ? 'search' : 'discovery',
-      );
+    const cursors = new Set<string>();
 
-      if (
-        envelope.page !== page ||
-        envelope.limit !== KINOPOISK_UPSTREAM_PAGE_SIZE ||
-        envelope.docs.length > KINOPOISK_UPSTREAM_PAGE_SIZE
-      )
-        throw new ApiException(
-          502,
-          ApiErrorCode.InvalidResponse,
-          'Kinopoisk returned inconsistent pagination',
-          true,
+    for (let page = 1; page <= KINOPOISK_MAX_SCAN_PAGES; page += 1) {
+      let docs: KinopoiskMovieDto[];
+
+      if (request.order) {
+        const envelope = this.validateCursorEnvelope(await this.request(`${path}?${parameters}`));
+
+        if (
+          envelope.limit !== upstreamPageSize ||
+          envelope.docs.length > upstreamPageSize ||
+          (envelope.hasNext &&
+            (!envelope.next || !envelope.docs.length || cursors.has(envelope.next)))
+        )
+          throw new ApiException(
+            502,
+            ApiErrorCode.InvalidResponse,
+            'Kinopoisk returned inconsistent cursor pagination',
+            true,
+          );
+
+        docs = envelope.docs;
+        exhausted = !envelope.hasNext;
+
+        if (envelope.hasNext && envelope.next) {
+          cursors.add(envelope.next);
+          parameters.set('next', envelope.next);
+        }
+      } else {
+        parameters.set('page', String(page));
+        const envelope = this.validateEnvelope(
+          await this.request(`${path}?${parameters}`),
+          request.query.trim() ? 'search' : 'discovery',
         );
 
-      for (const movie of envelope.docs) {
+        if (
+          envelope.page !== page ||
+          envelope.limit !== upstreamPageSize ||
+          envelope.docs.length > upstreamPageSize
+        )
+          throw new ApiException(
+            502,
+            ApiErrorCode.InvalidResponse,
+            'Kinopoisk returned inconsistent pagination',
+            true,
+          );
+
+        docs = envelope.docs;
+        exhausted =
+          envelope.docs.length === 0 ||
+          (envelope.total !== undefined
+            ? page * upstreamPageSize >= envelope.total
+            : envelope.docs.length < upstreamPageSize);
+      }
+
+      for (const movie of docs) {
         if (this.matchesCategory(movie, category) && !eligible.has(movie.id))
           eligible.set(movie.id, movie);
       }
-
-      exhausted =
-        envelope.docs.length === 0 ||
-        (envelope.total !== undefined
-          ? page * KINOPOISK_UPSTREAM_PAGE_SIZE >= envelope.total
-          : envelope.docs.length < KINOPOISK_UPSTREAM_PAGE_SIZE);
 
       if (eligible.size > end || exhausted) break;
     }
@@ -552,6 +586,25 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
 
     if (errors.length)
       throw schemaFailure(this.origin, operation, started, validationFields(errors));
+
+    return result;
+  }
+
+  /** Validates the ordered discovery cursor envelope and its normalized movie fields. */
+  private validateCursorEnvelope(value: unknown) {
+    const started = performance.now();
+
+    if (typeof value !== 'object' || value === null || Array.isArray(value))
+      throw schemaFailure(this.origin, 'discovery', started, ['response']);
+
+    const result = plainToInstance(KinopoiskCursorResponseDto, value);
+    const errors = validateSync(result, {
+      forbidUnknownValues: true,
+      validationError: { target: false, value: false },
+    });
+
+    if (errors.length)
+      throw schemaFailure(this.origin, 'discovery', started, validationFields(errors));
 
     return result;
   }

@@ -1,6 +1,8 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsBoolean,
+  MaxLength,
   IsInt,
   IsNumber,
   IsObject,
@@ -64,6 +66,17 @@ export class KinopoiskMoviesResponseDto {
   @IsInt() @Min(1) page!: number;
   @IsInt() @Min(1) limit!: number;
   @IsOptional() @IsInt() @Min(0) total?: number;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => KinopoiskMovieDto)
+  docs!: KinopoiskMovieDto[];
+}
+
+/** Validates ordered v1.5 discovery without requesting an expensive total count. */
+export class KinopoiskCursorResponseDto {
+  @IsInt() @Min(1) limit!: number;
+  @IsBoolean() hasNext!: boolean;
+  @IsOptional() @IsString() @MaxLength(4096) next?: string | null;
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => KinopoiskMovieDto)
