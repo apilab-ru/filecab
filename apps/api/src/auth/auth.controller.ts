@@ -36,6 +36,7 @@ import {
 } from './auth.dto';
 import { ApiErrorDto } from '../http/openapi.dto';
 import { ApiException } from '../http/api-error';
+import { DATABASE_READINESS, type DatabaseReadiness } from '../health/readiness';
 
 @ApiTags('Authentication')
 @ApiResponse({
@@ -67,7 +68,10 @@ import { ApiException } from '../http/api-error';
 })
 @Controller('auth')
 export class AuthController {
-  constructor(@Inject(AuthService) private readonly auth: AuthService) {}
+  constructor(
+    @Inject(AuthService) private readonly auth: AuthService,
+    @Inject(DATABASE_READINESS) private readonly database: DatabaseReadiness,
+  ) {}
 
   private get names() {
     return COOKIE_NAMES[this.auth.environment.mode === 'production' ? 'production' : 'development'];
@@ -97,9 +101,20 @@ export class AuthController {
   @ApiOperation({ summary: 'Check public extension login configuration', security: [] })
   @ApiQuery({ type: ExtensionConfigQueryDto })
   @ApiResponse({ status: 200, type: ExtensionLoginConfigDto })
-  extensionConfig(
+  async extensionConfig(
     @Query(new RequestDtoPipe(ExtensionConfigQueryDto)) input: ExtensionConfigQueryDto,
-  ): ExtensionLoginConfigDto {
+  ): Promise<ExtensionLoginConfigDto> {
+    try {
+      await this.database.check();
+    } catch {
+      throw new ApiException(
+        503,
+        ApiErrorCode.ServiceUnavailable,
+        'Service temporarily unavailable',
+        true,
+      );
+    }
+
     return {
       schemaVersion: 1,
       googleEnabled: this.auth.environment.google.enabled,

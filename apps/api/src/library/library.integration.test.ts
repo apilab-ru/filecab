@@ -609,7 +609,11 @@ test('replication creates are retry safe and cannot inject metadata or duplicate
       },
     ],
   });
-  expect(invalid.status).toBe(400);
+  expect(invalid.status).toBe(200);
+  expect(await invalid.json()).toMatchObject({
+    conflicts: [],
+    issues: [{ path: ['rows', 0, 'proposed', 'snapshot'], message: expect.any(String) }],
+  });
   const sourceConflict = await replicate('push', {
     schemaVersion: 1,
     rows: [{ assumedMaster: current, proposed: { ...current, sources: template.sources } }],
@@ -693,17 +697,29 @@ test('push validates all request shapes first and documents independent mixed-ro
   const semantic = await replicate('push', {
     schemaVersion: 1,
     rows: [
-      { assumedMaster: current, proposed: { ...current, comment: 'committed before error' } },
       {
         assumedMaster: null,
         proposed: { ...firstEntry, entryId: randomUUID(), serverVersion: null, userTitle: '' },
       },
+      { assumedMaster: current, proposed: { ...current, comment: 'committed after error' } },
+      {
+        assumedMaster: current,
+        proposed: { ...firstEntry, entryId: randomUUID(), serverVersion: null },
+      },
     ],
   });
-  expect(semantic.status).toBe(400);
+  expect(semantic.status).toBe(200);
+  expect(await semantic.json()).toEqual({
+    schemaVersion: 1,
+    conflicts: [],
+    issues: [
+      { path: ['rows', 0, 'proposed', 'userTitle'], message: expect.any(String) },
+      { path: ['rows', 2, 'assumedMaster'], message: expect.any(String) },
+    ],
+  });
   expect(
     await app.get(LibraryMutationService).get(first.ownerId, secondEntry.entryId),
-  ).toMatchObject({ comment: 'committed before error' });
+  ).toMatchObject({ comment: 'committed after error' });
   const docs = await fetch(base.replace(/v1\/library$/, 'docs-json'));
   const schema = (await docs.json()) as { paths: Record<string, unknown> };
   expect(schema.paths).toHaveProperty('/api/v1/replication/pull');

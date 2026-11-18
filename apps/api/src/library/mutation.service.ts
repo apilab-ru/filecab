@@ -1,6 +1,7 @@
 import {
   ApiErrorCode,
   associateCatalog,
+  CatalogAssociationConflictError,
   mergeCatalogSnapshots,
   type CatalogAssociationRequest,
   type CatalogRecord,
@@ -11,6 +12,7 @@ import {
   type ReplicationPull,
   type ReplicationPullResponse,
   type EntryPatch,
+  type FieldPath,
   type ServerEntry,
   type Snapshot,
   type Category,
@@ -202,7 +204,10 @@ export class LibraryMutationService {
       assumedMaster &&
       (assumedMaster.entryId !== proposed.entryId || !assumedMaster.serverVersion)
     )
-      throw new MutationError(ApiErrorCode.ValidationError);
+      throw new MutationError(ApiErrorCode.ValidationError, {
+        path: ['assumedMaster'],
+        message: 'The saved server version does not match this entry.',
+      });
 
     try {
       return await this.transaction(ownerId, async (tx) => {
@@ -244,7 +249,10 @@ export class LibraryMutationService {
             })),
           )
         )
-          throw new MutationError(ApiErrorCode.ValidationError);
+          throw new MutationError(ApiErrorCode.ValidationError, {
+            path: ['proposed', 'sources'],
+            message: 'The source links do not match the server URL format.',
+          });
 
         // An acknowledged write may have lost its response. Compare mutable state before
         // rejecting its now-stale assumption, excluding server-owned timestamps and version.
@@ -274,9 +282,12 @@ export class LibraryMutationService {
           ((current.catalogId !== null && current.catalogId !== proposed.catalogId) ||
             current.createdAt !== proposed.createdAt)
         )
-          throw new MutationError(ApiErrorCode.ValidationError);
+          throw new MutationError(ApiErrorCode.ValidationError, {
+            path: ['proposed', 'catalogId'],
+            message: 'The catalog identity or creation time cannot change.',
+          });
 
-        await this.checkCatalog(tx, proposed.catalogId, proposed.category);
+        await this.checkCatalog(tx, proposed.catalogId, proposed.category, ['proposed']);
         const catalog = proposed.catalogId
           ? await tx.catalogItem.findUnique({ where: { id: proposed.catalogId } })
           : null;
@@ -289,7 +300,11 @@ export class LibraryMutationService {
               );
 
         if (!isDeepStrictEqual(snapshot, proposed.snapshot))
-          throw new MutationError(ApiErrorCode.ValidationError);
+          throw new MutationError(ApiErrorCode.ValidationError, {
+            path: ['proposed', 'snapshot'],
+            message:
+              'Catalog details have changed on the server. Keep the server copy to resolve this item.',
+          });
 
         const now = new Date(
           Math.max(Date.now(), Date.parse(current?.updatedAt ?? '1970-01-01')),
@@ -302,7 +317,7 @@ export class LibraryMutationService {
           createdAt: current?.createdAt ?? now,
           updatedAt: now,
         };
-        validateEntry(document);
+        validateEntry(document, ['proposed']);
         await this.publish(tx, ownerId, document, !current);
 
         return null;
@@ -360,13 +375,17 @@ export class LibraryMutationService {
     tx: Prisma.TransactionClient,
     catalogId: string | null,
     category: string,
+    path: FieldPath = [],
   ): Promise<void> {
     if (catalogId === null) return;
 
     const catalog = await tx.catalogItem.findUnique({ where: { id: catalogId } });
 
     if (!catalog || catalog.category !== category)
-      throw new MutationError(ApiErrorCode.ValidationError);
+      throw new MutationError(ApiErrorCode.ValidationError, {
+        path: [...path, 'catalogId'],
+        message: 'The catalog item is missing or belongs to another category.',
+      });
   }
 
   async update(
@@ -569,10 +588,13 @@ export class LibraryMutationService {
           other,
           input.fields,
         ) as ServerEntry[];
-      } catch {
-        throw new MutationError(ApiErrorCode.Conflict);
+      } catch (error) {
+        if (error instanceof CatalogAssociationConflictError)
+          throw new MutationError(ApiErrorCode.Conflict);
+
+        throw error;
       }
-      proposed.forEach(validateEntry);
+      proposed.forEach((entry) => validateEntry(entry));
       const before = [current, ...(other ? [other] : [])];
 
       if (previewToken === undefined)

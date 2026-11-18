@@ -1,9 +1,16 @@
-import { ApiErrorCode, type EntryPatch, type ServerEntry } from '@filecab/contracts';
+import {
+  ApiErrorCode,
+  type EntryPatch,
+  type FieldPath,
+  type ServerEntry,
+  type ValidationIssue,
+} from '@filecab/contracts';
 import { validateEntryPatchDto } from '../contracts/entry-patch.dto';
 
 export class MutationError extends Error {
   constructor(
     readonly code: ApiErrorCode.NotFound | ApiErrorCode.Conflict | ApiErrorCode.ValidationError,
+    readonly issue?: ValidationIssue,
   ) {
     super(code);
   }
@@ -28,9 +35,18 @@ export function patchDocument(entry: ServerEntry, patch: EntryPatch): ServerEntr
 }
 
 /** Enforces entry-dependent rules without trimming or rewriting user text. */
-export function validateEntry(entry: ServerEntry): void {
-  if ((!entry.catalogId && !entry.userTitle.trim()) || entry.sources.length > 100)
-    throw new MutationError(ApiErrorCode.ValidationError);
+export function validateEntry(entry: ServerEntry, path: FieldPath = []): void {
+  if (!entry.catalogId && !entry.userTitle.trim())
+    throw new MutationError(ApiErrorCode.ValidationError, {
+      path: [...path, 'userTitle'],
+      message: 'A title is required when the entry has no catalog item.',
+    });
+
+  if (entry.sources.length > 100)
+    throw new MutationError(ApiErrorCode.ValidationError, {
+      path: [...path, 'sources'],
+      message: 'An entry can have no more than 100 source links.',
+    });
 }
 
 /** Proposes a merge without changing timestamps, server versions or persistence. */
@@ -55,11 +71,12 @@ export function proposeMerge(
 
   if (!survivor.catalogId && removed.catalogId) merged.snapshot = removed.snapshot;
 
-  merged.sources = [
-    ...new Map(
-      [...survivor.sources, ...removed.sources].map((source) => [source.normalizedUrl, source]),
-    ).values(),
-  ];
+  merged.sources = [...survivor.sources];
+
+  for (const source of removed.sources)
+    if (!merged.sources.some((known) => known.normalizedUrl === source.normalizedUrl))
+      merged.sources.push(source);
+
   validateEntry(merged);
 
   return [merged, { ...removed, deleted: true }];
@@ -80,7 +97,7 @@ export function proposeReassignment(
     { ...from, sources: from.sources.filter((value) => value !== source) },
     { ...to, sources: [...to.sources, source] },
   ];
-  moved.forEach(validateEntry);
+  moved.forEach((entry) => validateEntry(entry));
 
   return moved;
 }

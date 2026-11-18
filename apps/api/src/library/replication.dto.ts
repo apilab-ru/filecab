@@ -23,6 +23,7 @@ import {
 } from 'class-validator';
 import { Category, Status, type Snapshot } from '@filecab/contracts';
 import { EntryDto, ServerEntryDto, SnapshotDto } from './response.dto';
+import { ValidationIssueDto } from '../http/openapi.dto';
 
 /** Validates one original URL and its versioned normalized representation. */
 export class ReplicationSourceDto {
@@ -165,4 +166,10 @@ export class ReplicationConflictDto {
 export class ReplicationPushResponseDto {
   @ApiProperty({ type: Number, enum: [1] }) schemaVersion!: 1;
   @ApiProperty({ type: [ReplicationConflictDto] }) conflicts!: ReplicationConflictDto[];
+  @ApiProperty({
+    type: [ValidationIssueDto],
+    required: false,
+    description: 'Rows that failed entry validation. Omitted when every row is valid.',
+  })
+  issues?: ValidationIssueDto[];
 }

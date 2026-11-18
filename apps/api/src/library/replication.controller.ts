@@ -7,17 +7,19 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiErrorCode } from '@filecab/contracts';
 import type {
   ReplicationPullResponse,
   ReplicationPushResponse,
   ReplicationRow,
+  ValidationIssue,
 } from '@filecab/contracts';
 import { AuthGuard, CurrentAccount } from '../auth/auth.guard';
 import type { AuthIdentity } from '../auth/auth.service';
 import { RequestDtoPipe } from '../http/validation';
 import { ApiErrorDto } from '../http/openapi.dto';
 import { LibraryInputGuard } from './library.controller';
-import { LibraryMutationService } from './mutation.service';
+import { LibraryMutationService, MutationError } from './mutation.service';
 import {
   ReplicationPullDto,
   ReplicationPushDto,
@@ -70,7 +72,7 @@ export class ReplicationController {
   @ApiOperation({
     summary: 'Push assumed-master states; each row commits independently',
     description:
-      'Stale versions retain the server state. Conflicts do not prevent later rows. Semantic errors stop the batch; retrying previously committed proposals is safe.',
+      'Stale versions retain the server state. Each row commits independently: conflicts and row validation failures are returned together and do not prevent other rows from committing.',
   })
   @ApiBody({ type: ReplicationPushDto })
   @ApiResponse({ status: 200, type: ReplicationPushResponseDto })
@@ -79,12 +81,26 @@ export class ReplicationController {
     @Body(new RequestDtoPipe(ReplicationPushDto)) input: ReplicationPushDto,
   ): Promise<ReplicationPushResponse> {
     const conflicts: ReplicationPushResponse['conflicts'] = [];
-    for (const row of input.rows) {
-      const conflict = await this.mutations.pushRow(account.ownerId, row as ReplicationRow);
+    const issues: ValidationIssue[] = [];
+    for (const [index, row] of input.rows.entries()) {
+      let conflict: Awaited<ReturnType<LibraryMutationService['pushRow']>>;
+
+      try {
+        conflict = await this.mutations.pushRow(account.ownerId, row as ReplicationRow);
+      } catch (error) {
+        if (error instanceof MutationError && error.code === ApiErrorCode.ValidationError)
+          issues.push({
+            path: ['rows', index, ...(error.issue?.path ?? [])],
+            message: error.issue?.message ?? 'Server rejected this entry.',
+          });
+        else throw error;
+
+        continue;
+      }
 
       if (conflict) conflicts.push(conflict);
     }
 
-    return { schemaVersion: 1, conflicts };
+    return { schemaVersion: 1, conflicts, ...(issues.length ? { issues } : {}) };
   }
 }

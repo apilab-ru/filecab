@@ -50,6 +50,35 @@ function jsonResponse(body: unknown, status = 200, headers?: Record<string, stri
 }
 
 describe('SmotretAnimeAdapter fixtures', () => {
+  it.each([
+    { posterUrl: origin, expected: null },
+    { posterUrl: `${origin}/`, expected: null },
+    {
+      posterUrl: `${origin}/`,
+      posterUrlSmall: `${origin}/posters/small.jpg`,
+      expected: `${origin}/posters/small.jpg`,
+    },
+    {
+      posterUrl: `${origin}/posters/full.jpg`,
+      posterUrlSmall: `${origin}/posters/small.jpg`,
+      expected: `${origin}/posters/full.jpg`,
+    },
+  ])('does not use the provider homepage as a poster: %j', async ({ expected, ...posters }) => {
+    const { adapter, observed } = fixture(async () =>
+      jsonResponse({ data: [series(12, posters)] }),
+    );
+    await adapter.search({
+      provider: 'smotret',
+      category: Category.Anime,
+      locale: Locale.En,
+      query: 'fixture',
+      page: 1,
+      pageSize: 10,
+      filters: {},
+    });
+    expect(observed[0].posterUrl).toBe(expected);
+  });
+
   it('handles missing optional arrays and keeps provider references namespaced', async () => {
     const { adapter, observed } = fixture(async () =>
       jsonResponse({

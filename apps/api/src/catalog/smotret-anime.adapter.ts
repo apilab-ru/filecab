@@ -115,7 +115,14 @@ function posterUrl(value: string | undefined): string | null {
   try {
     const url = new URL(value);
 
-    if (url.protocol !== 'https:' || url.username || url.password || url.hash) return null;
+    if (
+      url.protocol !== 'https:' ||
+      url.username ||
+      url.password ||
+      url.hash ||
+      url.pathname === '/'
+    )
+      return null;
 
     return url.href;
   } catch {
