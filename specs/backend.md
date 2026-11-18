@@ -22,7 +22,9 @@ Start website login by redirect and extension login through `identity.launchWebA
 Use production HttpOnly/Secure cookies with SameSite and CSRF protection for the website.
 Extension callbacks carry a short-lived, single-use code bound to the login attempt
 by a verifier/challenge. Allowlist callbacks; never place reusable credentials in URLs
-or expose them to content scripts.
+or expose them to content scripts. Before the extension opens the login window,
+check database availability. If the database is unavailable, return HTTP 503 from
+the extension login configuration endpoint. Keep stored credentials.
 
 ### Session lifecycle
 
@@ -307,3 +309,23 @@ merges/restores, delete/Undo, commit-safe checkpoints, batch retries, rejected-i
 recovery, account switching, history reset, OAuth replay, sharing privacy/revocation,
 locale fallback, provider failure and parser rollback. Use deterministic fixtures;
 authorized live checks supplement them and must be reported separately.
+
+### Catalog association
+
+`POST /library/catalog/preview` accepts an entry ID, expected version, internal catalog
+ID and optional merge entry ID, merge version and selected user fields. Load catalog
+metadata on the server. Reject a category conflict or a different existing catalog ID.
+Return the before and proposed entries with an expiring confirmation token.
+`POST /library/catalog/apply` rechecks the same input, token and entry versions. Apply
+association or merge in one owner transaction. Publish the donor tombstone before the
+survivor. Keep the survivor UUID and creation time. Never accept a client catalog snapshot.
+
+Website library requests include `X-Filecab-Owner` as an account precondition.
+Authenticate the session first. If the header differs from the session owner, reject
+the request before a read or write. The header does not select an owner or grant access.
+
+Report server failures through one common HTTP error path for controllers and
+middleware. Report each response once. Provider schema failures include the schema
+stage and bounded validation field paths. Do not include submitted searches, provider
+payloads, field values or credentials. Test event creation with an isolated Sentry
+transport so tests do not send events to the configured project.

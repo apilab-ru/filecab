@@ -185,7 +185,7 @@ Category must be `anime`, `films`, or `tv`. Catalog subtype is separate: an anim
 
 **DATA-03.** Serialize writes or use revisions. Concurrent different-entry edits both survive; same-entry conflicts offer reload or deliberate overwrite preview. Stale backup previews must abort or renew confirmation.
 
-**DATA-04.** Initialize empty storage only when missing. Failed/corrupt reads preserve bytes and show Retry/raw-data export, never overwrite with an empty library.
+**DATA-04.** Initialize empty storage only when missing. Failed/corrupt reads preserve bytes and show Retry/raw-data export, never overwrite with an empty library. When the synchronization issue schema changes, increase its storage version. Upgrade existing issue records without changes to their contents or to library entries.
 
 **DATA-05.** Offline extension workflows support saved-data browse/search/edit/delete/export/import/manual creation. Website failures retain input and Retry without claiming a save. Catalog operations show offline; failed requests never clear entries/metadata.
 

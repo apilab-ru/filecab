@@ -33,6 +33,9 @@ build output, lockfiles and local environment files. The root `prepare` script i
 Husky; lint-staged formats staged files, preserves unstaged edits and blocks failures.
 CI runs the formatting check. Test meaningful behavior/regressions, not copies of the
 implementation or third-party internals.
+Enable TypeScript checks for unused local declarations and parameters. Remove
+unused imports and obsolete components when no application or test uses them.
+Keep models required by the documented public contract.
 
 ## Specification format
 

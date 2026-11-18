@@ -35,6 +35,11 @@ Forward only documented year/season/genre/reference filters, never arbitrary use
 MAL lookup uses a verified MAL filter. Never pass Shikimori IDs as MAL IDs because
 numbers match. Unsupported lookup returns capability/unresolved state.
 
+Smotret can return `myAnimeListId: 0` when no MAL match is available. Accept zero
+as missing metadata. Do not create a MAL reference or an attributed MAL score for
+zero. Reject negative or non-integer MAL IDs. Keep the Smotret series ID and the
+other search results usable.
+
 ### Titles and descriptions
 
 Retain localized titles/aliases and actual languages; `titles.en` is not necessarily
@@ -46,6 +51,8 @@ mislabeling language. Empty arrays mean missing metadata.
 
 Normalize poster, catalog URL, year, format, genres, declared total, available episodes
 and attributed scores; do not combine MAL/World Art scores into unlabeled popularity.
+Treat a poster URL with no path other than `/` as missing. Use a valid small poster
+when the main poster is missing. If neither poster is available, return null.
 Episode-array length is available-record count unless verified complete and authoritative
 for the declared total. Missing/truncated arrays neither invent totals nor erase known
 ones. Dubs/translations are not separate episodes.
@@ -128,3 +135,29 @@ The site's terms prohibit unauthorized bulk collection and automation that bypas
 the API or its limits. This adapter uses documented API routes only, sends a descriptive
 User-Agent, and applies Filecab timeout, payload, retry, concurrency and page-size
 budgets. No credentials are configured or needed for these public catalog operations.
+
+### Ordering probes (16 November 2026)
+
+Bounded public reads tested 22 request variants with 25 records per response on the
+configured `.online` origin. The current official OpenAPI schema still lists only
+`order=id`. This value returned ascending IDs. Adding `direction=desc` did not reverse
+it.
+
+Tested order values were `-id`, `id_desc`, `year`, `-year`, `year_desc`, `year:desc`,
+`year DESC`, `rating`, `-rating`, `myAnimeListScore`, `-myAnimeListScore`,
+`myAnimeListScore DESC`, `title`, `yearDesc` and `ratingAsc`. Also tested separate
+`sort`/`direction`, `sortBy`/`sortOrder` and `order`/`direction` parameters. These
+variants returned the same complete ID sequence as the native default and an
+intentionally invalid order value. HTTP 200 does not establish ordering support.
+
+The 25-record native default sample had descending MAL scores. This observation
+does not establish a separate supported score-order parameter or a general tie
+policy. No reliable additional ordering was found. Keep the explicit capability
+limited to verified ID ordering; do not advertise ignored year, title or score sorts.
+
+A follow-up probe tested `data.year`, `-data.year`, `data.year ASC`, `data.year DESC`,
+separate direction parameters, `sort`/`sortBy`/`sortField` forms, `data.id`, `-data.id`,
+`data.myAnimeListScore` and `-data.myAnimeListScore`. All 15 requests, including the
+default and invalid-field controls, returned HTTP 200 and the same 25-record ID
+sequence. The year sample began 2023, 2009, 2011, 2019, 2026, so neither year direction
+was applied. These dotted-field variants do not establish extra ordering support.

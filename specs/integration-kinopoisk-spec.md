@@ -80,7 +80,8 @@ omit exact totals; a short filtered page alone does not establish the end.
 
 Additional TMDB movie/TV verification, filter-value validation and nested provider DTO
 validation are excluded from step 14. Existing namespace separation and category
-classification remain. Kinopoisk uses fixed request timeout/payload limits; configurable
+classification remain. Kinopoisk uses a fixed 30-second timeout for each upstream request and a fixed
+payload limit; configurable
 request budgets and Retry-After handling are excluded from this step. These exceptions
 override the corresponding shared catalog/provider requirements for this adapter.
 
@@ -164,8 +165,20 @@ labels for verified dictionary names and unknown language for new labels. Dictio
 Genre filtering stays unavailable until internal genre mappings are verified.
 
 Structured discovery supports year, format and `providerRating` (Kinopoisk score),
-and `year-asc`, `year-desc`, `rating-asc`, `rating-desc` ordering, with ascending title
-ID as a stable tie breaker. Text search rejects all structured filters and ordering.
+and `year-asc`, `year-desc`, `rating-desc` ordering. Do not advertise `rating-asc`:
+continuation through missing scores timed out on the provider's native cursor
+endpoint during the 16 November live check. Reject that direction before fetching
+instead of silently changing the order or dropping unrated records. Send only the
+selected sort field and direction. Keep provider order for equal values. Do not add
+an ID sort: broad compound sorts can exceed the upstream timeout. Do not sort one
+returned page locally to simulate a global tie breaker. Use the verified v1.5
+cursor endpoint for ordered discovery. Follow its opaque `next` cursor and
+`hasNext` flag. Do not request a total count or use offset pages for this operation.
+Reject missing or repeated continuation cursors. Keep v1.4 for text search,
+unordered discovery and details. For ordered discovery,
+request the display page size plus one lookahead record, capped at 50 records per
+upstream page. Keep that upstream size constant across display pages. Broad
+ascending-rating queries can become slow when 50 records are requested. Text search rejects all structured filters and ordering.
 Unadvertised filters/order are rejected rather than silently ignored. No locale
 parameter is sent upstream.
 
@@ -176,5 +189,10 @@ The official [pricing and usage page](https://poiskkino.dev/) limits the demo pl
 to development/testing/home libraries (200 requests/day, pagination through page 10);
 production access needs the appropriate plan. The configured account's paid entitlement
 is unknown; activation remains opt-in and no production entitlement is claimed.
-The current replacement Swagger documents v1.5; this adapter retains independently
-probed v1.4 routes rather than assuming compatibility with v1.5.
+The replacement Swagger documents v1.5. Ordered discovery now uses its verified
+cursor response with the same v1.4 movie model. Other operations retain the
+independently probed v1.4 routes.
+
+Treat a provider release year of zero as unknown. Accept it in search pages and
+details, then store a null year. Continue to reject negative and non-integer years.
+Do not reject a complete search because an unrelated result has an unknown year.
