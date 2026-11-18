@@ -324,3 +324,21 @@ test.each([
     expect(JSON.stringify(reply)).not.toContain('private');
   },
 );
+
+test('database outage is diagnosed before browser login and preserves existing credentials', async () => {
+  mocks.local['filecab.auth.refresh'] = {
+    ownerId: tokens.ownerId,
+    refreshToken: tokens.refreshToken,
+  };
+  vi.mocked(fetch).mockResolvedValue(new Response('private database detail', { status: 503 }));
+  const handler = await worker();
+  const reply = await handler({ action: 'auth.login' }, sender);
+  expect(reply).toMatchObject({
+    account: null,
+    diagnostic: { stage: 'configuration', code: 'SERVICE_UNAVAILABLE', status: 503 },
+  });
+  expect(mocks.browser.identity.launchWebAuthFlow).not.toHaveBeenCalled();
+  expect(mocks.local['filecab.auth.refresh']).toHaveProperty('refreshToken', tokens.refreshToken);
+  expect(JSON.stringify(reply)).not.toContain('private database detail');
+  expect(JSON.stringify(reply)).not.toContain(tokens.refreshToken);
+});

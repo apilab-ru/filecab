@@ -42,6 +42,7 @@ const SYNC_HTTP_ERRORS: Partial<Record<number, ApiErrorCode | SyncErrorCode>> = 
 const AUTH_HTTP_ERRORS: Partial<Record<number, AuthFailureCode>> = {
   401: AuthFailureCode.SessionRejected,
   404: AuthFailureCode.ApiOutdated,
+  503: AuthFailureCode.ServiceUnavailable,
 };
 
 const AUTH_ACTION_STAGES: Partial<Record<string, AuthStage>> = {
@@ -371,6 +372,28 @@ function isSyncResetRequired(data: unknown): data is { code: ApiErrorCode.SyncRe
   );
 }
 
+/** Keeps bounded validation paths and messages while excluding rejected values. */
+function safeValidationIssues(data: unknown): { path: (string | number)[]; message: string }[] {
+  if (!data || typeof data !== 'object' || !('issues' in data) || !Array.isArray(data.issues))
+    return [];
+
+  return data.issues.slice(0, 20).flatMap((issue) => {
+    if (!issue || typeof issue !== 'object' || !('path' in issue) || !Array.isArray(issue.path))
+      return [];
+
+    const path = (issue.path as unknown[])
+      .slice(0, 12)
+      .filter(
+        (part: unknown): part is string | number =>
+          (typeof part === 'string' && part.length <= 80) ||
+          (typeof part === 'number' && Number.isSafeInteger(part) && part >= 0),
+      );
+    const message = 'message' in issue && typeof issue.message === 'string' ? issue.message : '';
+
+    return [{ path, message: message.slice(0, 240) }];
+  });
+}
+
 /** Fetches only library/replication routes after verifying the captured account identity. */
 async function libraryRequest(message: object): Promise<unknown> {
   const input = message as { ownerId?: string; operation?: string; body?: unknown };
@@ -434,7 +457,40 @@ async function libraryRequest(message: object): Promise<unknown> {
 
   if (isSyncResetRequired(data)) code = data.code;
 
-  return { error: code, diagnostic: { ...diagnostic, code } };
+  const issues = code === ApiErrorCode.ValidationError ? safeValidationIssues(data) : [];
+  const rows =
+    input.body &&
+    typeof input.body === 'object' &&
+    'rows' in input.body &&
+    Array.isArray(input.body.rows)
+      ? input.body.rows
+      : [];
+  const rowIndex = issues[0]?.path[1];
+  let parsedRowIndex: number | undefined;
+
+  if (typeof rowIndex === 'number') parsedRowIndex = rowIndex;
+
+  if (typeof rowIndex === 'string' && /^\d+$/.test(rowIndex)) parsedRowIndex = Number(rowIndex);
+
+  const row = parsedRowIndex === undefined ? undefined : rows[parsedRowIndex];
+  const proposed = row && typeof row === 'object' && 'proposed' in row ? row.proposed : undefined;
+  const entryId =
+    proposed &&
+    typeof proposed === 'object' &&
+    'entryId' in proposed &&
+    typeof proposed.entryId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(proposed.entryId)
+      ? proposed.entryId
+      : undefined;
+
+  return {
+    error: code,
+    diagnostic: {
+      ...diagnostic,
+      code,
+      ...(issues.length ? { issues, ...(entryId ? { entryId } : {}) } : {}),
+    },
+  };
 }
 
 /** Registers serialized auth operations restricted to the extension's own UI pages. */

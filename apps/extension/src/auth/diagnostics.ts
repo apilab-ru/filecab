@@ -13,6 +13,7 @@ export enum AuthStage {
 export enum AuthFailureCode {
   StorageUnavailable = 'STORAGE_UNAVAILABLE',
   ApiUnreachable = 'API_UNREACHABLE',
+  ServiceUnavailable = 'SERVICE_UNAVAILABLE',
   ExtensionNotAllowed = 'EXTENSION_NOT_ALLOWED',
   GoogleDisabled = 'GOOGLE_DISABLED',
   BrowserLoginFailed = 'BROWSER_LOGIN_FAILED',
@@ -29,6 +30,8 @@ const FAILURE_MESSAGES: Record<AuthFailureCode, string> = {
     'Extension credential storage is unavailable. Check identity/storage permissions and reload the extension.',
   API_UNREACHABLE:
     'Cannot reach the API. Check that it is running and that the extension has permission for the API origin.',
+  SERVICE_UNAVAILABLE:
+    'The login service is temporarily unavailable. Check that the API database is running, then retry.',
   EXTENSION_NOT_ALLOWED:
     'Add this extension origin to API EXTENSION_ORIGINS, then restart the API.',
   GOOGLE_DISABLED: 'Google login is disabled in the API configuration.',
