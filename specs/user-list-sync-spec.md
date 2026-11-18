@@ -2,124 +2,150 @@
 
 ## Purpose
 
-Bidirectional synchronization between a Filecab library and an explicitly connected
-external account. Shikimori is the first adapter. This is separate from catalog
-providers and extension-to-Filecab RxDB replication.
+Two-way synchronization between a Filecab library and an external account that the owner
+connects. Shikimori is the first adapter. This is separate from catalog providers and from
+extension replication.
 
 ## Requirements
 
 ### Provider abstraction
 
-Use adapters behind one backend service. Each declares connection/refresh/disconnect,
-verified account lookup, complete-list/item reads, create/partial-update/delete support,
-and category/field/status/pagination/rate/revision/mutation limitations.
-Unsupported behavior returns a capability result; provider HTTP DTOs remain backend-only.
+Use adapters behind one backend service. Each adapter declares:
+
+- connect, refresh and disconnect;
+- verified account lookup;
+- complete-list and item reads;
+- create, partial update and delete support;
+- limits of categories, fields, statuses, pagination, rate, revisions and mutations.
+
+Unsupported behavior returns a capability result. Provider HTTP DTOs stay on the backend.
 
 ### Separation from catalog providers
 
-List connections read/write personal lists, not catalog discovery. Connecting a provider
-must not alter Filecab login or grant another service access. Embedded title metadata
-may support import/identity without enabling general catalog search.
+A list connection reads and writes personal lists. It does not provide catalog discovery.
+Connecting a provider does not change Filecab login or give another service access.
+Embedded title metadata can support import and identity. It does not enable catalog search.
 
 ### Account connection
 
-Only the authenticated owner may connect, inspect, sync, pause or disconnect.
-Use provider authorization, state validation and minimum scopes; verify identity through
-the authorized API, never submitted names/IDs. Google remains Filecab login.
-Encrypt recoverable provider credentials with a server key; exclude them from client
-responses, logs, backups, sharing, replication and content scripts. They cannot merely
-be hashed because upstream refresh needs them.
-Allow one connection per provider per Filecab account and one Filecab owner per remote
-account. Relinking a different account needs confirmation, a new generation and fresh
-mappings/jobs.
+- Only the authenticated owner can connect, inspect, sync, pause or disconnect.
+- Use provider authorization, state validation and minimum scopes.
+- Verify the remote identity through the authorized API. Never trust a submitted name or ID.
+- Google stays the Filecab login.
+- Encrypt provider credentials with a server key. They must be recoverable for upstream refresh, so a hash is not sufficient.
+- Exclude credentials from client responses, logs, backups, sharing, replication and content scripts.
+- One connection for each provider and Filecab account. One Filecab owner for each remote account.
+- Linking a different remote account needs confirmation, a new generation and new mappings and jobs.
 
-### Common sync records
+### Sync records
 
-Persist account ID, scopes/capabilities, expiry, generation, field policy, state and last
-success per connection. Per item, retain Filecab UUID, verified media reference, separate
-remote list-record ID, common field baseline, remote revision/time and acknowledged
-operation. Common fields are status, score and episode progress. Preserve provider-only
-statuses/rewatch data in namespaced metadata without changing unrelated fields.
+For each connection, store the account ID, scopes and capabilities, expiry, generation,
+field policy, state and last success.
+
+For each item, store the Filecab UUID, the verified media reference, the separate remote
+record ID, the common field baseline, the remote revision or time and the acknowledged operation.
+
+Common fields are status, score and episode progress. Keep provider-only statuses and
+rewatch data in namespaced metadata. Do not change unrelated fields.
 
 ### Identity resolution
 
-Only verified references or confirmed mappings authorize links/writes; titles and equal
-numbers do not. Unresolved entries stay usable and require identification before export.
-Imports retain stable UUIDs, verified references and usable snapshots without duplicates.
-Optional catalog enrichment must not gate a valid import.
+Only verified references or confirmed mappings permit links and writes. Titles and equal
+numbers do not. Unresolved entries stay usable. They need identification before export.
+Imports keep stable UUIDs, verified references and usable snapshots without duplicates.
+Optional catalog enrichment must not block a valid import.
 
 ### Initial synchronization
 
-Read the full remote list and server-committed Filecab library, then preview additions
-and conflicts. Require explicit resolution for overlapping unequal fields. Users may
-confirm selected changes, retain unresolved items or cancel without external writes.
-Imports use ordinary ownership/version validation and publish replication changes.
+1. Read the complete remote list and the committed Filecab library.
+2. Preview additions and conflicts.
+3. Ask the user to resolve overlapping unequal fields.
+4. The user confirms selected changes, keeps unresolved items or cancels. Cancel writes nothing externally.
+
+Imports use the ordinary ownership and version checks and publish replication changes.
 
 ### Field policy and privacy
 
-Sync enabled, representable status/score/progress fields only. Do not export private
-notes, viewing URLs, hidden-state semantics or local-only fields by default; preserve
-unowned remote fields. Unsupported values become recoverable item issues, never silent
-conversion/clamping/clearing/deletion. Preserve original values behind lossy projections;
-a display difference alone must not trigger reverse export.
+- Synchronize only enabled, representable status, score and progress fields.
+- By default, do not export notes, viewing URLs, hidden-state meaning or local-only fields.
+- Keep remote fields that Filecab does not own.
+- An unsupported value becomes a recoverable item issue. Never convert, clamp, clear or delete it silently.
+- Keep the original value behind a lossy projection. A display difference alone must not start a reverse export.
 
 ### Three-way reconciliation
 
-Compare each field on both sides with its last acknowledged baseline. Propagate one-sided
-changes, converge identical changes and combine independent fields; pause conflicting
-same-field edits for user resolution. Revalidate both sides before applying a decision.
-Wall-clock timestamps alone do not choose winners. Without conditional writes, read
-before and verify after writing; do not claim atomic protection from remote races.
+Compare each field on both sides with its last acknowledged baseline.
 
-### Scheduling and asynchronous writes
+| Change                         | Result                    |
+| ------------------------------ | ------------------------- |
+| One side changed               | Propagate it              |
+| Both sides changed identically | Converge                  |
+| Different fields changed       | Combine                   |
+| Same field changed differently | Pause for user resolution |
 
-Support manual sync and debounced scheduling after relevant committed Filecab edits.
-Check remote lists every configurable 15 minutes initially, subject to quotas/fairness;
-this is eventual, not realtime. Offline edits replicate to Filecab before export.
-CRUD never waits for provider availability. Durable PostgreSQL jobs/outbox handle
-side effects and restart retries; they are distinct from RxDB metadata. Jobs carry
-connection generation and entry version, coalesce superseded work and recheck state.
+Check both sides again before you apply a decision. Wall-clock time alone never selects a
+winner. Without conditional writes, read before and verify after each write. Do not claim
+atomic protection from remote races.
 
-### Retry safety and feedback-loop prevention
+### Scheduling
 
-Serialize per connection/target. Use provider idempotency or reconcile uncertain outcomes
-before retrying; write absolute progress, never increments. Retain acknowledged remote
-values and operation provenance. Imports update the baseline rather than immediately
-re-exporting as new user edits. Repeated scans converge without unnecessary writes.
+- Support manual sync and debounced sync after committed Filecab edits.
+- Check remote lists every 15 minutes by default. The interval is configurable and depends on quotas and fairness. This is eventual, not realtime.
+- Offline edits replicate to Filecab before export.
+- CRUD never waits for a provider.
+- Durable PostgreSQL jobs handle side effects and retries after restart. They are separate from RxDB metadata.
+- Jobs carry the connection generation and the entry version. Combine superseded work. Check state again before each job.
+
+### Retry safety
+
+- Serialize work for each connection and target.
+- Use provider idempotency, or reconcile an uncertain result before a retry.
+- Write absolute progress. Never write increments.
+- Keep acknowledged remote values and operation provenance.
+- An import updates the baseline. It does not export the change again as a new edit.
+- Repeated scans converge without unnecessary writes.
 
 ### Complete scans and missing records
 
-Read all statuses/pages. Partial, interrupted, filtered, private or throttled reads are
-not complete snapshots. Deduplicate mutable pagination across bounded passes; do not
-claim point-in-time isolation without provider support. Only a complete scan establishes
-absence, which creates a removal issue rather than deleting Filecab data. Unresolved
-removals must not repeatedly recreate deliberately removed items.
+Read all statuses and pages. Partial, interrupted, filtered, private or throttled reads
+are not complete. Remove duplicates from changing pagination across bounded passes. Do not
+claim a point-in-time view without provider support.
 
-### Explicit deletion policy
+Only a complete scan can prove that a record is absent. Absence creates a removal issue.
+It never deletes Filecab data. An unresolved removal must not recreate an item that the
+user removed.
 
-Disable automatic destructive propagation. Resolve removals by restoring/recreating,
-retaining one side with durable suppression/unlink, or explicitly confirming deletion
-on the other side. Remote deletion requires verified ownership/mapping and fresh checks.
-Local delete/Undo never triggers irreversible remote deletion without this decision.
+### Deletion policy
 
-### Pause, disconnect, and authorization loss
+Never propagate deletion automatically. Resolve a removal by one of these actions:
 
-Pause blocks new side effects but keeps connection data. Disconnect invalidates generation,
-cancels jobs, removes credentials and retains Filecab entries; revoke upstream tokens
-only if supported. Recheck generation/permissions before every mutation. In-flight work
-may finish and cannot be promised undone. Invalid authorization pauses for reconnection;
-provider failure never erases libraries.
+- restore or recreate the item;
+- keep one side, with durable suppression or unlink;
+- confirm deletion on the other side explicitly.
 
-### User-visible state and API documentation
+Remote deletion requires verified ownership and mapping and fresh checks. A local delete
+or Undo never starts an irreversible remote deletion without this decision.
 
-Expose account/connection state, enabled fields, last successful scan, pending/running
-counts, unresolved mappings, conflicts/removals and retryable failures. Owners can
-connect, pause/resume, disconnect, request sync, preview and resolve issues.
-Swagger covers Filecab auth, provider consent, field mappings and asynchronous status;
-client-facing operations never require provider tokens.
+### Pause, disconnect and authorization loss
 
-## Reliability verification
+- Pause blocks new side effects and keeps connection data.
+- Disconnect changes the generation, cancels jobs, removes credentials and keeps Filecab entries. Revoke upstream tokens if the provider supports it.
+- Check the generation and permissions before each mutation.
+- Work in progress can finish. Do not promise to undo it.
+- Invalid authorization pauses the connection until reconnection.
+- A provider failure never erases a library.
 
-Test initial sync, duplicates, independent/same-field edits, remote races, suppressed
-removals, delete/Undo, relinking, refresh, restart, uncertain responses, throttling,
-interrupted scans and feedback-loop prevention.
+### Visible state and API documentation
+
+Show account and connection state, enabled fields, last successful scan, pending and
+running counts, unresolved mappings, conflicts, removals and retryable failures. Owners
+can connect, pause, resume, disconnect, request sync, preview and resolve issues.
+
+Swagger covers Filecab authentication, provider consent, field mappings and asynchronous
+status. Client operations never require provider tokens.
+
+## Verification
+
+Test initial sync, duplicates, edits to different and same fields, remote races,
+suppressed removals, delete and Undo, relinking, refresh, restart, uncertain responses,
+throttling, interrupted scans and feedback-loop prevention.

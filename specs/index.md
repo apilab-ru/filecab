@@ -1,38 +1,41 @@
 # Specifications
 
-Read the relevant owner document; linked details inherit its rules. Requirements
+Read the document that owns the topic. Linked details follow its rules. Requirements
 describe target behavior, not implementation status.
 
 ## Start here
 
-| Document                              | Owns                                                                      |
-| ------------------------------------- | ------------------------------------------------------------------------- |
-| [Functionality](functionality.md)     | Release scope, user behavior, stable requirement IDs and acceptance cases |
-| [Stack](stack.md)                     | Technology choices only                                                   |
-| [Conventions](conventions.md)         | Architecture, package boundaries and implementation patterns              |
-| [Contributing](contributing.md)       | Workflow, code rules, formatting and specification format                 |
-| [Domain contract](domain-contract.md) | Shared models, identities, serialization and clearing semantics           |
+| Document                              | Owns                                                                   |
+| ------------------------------------- | ---------------------------------------------------------------------- |
+| [Functionality](functionality.md)     | Release scope, user behavior, requirement IDs and acceptance scenarios |
+| [Stack](stack.md)                     | Technology choices                                                     |
+| [Conventions](conventions.md)         | Architecture, package boundaries and implementation patterns           |
+| [Contributing](contributing.md)       | Workflow, code rules, formatting and spec format                       |
+| [Domain contract](domain-contract.md) | Shared models, identities, normalization, clearing and serialization   |
 
 ## Feature specifications
 
-| Document                                           | Owns                                                                  |
-| -------------------------------------------------- | --------------------------------------------------------------------- |
-| [Backend](backend.md)                              | Private APIs, sessions, replication, sharing and parser configuration |
-| [Catalog](catalog-spec.md)                         | Shared discovery/metadata behavior and pagination                     |
-| [External list sync](user-list-sync-spec.md)       | Common reconciliation, jobs, privacy and removal policy               |
-| [Kinopoisk Dev](integration-kinopoisk-spec.md)     | Film/TV catalog adapter differences                                   |
-| [Smotret Anime](integration-smotret-anime-spec.md) | Anime catalog adapter differences                                     |
-| [Shikimori](integration-shikimori-spec.md)         | Personal-list adapter, OAuth and field mapping                        |
+| Document                                           | Owns                                                                              |
+| -------------------------------------------------- | --------------------------------------------------------------------------------- |
+| [Backend](backend.md)                              | Sessions, library API, replication server, sharing, parser config, API foundation |
+| [Extension storage](extension-storage.md)          | Device persistence, recovery and client replication                               |
+| [Library UI](library-ui.md)                        | Library and catalog screens, cards, ordering and loading                          |
+| [Catalog](catalog-spec.md)                         | Provider-independent discovery, metadata, genres and cache                        |
+| [External list sync](user-list-sync-spec.md)       | Common reconciliation, jobs, privacy and removal rules                            |
+| [Kinopoisk Dev](integration-kinopoisk-spec.md)     | Film and TV catalog adapter                                                       |
+| [Smotret Anime](integration-smotret-anime-spec.md) | Anime catalog adapter                                                             |
+| [Shikimori](integration-shikimori-spec.md)         | Personal-list adapter, OAuth and field mapping                                    |
 
-## Decisions, delivery and ideas
+## Delivery and ideas
 
-- [Baseline decisions](../implementation/baseline-decisions.md) and [backend design](../implementation/backend-decisions.md): detailed technical contracts.
-- [Implementation plan](../implementation/implementation-plan.md) and [checklist](../implementation/requirement-checklist.md): delivery order and evidence.
-- [Plans](plans.md): optional improvements and pointers to baseline follow-ups.
+- [Implementation plan](../implementation/implementation-plan.md): delivery order.
+- [Requirement checklist](../implementation/requirement-checklist.md): status and evidence.
+- [Plans](plans.md): optional improvements.
 
 ## Mockups
 
-[Dark layout](mockup-dark.png) · [Light colors](mockup-light.png) · [Settings](mockup-settings.png)
+[Dark layout](mockup-dark.png) · [Light colors](mockup-light.png) ·
+[Light list](mockup-light-list.png) · [Settings](mockup-settings.png)
 
-Use the supplied [SVG icons](../apps/extension/public/icons) and
+Use the supplied [SVG icons](../apps/extension/public/icons) and the
 [Filecab logo](../apps/extension/public/wish-list-icon.png).

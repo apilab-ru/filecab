@@ -2,162 +2,120 @@
 
 ## Purpose
 
-Anime discovery and metadata through Smotret Anime / Anime 365.
-Apply shared [Catalog rules](catalog-spec.md); this file defines adapter differences.
+Anime discovery and metadata through Smotret Anime (Anime 365).
+All [Catalog rules](catalog-spec.md) apply. This file defines the adapter differences.
 
 ## Requirements
 
-### Configuration and provider identity
+### Configuration and identity
 
-Use provider `smotret`, entity `series`. Configure approved origins, optional credentials,
-limits and timeouts server-side; `https://smotret-anime.online` is an example origin.
-Mirrors share identity only after verifying they use the same series IDs. Use HTTPS;
-disable credential-bearing access without a validated secure endpoint. Never fetch
-arbitrary user-provided origins. Follow HTTP redirects using the Fetch implementation's
-redirect limit within the configured request timeout.
+- Provider `smotret`, entity `series`.
+- The origin is `SMOTRET_API_ORIGIN`. The default is `https://smotret-anime.online`.
+- Configure origins, optional credentials, limits and timeouts on the server.
+- A mirror shares identity only after you verify that it uses the same series IDs. Never switch mirrors to avoid restrictions.
+- Use HTTPS. Disable credential access without a validated secure endpoint.
+- Never fetch an origin that a user supplies.
+- Follow HTTP redirects within the Fetch redirect limit and the request timeout.
+- Send a descriptive `User-Agent` that identifies Filecab.
 
-### Series search
+### Operations
 
-Support documented title search, pages, series details and verified reference lookup.
-Anime movies stay in the anime category. For offset pagination use `(page - 1) × limit`
-before normalization/lookahead, respecting both provider and Filecab limits.
-Forward only documented year/season/genre/reference filters, never arbitrary user keys.
+The public catalog routes need no credentials:
 
-### External-reference separation
+| Route                  | Use               |
+| ---------------------- | ----------------- |
+| `GET /api/series`      | Search and lookup |
+| `GET /api/series/{id}` | Series details    |
+
+User data, playback and embed APIs need a token and are not in scope. Catalog operations
+exclude playback, subtitles, translation media and provider accounts.
+
+Filecab exposes the provider through:
+
+- `GET /api/v1/catalog/search`
+- `GET /api/v1/catalog/provider-items/smotret/{id}?locale=en|ru`
+- `GET /api/v1/catalog/providers/{namespace}/{entity}/{id}?locale=en|ru`
+
+Persist each accepted record through the shared identity service before you return its
+internal catalog ID.
+
+### Search, filters and ordering
+
+- Forward only the documented exact filters `myAnimeListId`, `type`, `year` and `season`. Never forward `chips` or other user keys.
+- The only verified order is `order=id`, ascending. Do not offer year, title or score order. Other values return HTTP 200 but have no effect.
+- The provider limit is 1000. Filecab requests at most 50 results.
+- Use offset `(page - 1) × limit` and one bounded lookahead row, before normalization.
+- Anime movies stay in the anime category.
+
+### External references
 
 | Source field    | Reference namespace                                 |
 | --------------- | --------------------------------------------------- |
 | Series ID       | `{ provider: "smotret", entityType: "series", id }` |
-| `myAnimeListId` | MyAnimeList anime, never Shikimori                  |
+| `myAnimeListId` | MyAnimeList anime. Never Shikimori.                 |
 | `aniDbId`       | AniDB anime                                         |
 | Shikimori ID    | Only a verified explicit mapping                    |
 
-MAL lookup uses a verified MAL filter. Never pass Shikimori IDs as MAL IDs because
-numbers match. Unsupported lookup returns capability/unresolved state.
-
-Smotret can return `myAnimeListId: 0` when no MAL match is available. Accept zero
-as missing metadata. Do not create a MAL reference or an attributed MAL score for
-zero. Reject negative or non-integer MAL IDs. Keep the Smotret series ID and the
-other search results usable.
+- Never pass Shikimori IDs as MAL IDs because the numbers are equal.
+- `myAnimeListId: 0` means no MAL match. Do not create a MAL reference or a MAL score for it.
+- Reject negative and noninteger MAL IDs. Keep the series ID and the other results usable.
+- Ordinary search keeps MAL IDs as unverified references. An exact MAL lookup verifies a reference only when the returned record has that exact ID.
+- IDs parsed from provider links stay unverified. Search results never establish a Shikimori mapping.
+- An unsupported lookup returns a capability or unresolved state.
 
 ### Titles and descriptions
 
-Retain localized titles/aliases and actual languages; `titles.en` is not necessarily
-original. Unknown original language stays unknown. Preserve description attribution;
-select requested language, then a documented deterministic source preference without
-mislabeling language. Empty arrays mean missing metadata.
+- Keep localized titles, aliases and their actual languages. `titles.en` is not necessarily the original title.
+- An unknown original language stays unknown.
+- Keep description attribution. Select the requested language, then a documented fixed source order. Do not mislabel the language.
+- An empty array means missing metadata.
 
-### Media and episode metadata
+### Media and episodes
 
-Normalize poster, catalog URL, year, format, genres, declared total, available episodes
-and attributed scores; do not combine MAL/World Art scores into unlabeled popularity.
-Treat a poster URL with no path other than `/` as missing. Use a valid small poster
-when the main poster is missing. If neither poster is available, return null.
-Episode-array length is available-record count unless verified complete and authoritative
-for the declared total. Missing/truncated arrays neither invent totals nor erase known
-ones. Dubs/translations are not separate episodes.
+- Normalize poster, catalog URL, year, format, genres, declared total, available episodes and attributed scores.
+- Do not combine MAL and World Art scores into an unlabeled popularity value.
+- A poster URL with no path other than `/` is missing. Use a valid small poster instead. If neither exists, return null.
+- `numberOfEpisodes` is the declared total.
+- The available count includes only listed narrative episode types. The episode array is not a complete total unless verified.
+- Missing or truncated arrays never invent or erase totals.
+- Dubs and translations are not separate episodes.
+- `descriptions`, `genres` and `episodes` are not in the OpenAPI schema. Accept them only as optional validated detail fields.
 
-### Genre normalization
+### Genres
 
-Preserve provider IDs/labels and explicit internal mappings. Document semantic remapping
-or exclusions while keeping original references; never equate unrelated genres.
-Without a dictionary endpoint, use complete bounded pagination or a managed mapping,
-not a fixed sample described as complete.
+- Keep provider genre IDs and labels as provider-scoped candidates until an operator verifies a mapping.
+- Genre capability and genre filtering stay disabled.
+- Never treat unrelated genres as equal. Document any semantic remapping and keep the original reference.
+- Without a dictionary endpoint, use complete bounded pagination or a managed mapping. Never describe a sample as complete.
 
-### Persistence and pagination integrity
+### Persistence and pagination
 
-Normalize before forming continuation. Deduplicate by verified identity, not title.
-A valid series ID remains usable without cross-provider references. Determine `hasMore`
-from eligible continuation, not grouped observables or provider-ID bucket counts.
-Empty lists complete normally; required catalog persistence finishes before returning
-an internal identity.
+- Normalize before you build the continuation.
+- Remove duplicates by verified identity, not by title.
+- A valid series ID is usable without cross-provider references.
+- Get `hasMore` from eligible continuation, not from grouped observables or ID bucket counts.
+- Empty lists complete normally.
 
-### Failure handling
+### Failures
 
-Distinguish missing series, malformed response, unsupported filters, denial, throttling
-and transport failure. Never clear libraries; catalog/cache/genre failure cannot block
-manual saves. Do not send notes, status, personal ratings or progress upstream.
-Catalog operations exclude playback, subtitles, translation media and provider accounts.
+Keep these errors separate: missing series, malformed response, unsupported filter,
+denial, throttling and transport failure. Never clear libraries. Catalog, cache and genre
+failures cannot block manual saves. Do not send notes, status, personal ratings or
+progress upstream.
 
-## Verification and documentation
+The site terms prohibit unauthorized bulk collection and automation that bypasses the
+API or its limits. Use documented routes only. Apply Filecab timeout, payload, retry,
+concurrency and page-size limits.
 
-Verify selected mirror schema, lookup, pagination, credentials and usage conditions
-before activation. Do not switch mirrors to bypass restrictions. Test namespace separation,
-offset arithmetic, empty/missing titles/descriptions/episodes, incomplete totals, genre
-mapping, records without cross-provider IDs, persistence completion and continuation.
+## Verification
+
+Verify the mirror schema, lookup, pagination, credentials and usage conditions before
+activation. Test namespace separation, offset arithmetic, empty titles, descriptions and
+episodes, incomplete totals, genre mapping, records without cross-provider IDs,
+persistence completion and continuation.
 
 ## Provider documentation
 
 - [API documentation](https://smotret-anime.org/api-docs)
 - [OpenAPI description](https://smotret-anime.org/api/openapi.yaml)
 - [Usage conditions](https://smotret-anime.org/docs/terms)
-
-### Verified catalog surface (12 November 2026)
-
-The selected origin is the configured `SMOTRET_API_ORIGIN`, defaulting to
-`https://smotret-anime.online`. The official OpenAPI document is served by
-`smotret-anime.org`; a bounded public `GET /api/series?limit=1&fields=...`
-request to both `.org` and the configured `.online` origin returned the documented
-`{ data: [...] }` envelope and the same sample series ID. This confirms the current
-configured host for the observed API surface only; mirrors must not be switched or
-treated as generally interchangeable without further ID verification.
-
-The documented public catalog operations are `GET /api/series` and
-`GET /api/series/{id}`; they do not require credentials. Search accepts `query`,
-`myAnimeListId`, `type`, `year`, `season`, `isActive`, `isAiring`, `chips`, `order=id`,
-`limit`, and `offset`. Filecab supports only the documented exact fields
-`myAnimeListId`, `type`, `year`, and `season`, and order `id`; it does not forward
-arbitrary `chips` content. Provider limit is 1000; Filecab requests at most 50 results
-and uses `(page - 1) * pageSize` with one bounded lookahead row. The API asks clients
-to identify their application in `User-Agent`. Catalog routes are public; user data
-and playback/embed APIs require an access token and are outside this integration.
-
-Filecab exposes provider reads as `GET /api/v1/catalog/search`,
-`GET /api/v1/catalog/provider-items/smotret/{id}?locale=en|ru`, and
-`GET /api/v1/catalog/providers/{namespace}/{entity}/{id}?locale=en|ru`. Each accepted
-record is persisted through the shared identity service before its internal catalog ID
-is returned.
-
-The documented `Series` schema exposes IDs, title translations, type, year, season,
-declared episode total, poster URLs and MAL ID/score. One bounded live detail read also
-returned `descriptions`, `genres` and `episodes`, but the OpenAPI schema does not define
-these fields or promise episode completeness. Filecab accepts them only as optional,
-validated detail fields; absence leaves metadata unknown. Returned provider genres keep
-their Smotret IDs and labels as provider-scoped candidates until an operator verifies a
-mapping; the genre capability and genre filter remain disabled. Available episode count
-counts only listed narrative episode types, while `numberOfEpisodes` remains the
-provider-declared total. Search results do not establish a Shikimori mapping: IDs parsed
-from provider links remain unverified. MAL IDs from `myAnimeListId` are retained as
-unverified references during ordinary search; exact MAL lookup can verify a reference
-only when the returned record contains that exact ID.
-
-The site's terms prohibit unauthorized bulk collection and automation that bypasses
-the API or its limits. This adapter uses documented API routes only, sends a descriptive
-User-Agent, and applies Filecab timeout, payload, retry, concurrency and page-size
-budgets. No credentials are configured or needed for these public catalog operations.
-
-### Ordering probes (16 November 2026)
-
-Bounded public reads tested 22 request variants with 25 records per response on the
-configured `.online` origin. The current official OpenAPI schema still lists only
-`order=id`. This value returned ascending IDs. Adding `direction=desc` did not reverse
-it.
-
-Tested order values were `-id`, `id_desc`, `year`, `-year`, `year_desc`, `year:desc`,
-`year DESC`, `rating`, `-rating`, `myAnimeListScore`, `-myAnimeListScore`,
-`myAnimeListScore DESC`, `title`, `yearDesc` and `ratingAsc`. Also tested separate
-`sort`/`direction`, `sortBy`/`sortOrder` and `order`/`direction` parameters. These
-variants returned the same complete ID sequence as the native default and an
-intentionally invalid order value. HTTP 200 does not establish ordering support.
-
-The 25-record native default sample had descending MAL scores. This observation
-does not establish a separate supported score-order parameter or a general tie
-policy. No reliable additional ordering was found. Keep the explicit capability
-limited to verified ID ordering; do not advertise ignored year, title or score sorts.
-
-A follow-up probe tested `data.year`, `-data.year`, `data.year ASC`, `data.year DESC`,
-separate direction parameters, `sort`/`sortBy`/`sortField` forms, `data.id`, `-data.id`,
-`data.myAnimeListScore` and `-data.myAnimeListScore`. All 15 requests, including the
-default and invalid-field controls, returned HTTP 200 and the same 25-record ID
-sequence. The year sample began 2023, 2009, 2011, 2019, 2026, so neither year direction
-was applied. These dotted-field variants do not establish extra ordering support.

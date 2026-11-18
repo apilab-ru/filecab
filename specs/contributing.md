@@ -2,48 +2,39 @@
 
 ## Workflow
 
-1. Update the affected specification before changing implementation.
-2. Follow [Conventions](conventions.md) and the repository [coding rules](../AGENTS.md).
-3. Run relevant checks and record actual evidence in the [checklist](../implementation/requirement-checklist.md).
+1. Update the affected spec before you change the implementation.
+2. Follow [Conventions](conventions.md) and the repository rules in [AGENTS.md](../AGENTS.md).
+3. Run the relevant checks. Record the actual results in the [checklist](../implementation/requirement-checklist.md).
 
-## Code conventions
+## Code rules
 
-Keep one named React component per folder/file; index files only re-export.
-Use the model placement, validation, function documentation, spacing and constant
-rules in [AGENTS.md](../AGENTS.md). Never add Zod.
+[AGENTS.md](../AGENTS.md) owns the code, model placement, validation, function, constant,
+style and test rules. These rules add to it:
 
-Separate top-level const/enum/type/interface declarations with blank lines and document
-interfaces. Prefer string enums over derived `as const` value sets; use
-`Object.values(EnumName)` and preserve serialized values. Keep individual IDs,
-timestamps, versions and cursors as primitives.
-
-### Component Style Colocation
-
-Import component-specific styles directly from a neighboring stylesheet. Globals
-contain resets, typography, tokens and truly application-wide styles only.
-Extract genuinely shared styles without duplication; regular CSS/SCSS imports do
-not scope classes. Refactors preserve appearance, responsive behavior, specificity,
-cascade and functionality. See [style rules](../AGENTS.md#style-rules).
+- Separate top-level `const`, `enum`, `type` and `interface` declarations with blank lines. Document interfaces.
+- Prefer string enums to derived `as const` value sets. Use `Object.values(EnumName)`. Keep serialized values.
+- Keep individual IDs, timestamps, versions and cursors as primitives.
+- TypeScript checks unused local declarations and parameters. Remove unused imports and components that no application or test uses.
+- Keep models that the documented public contract requires.
 
 ## Formatting and checks
 
-Use `pnpm format` and `pnpm format:check` for ESLint Stylistic and Prettier checks,
-including statement spacing and the ban on nested ternaries. Exclude generated files,
-build output, lockfiles and local environment files. The root `prepare` script installs
-Husky; lint-staged formats staged files, preserves unstaged edits and blocks failures.
-CI runs the formatting check. Test meaningful behavior/regressions, not copies of the
-implementation or third-party internals.
-Enable TypeScript checks for unused local declarations and parameters. Remove
-unused imports and obsolete components when no application or test uses them.
-Keep models required by the documented public contract.
+- `pnpm format` and `pnpm format:check` run ESLint Stylistic and Prettier, including statement spacing and the nested-ternary ban.
+- Exclude generated files, build output, lockfiles and local environment files.
+- The root `prepare` script installs Husky. lint-staged formats staged files, keeps unstaged edits and blocks failures.
+- CI runs the formatting check.
+- Test meaningful behavior and regressions. Do not test copies of the implementation or third-party internals.
 
 ## Specification format
 
-- Give each file one responsibility; link to shared rules instead of restating them.
-- Start feature specs with Purpose, then Requirements and Verification. Use short headings without repeated “Capability” or “Requirement” prefixes.
-- Write short, testable rules in plain language. Requirements are mandatory unless explicitly optional.
-- Preserve existing requirement IDs and update links when headings move.
-- Use tables for mappings, limits and comparisons; keep independent rules in short paragraphs or lists.
-- Keep technologies in Stack, engineering rules in Conventions, product behavior in Functionality, and provider differences in integration specs.
-- Keep protocol/design decisions under `implementation/`, delivery evidence in its checklist, and optional ideas in Plans.
-- Label assumptions/open decisions. Do not silently resolve conflicts or claim fixtures prove live provider availability.
+- Write specs in ASD-STE100: short sentences, one instruction in each sentence, active voice. Do not use slash lists such as "edit/delete".
+- Give each file one responsibility. Link to shared rules. Do not repeat them.
+- Start each feature spec with Purpose, then Requirements, then Verification. Use short headings.
+- Write short, testable rules. Requirements are mandatory unless marked optional.
+- Keep requirement IDs. Update links when headings move.
+- Use tables for mappings, limits and comparisons.
+- Technologies go in [Stack](stack.md). Engineering rules go in [Conventions](conventions.md). Product behavior goes in [Functionality](functionality.md). Provider differences go in integration specs. Optional ideas go in [Plans](plans.md).
+- `specs/` holds all normative rules, including protocol and design decisions.
+- `implementation/` holds only the delivery plan and the checklist with status and evidence. Do not put rules there.
+- Do not keep dated investigation logs in specs. Keep only the resulting rule. Record evidence in the checklist.
+- Label assumptions and open decisions. Do not resolve conflicts silently. Fixtures do not prove live provider availability.

@@ -2,114 +2,121 @@
 
 ## Purpose
 
-Implement the shared [External list synchronization](user-list-sync-spec.md) rules
-for the connected user's anime list. Shikimori is not a catalog search/browse/genre
-provider; embedded list metadata may support import only.
+Apply the [External list synchronization](user-list-sync-spec.md) rules to the anime list
+of the connected user. Shikimori is not a catalog, search or genre provider. Embedded list
+metadata can support import only.
 
 ## Requirements
 
-### Independent OAuth connection
+### OAuth connection
 
-Use explicit owner consent via `/oauth/authorize`, backend exchange and refresh via
-`/oauth/token`, state validation and allowlisted callbacks. Verify account identity with
-`GET /api/users/whoami`; request/verify `user_rates` write scope. Google remains Filecab
-login. Do not collect provider passwords or trust matching email/nickname.
-Use configured HTTPS origin (initially `https://shikimori.io`), documented Bearer auth
-and the registered application name as User-Agent, not a browser impersonation.
+- Get explicit owner consent through `/oauth/authorize`.
+- Exchange and refresh tokens on the backend through `/oauth/token`.
+- Validate state. Allowlist callbacks.
+- Verify the account with `GET /api/users/whoami`.
+- Request and verify the `user_rates` write scope.
+- Google stays the Filecab login. Do not collect provider passwords. Do not trust a matching email or nickname.
+- Use the configured HTTPS origin, initially `https://shikimori.io`, with Bearer authentication.
+- Send the registered application name as `User-Agent`. Do not impersonate a browser.
 
 ### Token lifecycle
 
-Honor returned expiry. Serialize refresh per connection and atomically replace rotating
-token pairs. Encrypt tokens at rest and exclude them from library sync, sharing, exports,
-client logs and Swagger examples. Failed/revoked refresh pauses for reconnection without
-deleting data.
+- Obey the returned expiry.
+- Serialize refresh for each connection. Replace rotating token pairs atomically.
+- Encrypt tokens at rest.
+- Exclude tokens from library sync, sharing, exports, client logs and Swagger examples.
+- A failed or revoked refresh pauses the connection until reconnection. It deletes no data.
 
-### Anime-list reading
+### Reading the anime list
 
-Read the verified account's Anime targets only; exclude manga/ranobe and other owners.
+Read only the anime records of the verified account. Exclude manga, ranobe and other owners.
 
-| Operation                        | Use and limitation                                                                                                             |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `GET /api/users/:id/anime_rates` | Default metadata-complete scan; bounded page/limit and all statuses without silently omitting censored/status-filtered records |
-| `GET /api/v2/user_rates`         | Rate/identity reads; `page`/`limit` are ignored with `user_id`, so do not loop identical responses as pages                    |
-| `GET /api/v2/user_rates/:id`     | Verify mapped records                                                                                                          |
+| Operation                        | Use and limits                                                                                                                   |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/users/:id/anime_rates` | Default complete scan with metadata. Bounded page and limit. Read all statuses. Do not omit censored or status-filtered records. |
+| `GET /api/v2/user_rates`         | Rate and identity reads. With `user_id`, `page` and `limit` are ignored. Do not loop on identical responses.                     |
+| `GET /api/v2/user_rates/:id`     | Verify mapped records.                                                                                                           |
 
-Report access restrictions rather than claim completeness. Preserve rate ID, owner ID,
-anime target ID, status, score, episodes, rewatches and timestamps. Keep rate/anime/
-Filecab IDs separate. Success requires all pages/segments and reconciled duplicates.
+Report access restrictions. Do not claim completeness when restricted. Keep the rate ID,
+owner ID, anime target ID, status, score, episodes, rewatches and timestamps. Keep rate,
+anime and Filecab IDs separate. A scan succeeds only when all pages are read and duplicates are reconciled.
 
-### Verified identity mapping
+### Identity mapping
 
-Use `{ provider: "shikimori", entityType: "anime", id: target_id }` for media and a
-separate `user_rate.id` for writes. Recheck owner/target type. Link by verified reference,
-verified crosswalk or explicit confirmation, never equal MAL/Shikimori numbers or arbitrary
-titles. Imported list metadata may form a minimal snapshot; optional catalog enrichment
-must not discard unresolved imports or start general Shikimori search.
+- Media reference: `{ provider: "shikimori", entityType: "anime", id: target_id }`.
+- Writes use the separate `user_rate.id`.
+- Check the owner and target type again.
+- Link by a verified reference, a verified crosswalk or explicit confirmation. Never link by equal MAL and Shikimori numbers or by title.
+- Imported list metadata can form a minimal snapshot.
+- Optional catalog enrichment must not drop unresolved imports or start a Shikimori search.
 
-### Bidirectional field mapping
+### Field mapping
 
-| Filecab          | Shikimori    | Policy                                                           |
-| ---------------- | ------------ | ---------------------------------------------------------------- |
-| `planned`        | `planned`    | Bidirectional                                                    |
-| `process`        | `watching`   | Preserve remote rewatch state                                    |
-| `complete`       | `completed`  | Bidirectional                                                    |
-| `drop`           | `dropped`    | Bidirectional                                                    |
-| `hide`           | None         | Local only; never delete, drop or put on hold                    |
-| null status      | None         | Do not guess; remote creation needs an explicit supported status |
-| Rating 0–10      | `score` 0–10 | Bidirectional; 0 clears                                          |
-| Episode progress | `episodes`   | Absolute integers, including deliberate decreases                |
-| Notes            | `text`       | Excluded both ways by default                                    |
-| Viewing links    | None         | Never export                                                     |
+| Filecab          | Shikimori    | Rule                                                              |
+| ---------------- | ------------ | ----------------------------------------------------------------- |
+| `planned`        | `planned`    | Two-way                                                           |
+| `process`        | `watching`   | Keep the remote rewatch state                                     |
+| `complete`       | `completed`  | Two-way                                                           |
+| `drop`           | `dropped`    | Two-way                                                           |
+| `hide`           | None         | Local only. Never delete, drop or put on hold.                    |
+| null status      | None         | Do not guess. Remote creation needs an explicit supported status. |
+| Rating 0–10      | `score` 0–10 | Two-way. 0 clears.                                                |
+| Episode progress | `episodes`   | Absolute integers, also deliberate decreases                      |
+| Notes            | `text`       | Not synchronized by default                                       |
+| Viewing links    | None         | Never export                                                      |
 
-Import `on_hold` as null plus preserved remote status; import `rewatching` as `process`
-plus preserved status/rewatches. Make these projections visible; they alone never trigger
-reverse status writes. Unrelated score/progress edits preserve projected remote status;
-only explicit Filecab status actions replace it. Keep provider-only metadata without
-new domain statuses. Hiding does not export status; inbound status updates change shadow
-state without unhiding. Omit unrelated remote text, rewatches, chapters and volumes from
-writes. Never trust provider `text_html` as safe HTML.
+- Import `on_hold` as null status and keep the remote status.
+- Import `rewatching` as `process` and keep the remote status and rewatches.
+- Show these projections. They alone never start a reverse status write.
+- Unrelated score or progress edits keep the projected remote status. Only an explicit Filecab status action replaces it.
+- Keep provider-only metadata without new domain statuses.
+- Hiding does not export a status. An inbound status update changes shadow state and does not unhide the entry.
+- Omit unrelated remote text, rewatches, chapters and volumes from writes.
+- Never trust provider `text_html` as safe HTML.
 
-### Remote list mutations
+### Remote mutations
 
-| Operation                       | Contract                                                                                    |
+| Operation                       | Rule                                                                                        |
 | ------------------------------- | ------------------------------------------------------------------------------------------- |
 | `POST /api/v2/user_rates`       | Verified owner, mapped anime target, `target_type=Anime`, enabled fields inside `user_rate` |
-| `PATCH /api/v2/user_rates/:id`  | Changed fields only; preserve explicit score/progress zero                                  |
-| `DELETE /api/v2/user_rates/:id` | Verified mapping and explicit removal resolution                                            |
+| `PATCH /api/v2/user_rates/:id`  | Changed fields only. Keep explicit score and progress zero.                                 |
+| `DELETE /api/v2/user_rates/:id` | Verified mapping and an explicit removal decision                                           |
 
-PUT and increment endpoints are not required; increments are unsafe for retries.
-Reconcile account/anime state before retrying uncertain creates. Read before mutation,
-verify returned/post-write state, then advance the acknowledged baseline.
+Do not use PUT or increment endpoints. Increments are unsafe for retries. Reconcile
+account and anime state before you retry an uncertain create. Read before a mutation,
+verify the result after it, then advance the acknowledged baseline.
 
-### Reconciliation and consistency
+### Reconciliation
 
-Use common initial preview, per-field three-way reconciliation and explicit conflict
-resolution. Inbound changes use Filecab ownership/version/change-feed services.
-Do not claim compare-and-swap unless verified upstream. Read-before/write-after checks
-reduce races but do not protect atomically against simultaneous external edits;
-uncertain outcomes remain reconcilable.
+Use the common initial preview, per-field three-way reconciliation and explicit conflict
+resolution. Inbound changes use the Filecab ownership, version and change-feed services.
+Do not claim compare-and-swap unless upstream supports it. Read-before and verify-after
+checks reduce races but do not give atomic protection. Uncertain results stay reconcilable.
 
-### Scheduling, limits, and failures
+### Scheduling, limits and failures
 
-Use common manual/debounced/periodic jobs, generation checks, per-target serialization
-and acknowledged state. Do not assume webhooks or realtime delivery. Apply one limiter
-across accounts/instances, below documented ceilings of 5 requests/second and 90/minute,
-allowing for bursts, OAuth and other traffic. Honor stricter responses/updated limits
-and 429 Retry-After with bounded backoff. Classify 401/403 by provider semantics;
-refresh only boundedly for invalid/expired tokens, not missing scope/access denial.
-Missing rates create removal issues, never silent Filecab deletions.
+- Use the common manual, debounced and periodic jobs, generation checks, per-target serialization and acknowledged state.
+- Do not assume webhooks or realtime delivery.
+- Use one rate limiter across accounts and instances. Stay below the documented limits of 5 requests a second and 90 a minute, with space for bursts, OAuth and other traffic.
+- Obey stricter responses and changed limits. Obey 429 Retry-After with bounded backoff.
+- Classify 401 and 403 by provider meaning. Refresh a bounded number of times only for invalid or expired tokens. Do not refresh for a missing scope or access denial.
+- A missing rate creates a removal issue. It never deletes Filecab data silently.
 
-### Connection management and disconnect
+### Connection management
 
-Expose connected ID/name, write capability, last scan, mappings/conflicts/removals,
-pending count and actionable failures. Disconnect retains entries, invalidates jobs/
-mappings and deletes credentials. A different reconnected account needs a new preview.
+Show the connected ID and name, write capability, last scan, mappings, conflicts,
+removals, pending count and actionable failures. Disconnect keeps entries, invalidates
+jobs and mappings and deletes credentials. Connecting a different account needs a new preview.
 
-## Documentation and verification
+## Verification
 
-Document Filecab-owned operations without asking clients for provider tokens. Test scope,
-rotation, pagination differences, rate/media IDs, projections/hidden entries, explicit
-zeros, private-text preservation, retry-safe creates, removals, quotas and remote races.
+Document Filecab operations without asking clients for provider tokens. Test scope,
+rotation, pagination differences, rate and media IDs, projections and hidden entries,
+explicit zeros, private text preservation, retry-safe creates, removals, quotas and remote races.
+
+Verify the schema and permissions before writes. The documented REST operations define
+the mutation contract. A later transport change, for example GraphQL, must keep the
+shared sync behavior and identity namespaces.
 
 ## API references
 
@@ -117,7 +124,3 @@ zeros, private-text preservation, retry-safe creates, removals, quotas and remot
 - [User rates](https://shikimori.io/api/doc/2.0/user_rates)
 - [Anime list](https://shikimori.io/api/doc/1.0/users/anime_rates)
 - [General documentation](https://shikimori.io/api/doc)
-
-Verify schema/permissions before writes. The documented REST operations define the
-mutation contract; a later transport change, including GraphQL, must preserve shared
-sync behavior and identity namespaces.
