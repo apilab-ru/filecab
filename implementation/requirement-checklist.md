@@ -342,13 +342,13 @@ Each row covers the complete linked section, including its table rows, bullets, 
 
 Infrastructure initially verified on 2 November 2026; test review and current suites verified on 3 November 2026 with Node 24.20.0, pnpm 12.16.1, Prisma 7.10.1, and PostgreSQL 17.11. CI has been configured but has not yet executed remotely. Infrastructure checks do not establish product acceptance or live provider availability.
 
-| Done | Deliverable                    | Code                                                                                                                                                                                         | Verification evidence                                                                                                                                                                                                       | Status / blocker                                       |
-| ---- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
-| [x]  | Dependency boundaries          | [Checker](../scripts/check-boundaries.mjs), [negative cases](../tests/unit/boundaries.test.ts)                                                                                               | `pnpm check:boundaries`; 16 unit cases cover relative/alias server imports, re-exports, type imports, npm aliases, Node modules, environment access, and UI data dependencies                                               | Complete                                               |
-| [x]  | Validated server configuration | [Validation](../apps/api/src/config/environment.ts), [bootstrap](../apps/api/src/main.ts), backend/client `.env.example` files                                                               | 19 configuration cases in [unit suite](../tests/unit/environment.test.ts); rejects invalid configuration without echoing values; disabled providers require no credentials                                                  | Complete; actual auth/provider features remain pending |
-| [x]  | Test and Nx targets            | [Vitest](../vitest.config.ts), [Playwright](../playwright.config.ts), [Nx checks](../tools/checks/project.json)                                                                              | `pnpm test` (35 passed), `pnpm test:contracts` (1 passed), `pnpm test:e2e` (1 passed); Nx test target verified                                                                                                              | Complete; later product suites remain pending          |
-| [x]  | Prisma/PostgreSQL foundation   | [Schema](../apps/api/prisma/schema.prisma), [migration](../apps/api/prisma/migrations/20261102000000_workspace_baseline/migration.sql), [client factory](../apps/api/src/database/client.ts) | `db:validate`, `db:generate`, `db:deploy`, `db:status`; [database tests](../tests/integration/database.test.ts) verify the committed migration marker through generated-client queries on an isolated PostgreSQL 17 cluster | Complete; domain schema remains step 4                 |
-| [x]  | Reproducible setup and checks  | [README](../README.md), [Brewfile](../Brewfile), root/API package scripts and lockfile                                                                                                       | `pnpm install --frozen-lockfile`; `pnpm build` (6 targets); `pnpm typecheck` (7 targets); `pnpm typecheck:tools`                                                                                                            | Complete                                               |
+| Done | Deliverable                    | Code                                                                                                                                                                                         | Verification evidence                                                                                                                                                         | Status / blocker                                       |
+| ---- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| [x]  | Dependency boundaries          | [Checker](../scripts/check-boundaries.mjs), [negative cases](../tests/unit/boundaries.test.ts)                                                                                               | `pnpm check:boundaries`; 16 unit cases cover relative/alias server imports, re-exports, type imports, npm aliases, Node modules, environment access, and UI data dependencies | Complete                                               |
+| [x]  | Validated server configuration | [Validation](../apps/api/src/config/environment.ts), [bootstrap](../apps/api/src/main.ts), backend/client `.env.example` files                                                               | 19 configuration cases in [unit suite](../tests/unit/environment.test.ts); rejects invalid configuration without echoing values; disabled providers require no credentials    | Complete; actual auth/provider features remain pending |
+| [x]  | Test and Nx targets            | [Vitest](../vitest.config.ts), [Playwright](../playwright.config.ts), [Nx checks](../tools/checks/project.json)                                                                              | `pnpm test` (35 passed), `pnpm test:contracts` (1 passed), `pnpm test:e2e` (1 passed); Nx test target verified                                                                | Complete; later product suites remain pending          |
+| [x]  | Prisma/PostgreSQL foundation   | [Schema](../apps/api/prisma/schema.prisma), [migration](../apps/api/prisma/migrations/20261102000000_workspace_baseline/migration.sql), [client factory](../apps/api/src/database/client.ts) | `db:validate`, `db:generate`, `db:deploy`, `db:status`; [readiness test](../apps/api/src/health/readiness.integration.test.ts) verifies the PostgreSQL connection             | Complete; domain schema remains step 4                 |
+| [x]  | Reproducible setup and checks  | [README](../README.md), [Brewfile](../Brewfile), root/API package scripts and lockfile                                                                                                       | `pnpm install --frozen-lockfile`; `pnpm build` (6 targets); `pnpm typecheck` (7 targets); `pnpm typecheck:tools`                                                              | Complete                                               |
 
 The PostgreSQL test cluster used a temporary directory and port 55439; it was stopped after verification. The Homebrew PostgreSQL service was not started. No production database or live provider credentials were used.
 
@@ -494,7 +494,7 @@ The preceding scoped preview storage was never used, as confirmed by the user. C
 Initial server delivery on 6 November 2026. Client completion and final verification are recorded below.
 
 - [Replication controller](../apps/api/src/library/replication.controller.ts) exposes authenticated, owner-scoped `/api/v1/replication/pull` and `/api/v1/replication/push`. [Request DTOs](../apps/api/src/library/replication.dto.ts) use class-validator/class-transformer, bound batch sizes and reject unknown transport fields and duplicate row IDs. OpenAPI documents request/result models, authentication, partial commits, conflicts and reset errors.
-- [Common mutation service](../apps/api/src/library/mutation.service.ts) serializes each replicated write through the existing owner lock and source/catalog constraints, publishes its complete document to the same transactional feed, and assigns server versions/timestamps. Equivalent retries are no-ops. Stale assumed versions retain the current document; foreign UUID collisions return a conflict without exposing foreign data. Metadata must match authoritative snapshots and sources must match the server normalization policy.
+- [Common mutation service](../apps/api/src/library/mutation.service.ts) serializes each replicated write through the existing owner lock and source/catalog constraints, publishes its complete document to the same transactional feed, and assigns server versions/timestamps. Equivalent retries are no-ops. Stale assumed versions retain the current document; foreign UUID collisions return a conflict without exposing foreign data. Proposed snapshots are replaced with authoritative server snapshots, and sources must match the server normalization policy.
 - Pull reads revision/history in a RepeatableRead snapshot, consumes contiguous bigint revisions in order, collapses repeated entry IDs within a batch, includes tombstones and reports `hasMore`. Future checkpoints or missing history return `SYNC_RESET_REQUIRED`. History and tombstones are retained indefinitely; no pruning job was introduced.
 - Five new [HTTP integration tests](../apps/api/src/library/library.integration.test.ts) cover retry-safe create/update/delete, restore, stale intent, cross-account UUID collisions, metadata injection, source claims, deterministic pull pages and duplicate collapse, missing history, mixed-row validation/commits, concurrent writes and generated OpenAPI routes.
 
@@ -573,7 +573,7 @@ codes. PostgreSQL verification uses only the isolated test cluster on port 55439
 ## Shared UI, localization, and navigation (step 10)
 
 Delivered and verified locally on 7 November 2026. The shared shell uses the
-[light](../specs/mockup-white.png) and [dark](../specs/mockup-dark.png) mockups for
+[light](../specs/mockup-light.png) and [dark](../specs/mockup-dark.png) mockups for
 navigation, surface colors, typography and focus styling. Full card layouts and
 browsing controls remain in step 11; no fixture titles are shown in production.
 
@@ -694,3 +694,266 @@ CRUD/concurrency tests now use full-page tabs; popup authentication, Settings,
 locale/theme propagation and asset checks remain exercised in the real popup.
 Regression coverage checks saved Library/Search/Settings modes, legacy popup
 Library URLs, absence of library UI/actions and preservation of full-page mode.
+
+### Shared library and catalog cards — 15 November 2026
+
+Library and catalog use `LibraryCard` and `TitleResults` for the same card markup,
+responsive columns and list layout. Catalog Add, Edit and association actions use
+the shared poster menu. Cards use the dark mockup's poster height, title scale,
+status pill, menu shape, rating row and progress track. Unsaved cards reserve body
+space without showing personal values. Removed the separate catalog action row
+and collection styles.
+
+Validation: library typecheck, focused ESLint and Prettier checks passed. Six
+website catalog browser tests and two production extension catalog browser tests
+passed. The website layout test compares saved card width, height and poster
+height across library and catalog, and checks list switching and the Edit menu.
+Inspected its dark screenshots against the mockup for geometry and typography;
+fixture posters are absent, so these screenshots verify the fallback layout.
+
+### Catalog card actions and provider score — 15 November 2026
+
+Unsaved catalog cards show Add at the bottom. Edit and association actions remain
+in the poster menu. Shared cards omit an unknown year. Catalog and search display
+the mean of available positive provider scores after conversion to a 10-point
+scale, rounded to one decimal and marked with `≈`. Library cards retain personal
+ratings. No provider score is saved as a personal rating.
+
+Validation: library typecheck and focused ESLint/Prettier checks passed. Seven
+website catalog browser tests and two rebuilt production extension catalog tests
+passed. The new website test checks the bottom Add action, omitted unknown year,
+normalized score average and opening an unsaved draft.
+
+### Direct catalog Add and personal rating — 15 November 2026
+
+Add title saves directly with planned status and zero personal rating/progress. It
+keeps the result in place, hides Add after acknowledgement and shows saved state
+with a personal rating selector. Unsaved cards show the approximate provider score;
+saved cards show the personal score. Rating changes use the current entry revision.
+Failed writes show an error and allow retry. A stable creation ID and an immediate
+submission lock prevent duplicate creates. Edit and association keep their existing
+editor and preview flows.
+
+Validation: library typecheck, focused ESLint/Prettier and diff checks passed. Seven
+website catalog tests and two rebuilt production extension catalog tests passed.
+Coverage includes direct Add without an editor, failed create/rating retries, retained
+results, planned defaults, acknowledged personal ratings and lost-response duplicate
+submission recovery.
+
+### Compact list rows and column ordering — 15 November 2026
+
+The shared title collection now renders list rows with 40-pixel thumbnails, aligned
+Title/Year/Status/Episodes/Rating columns, status pills and row action menus. A sticky
+header and horizontal scrolling keep columns aligned. Grid cards use the same item
+component. Catalog Add and personal rating controls remain available in rows.
+
+Library header clicks sort the filtered collection before pagination, reset the page
+and update the footer sort/order controls. Status and episode-count ordering are also
+available in the footer. Catalog header arrows and actions use only the directions
+advertised for the current provider and operation. Header clicks update the server
+order and footer. Unsupported columns remain plain labels.
+
+Validation: library typecheck, focused ESLint/Prettier and diff checks passed. Nine
+website catalog tests and two rebuilt production extension catalog tests passed.
+New browser tests cover title direction changes, footer synchronization, row height,
+thumbnail size, provider direction restrictions and removal of sort actions for text
+search without ordering support. Inspected the light list screenshots against the
+mockup; fixture thumbnails use the missing-poster fallback.
+
+### Personal rating popup from the light card mockup — 15 November 2026
+
+Saved grid cards and list rows now use one shared rating picker. Its popup shows
+Your rating, Clear and scores 1–10 in two rows of five. It highlights the saved score
+and outlines the active card. In grid mode, it opens above the title over the poster.
+Selecting a score saves immediately; Clear saves zero. Escape and outside clicks
+close without a write. A successful save closes the popup and returns focus. Failed
+writes keep the popup open with an error. Library and saved catalog cards use the
+same version-bound persistence hook; provider scores remain display-only.
+
+Validation: UI and library typechecks, workspace boundaries, focused ESLint/Prettier
+and diff checks passed. Ten website catalog tests passed across the suite and focused
+rating reruns. Two rebuilt production extension catalog tests passed. Coverage checks
+selection, the current score highlight, Clear, failure retry, keyboard focus, outside
+clicks, list mode and popup placement above the title. Extension coverage checks score
+propagation to a second surface and persistence after restart. Inspected the light
+popup screenshot against the mockup; its poster fixture uses the fallback image.
+
+### Grid card and cover dimensions — 15 November 2026
+
+Measured the light grid mockup's card reference as approximately 326 by 327 pixels,
+with a 208-pixel landscape cover. Shared grid columns now stop at 326 pixels. Covers
+use a 25:16 aspect ratio and crop portrait images to fill the frame. The body reserves
+118 pixels, including the unsaved catalog Add action. Covers scale with card width
+instead of keeping a fixed height on small screens. List thumbnail sizes are unchanged.
+
+Validation: library typecheck, focused ESLint/Prettier and diff checks passed. Three
+focused browser tests passed for saved library/catalog dimensions, rating popup
+placement and unsaved card dimensions with responsive covers. The cover test loads a
+portrait SVG fixture and checks its displayed bounds against the landscape frame.
+Inspected the final desktop library render against the mockup for card geometry.
+
+### Kinopoisk TV unknown-year search and error reporting — 15 November 2026
+
+Reproduced the reported Russian TV search as HTTP 502. Its second upstream page
+contained two records with year zero. The DTO now accepts zero as an unknown year,
+which normalization stores as null. Negative and non-integer years remain invalid.
+The adapter schema version is now 4 to separate affected search cache entries.
+Schema errors include bounded field paths and the schema stage without response
+values. Controller and middleware failures use one reporting path, with one event
+per response and no reporting for expected client errors. The Sentry sanitizer has
+an isolated transport test; startup trims the optional DSN.
+
+Validation: API typecheck/build, focused ESLint/Prettier and diff checks passed.
+63 Kinopoisk, HTTP-boundary and instrumentation unit tests passed. The live local
+search returned HTTP 200 with 12 TV results, including the 2023 Usher series. Sentry
+accepted the original failure report with HTTP 200 and flushed successfully (event
+`c7cf5f7d7eab4579bc297b7263d34dec`). Private search text, credentials and provider
+payloads are excluded from the report.
+
+### Configurable 24-hour query cache — 15 November 2026
+
+Catalog search freshness now comes from `CATALOG_SEARCH_CACHE_TTL_SECONDS`, with a
+24-hour default (86400 seconds). Startup accepts positive integer values through
+30 days and rejects invalid values. The API passes the validated duration to the
+query cache. Expired pages retain a further 24-hour stale fallback window. The
+example environment and local API environment specify the 24-hour setting.
+
+Validation: 32 environment/cache unit tests passed, including custom durations,
+invalid settings, freshness expiry and stale fallback boundaries. API typecheck,
+focused ESLint/Prettier and diff checks passed.
+
+### Kinopoisk ordered discovery timeout investigation — 16 November 2026
+
+Live probes identified expensive compound sorting (`year` or `rating.kp` plus `id`)
+and broad 50-record reads. Removed the added ID sort and reduced ordered upstream
+pages to display size plus one lookahead record, capped at 50. Ordered discovery now
+uses the verified v1.5 cursor endpoint without a total count; other operations retain
+v1.4. Cursor responses share the documented v1.4 movie model. Added validation for
+missing or repeated continuation cursors. Adapter cache schema 7 isolates the new
+ordering and pagination from earlier cached pages.
+
+Ascending rating remains unavailable: broad film results start with missing scores,
+and continuation timed out at 30 seconds on both the legacy route and the provider's
+native cursor route. Removed `rating-asc` from capabilities and reject it before
+fetching. Do not silently exclude unrated records or substitute a different order.
+The existing capability-driven controls show only the verified directions.
+
+Validation: 54 Kinopoisk tests and API typecheck passed, with focused ESLint/Prettier
+and diff checks. All 12 live API reads (three supported directions, first two pages,
+films and TV) returned HTTP 200 with 12 results and no cross-page overlap. End-to-end
+latencies were 0.36–1.09 seconds. The unavailable direction returned HTTP 400 promptly.
+Regression tests cover primary-only sort serialization, reduced page sizes, cursor
+continuation, end-of-list behavior, malformed/repeated cursors and unsupported orders.
+
+### Separate catalog sort and direction controls — 16 November 2026
+
+Catalog pagination now uses separate Sort by and Order controls with the shared
+library panel layout. Field and direction options come from the current provider
+operation. Field changes preserve a supported direction or select the first supported
+one. Provider-default order clears the explicit order and disables direction selection.
+Column headers and both selects retain one route order value.
+
+Validation: library typecheck and focused ESLint passed. Two focused browser tests
+passed for column-header synchronization, field/direction selection, supported
+one-way sorting and restoring provider order.
+
+### Default sort label and Smotret ordering probes — 16 November 2026
+
+Renamed the provider-default option to Default (По умолчанию) and display this label
+when no field is selected. Library typecheck, the focused sort-control browser test,
+ESLint/Prettier and diff checks passed.
+
+Probed 22 bounded Smotret request variants and checked the current official OpenAPI
+schema. Only explicit ascending ID ordering was verified. Alternative order and
+separate direction parameters matched the native-default ID sequence, including
+an invalid-order negative control. The native default sample had descending MAL
+scores, but this does not prove an extra supported score-order parameter. Recorded
+the tested variants and limits in the Smotret integration specification. No additional
+adapter ordering capability was enabled.
+
+### Keep catalog pagination mounted during loading — 16 November 2026
+
+The pagination panel stays visible during initial and replacement requests. An empty
+result region keeps it at the bottom while loading. Navigation and sorting controls
+are disabled until results arrive; no stale continuation flags are used. Ignored null
+select notifications prevent disabling a control from clearing the selected order.
+
+Validation: library typecheck, focused ESLint and two browser tests passed for loading
+pagination visibility and disabled navigation, plus sort/direction persistence.
+
+### Catalog loading skeletons — 16 November 2026
+
+Added 12 loading placeholders matching the selected card or compact list layout.
+They share result column geometry, landscape covers and body heights. Pagination
+stays visible. Skeleton shapes are hidden from assistive technology while the loading
+status remains available. Reduced-motion preferences disable the pulse animation.
+Skeletons are removed when loading ends or the surface goes offline.
+
+Validation: library typecheck, focused ESLint/Prettier and diff checks passed. Focused
+browser tests passed for debounce/loading pagination and skeletons in grid/list mode,
+including reduced motion and replacement by real results.
+
+### Local issue schema upgrade correction
+
+DATA-04: The issue collection uses storage version 1. The upgrade retains version 0
+issue contents and device entries. The bundled validators include the previous schema
+for migration writes under the extension content security policy.
+
+Verification: `pnpm --filter @filecab/extension build` and
+`pnpm --filter @filecab/extension typecheck` passed. The upgrade has no automated
+test. The version 0 schema is unreleased, so only development installs have it.
+
+ESLint and Prettier checks passed for the changed files. The tools type check
+reported existing `SVGElement | HTMLElement.click` errors in
+`tests/e2e/catalog.spec.ts` at lines 337–338. The existing damaged-record recovery
+test exceeded its 30-second limit. These checks do not provide passing evidence
+for the full storage suite.
+
+### Extension login database availability correction
+
+The local PostgreSQL service was stopped. The running API returned HTTP 500 from
+Google login start. After `pnpm db:start`, the readiness and extension login
+configuration endpoints returned HTTP 200. Login start returned HTTP 302 to
+`accounts.google.com`. A complete Google sign-in was not tested.
+
+The extension login configuration endpoint now checks database availability. A
+failed check returns HTTP 503. The worker reports `SERVICE_UNAVAILABLE` at the
+configuration stage, keeps stored credentials and does not open the browser login
+window. English and Russian guidance identify the database check.
+
+Verification: 19 focused controller and worker unit tests passed. API and extension
+type checks, the extension production build, and ESLint/Prettier checks for the
+changed files passed. The browser test for shared extension controls passed. The
+broader browser run found a website test that calls `selectOption` on a combobox
+button and extension workflow timeouts. These results do not verify complete
+browser login or replication.
+
+### Web poster investigation (18 November 2026)
+
+A live local Chromium check loaded 11 anime posters on the first 12-result page.
+One provider poster URL was the site root. It redirected to a login document and
+Chromium blocked it with `ERR_BLOCKED_BY_ORB`. The Smotret adapter now treats root
+URLs as missing and uses the small poster when available. This change applies to
+new provider reads; it does not rewrite saved entries or existing metadata caches.
+
+A live film page loaded all five supplied poster URLs. Seven other results had
+null poster metadata in the API response and showed the missing-poster state.
+These observations do not establish that every provider image is available.
+
+Verification: all 13 Smotret adapter unit tests and the API type check passed.
+The deployed website could not be reached from this environment, so deployment
+image headers and the user's authenticated library remain unverified.
+The browser poster loading/responsive-size regression test also passed, as did
+ESLint and Prettier checks for the changed files.
+
+### Unused code cleanup (18 November 2026)
+
+Removed five unused imports, an unused browser-test argument and the unused
+`SearchPage` component and export. No application route or test used the component.
+Kept the documented public contract models. Enabled `noUnusedLocals` and
+`noUnusedParameters` in the shared TypeScript configuration. Specified the button
+element type in the duplicate-submit test so the tools type check passes.
+
+Verification: all 10 workspace type-check tasks passed. All 187 unit tests and
+12 contract tests passed. `pnpm format:check` passed. Additional JavaScript
+unused-variable checks and API, web and extension unreachable-code checks passed.

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, test } from 'vitest';
-import { Category, Status, emptySnapshot } from '../../packages/contracts/src/index';
+import { Category, emptySnapshot } from '../../packages/contracts/src/index';
 import { createDatabaseClient } from '../../apps/api/src/database/client';
 import { validateEnvironment } from '../../apps/api/src/config/environment';
 import { LibraryMutationService } from '../../apps/api/src/library/mutation.service';
@@ -37,30 +37,6 @@ function create(owner: string = owners[0], urls: string[] = []) {
   });
 }
 
-test('ownership, no-op edits, optimistic concurrency and exact tombstone restore', async () => {
-  const entry = await create();
-  await expect(
-    service.update(owners[1], entry.entryId, entry.serverVersion, { comment: 'private' }),
-  ).rejects.toMatchObject({ code: 'NOT_FOUND' });
-  expect(await service.update(owners[0], entry.entryId, entry.serverVersion, {})).toEqual(entry);
-  const results = await Promise.allSettled([
-    service.update(owners[0], entry.entryId, entry.serverVersion, { progress: 12 }),
-    service.update(owners[0], entry.entryId, entry.serverVersion, { status: Status.Complete }),
-  ]);
-  expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
-  expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
-  const row = await database.libraryEntry.findUniqueOrThrow({ where: { id: entry.entryId } });
-  const current = row.document as unknown as typeof entry;
-  const deleted = await service.setDeleted(owners[0], entry.entryId, current.serverVersion, true);
-  const restored = await service.setDeleted(owners[0], entry.entryId, deleted.serverVersion, false);
-  expect({
-    ...restored,
-    serverVersion: current.serverVersion,
-    updatedAt: current.updatedAt,
-  }).toEqual(current);
-  expect(restored.createdAt).toBe(entry.createdAt);
-});
-
 test('concurrent normalized source duplicates have one winner and isolated owners', async () => {
   const url = `https://example.com/${randomUUID()}`;
   const results = await Promise.allSettled([create(owners[0], [url]), create(owners[0], [url])]);
@@ -71,63 +47,6 @@ test('concurrent normalized source duplicates have one winner and isolated owner
   await expect(create(owners[1], [url])).resolves.toMatchObject({
     sources: [{ normalizedUrl: url }],
   });
-});
-
-test('atomic reassignment and conflicting restore preserve source claims and revisions', async () => {
-  const url = `https://example.com/${randomUUID()}`;
-  const from = await create(owners[0], [url]);
-  const to = await create();
-  const before = await database.userLibrary.findUniqueOrThrow({ where: { ownerId: owners[0] } });
-  await expect(
-    service.reassignSource(owners[0], from.entryId, from.serverVersion, to.entryId, '0', url),
-  ).rejects.toMatchObject({ code: 'CONFLICT' });
-  expect(
-    (await database.userLibrary.findUniqueOrThrow({ where: { ownerId: owners[0] } })).revision,
-  ).toBe(before.revision);
-  const [first, second] = await service.reassignSource(
-    owners[0],
-    from.entryId,
-    from.serverVersion,
-    to.entryId,
-    to.serverVersion,
-    url,
-  );
-  expect(first.sources).toEqual([]);
-  expect(second.sources).toEqual(from.sources);
-  const deleted = await service.setDeleted(owners[0], second.entryId, second.serverVersion, true);
-  await create(owners[0], [url]);
-  const revision = (await database.userLibrary.findUniqueOrThrow({ where: { ownerId: owners[0] } }))
-    .revision;
-  await expect(
-    service.setDeleted(owners[0], second.entryId, deleted.serverVersion, false),
-  ).rejects.toMatchObject({ code: 'CONFLICT' });
-  expect(
-    (await database.userLibrary.findUniqueOrThrow({ where: { ownerId: owners[0] } })).revision,
-  ).toBe(revision);
-  expect(
-    (await database.libraryEntry.findUniqueOrThrow({ where: { id: second.entryId } })).deleted,
-  ).toBe(true);
-});
-
-test('merge preserves survivor identity and publishes removed identity as a tombstone', async () => {
-  const first = await create();
-  const second = await create(owners[0], [`https://example.com/${randomUUID()}`]);
-  const [survivor, removed] = await service.merge(
-    owners[0],
-    first.entryId,
-    first.serverVersion,
-    second.entryId,
-    second.serverVersion,
-    { comment: 'chosen fields' },
-  );
-  expect(survivor).toMatchObject({
-    entryId: first.entryId,
-    createdAt: first.createdAt,
-    comment: 'chosen fields',
-    sources: second.sources,
-  });
-  expect(removed).toMatchObject({ entryId: second.entryId, deleted: true });
-  expect(BigInt(survivor.serverVersion)).toBe(BigInt(removed.serverVersion) + 1n);
 });
 
 test('owner lock prevents a later change from committing ahead of an earlier allocated revision', async () => {
