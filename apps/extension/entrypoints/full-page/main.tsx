@@ -2,9 +2,11 @@ import { authRepository } from '../../src/auth/auth-repository';
 import { browser } from 'wxt/browser';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AuthProvider, ApplicationShell, FullPage } from '@filecab/library';
+import { AuthProvider, WorkspaceProvider, ApplicationShell, FullPage } from '@filecab/library';
+import { API_ORIGIN } from '../../src/auth/connection';
 import { extensionPreferences } from '../../src/models/interface-preferences';
 import { LocalLibrary } from '../../src/library/components/local-library/local-library';
+import { DeviceSync } from '../../src/library/components/device-sync/device-sync';
 import '../../styles.scss';
 
 const ICON_BASE_URL = new URL('.', browser.runtime.getURL('/icons/library.svg')).href;
@@ -14,10 +16,13 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider repository={authRepository}>
       <ApplicationShell storage={extensionPreferences} iconsBaseUrl={ICON_BASE_URL}>
-        <FullPage
-          iconUrl={LOGO_URL}
-          renderLibrary={(category) => <LocalLibrary category={category} />}
-        />
+        <WorkspaceProvider origin={API_ORIGIN}>
+          <FullPage
+            iconUrl={LOGO_URL}
+            renderLibrary={(category) => <LocalLibrary category={category} />}
+          />
+          <DeviceSync registerWorkspace={false} />
+        </WorkspaceProvider>
       </ApplicationShell>
     </AuthProvider>
   </StrictMode>,

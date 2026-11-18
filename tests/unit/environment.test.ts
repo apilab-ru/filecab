@@ -19,6 +19,21 @@ const production = {
 };
 
 describe('startup configuration', () => {
+  it('defaults catalog query freshness to 24 hours and accepts an override', () => {
+    expect(validateEnvironment(development).catalog.searchCacheTtlSeconds).toBe(86400);
+    expect(
+      validateEnvironment({ ...development, CATALOG_SEARCH_CACHE_TTL_SECONDS: '3600' }).catalog
+        .searchCacheTtlSeconds,
+    ).toBe(3600);
+  });
+  it.each(['0', '-1', '1.5', 'NaN', '', '2592001'])(
+    'rejects invalid catalog query TTL %s',
+    (value) => {
+      expect(() =>
+        validateEnvironment({ ...development, CATALOG_SEARCH_CACHE_TTL_SECONDS: value }),
+      ).toThrow('CATALOG_SEARCH_CACHE_TTL_SECONDS');
+    },
+  );
   it('starts without external credentials when integrations are disabled', () => {
     const config = validateEnvironment(development);
     expect(config.google.enabled).toBe(false);

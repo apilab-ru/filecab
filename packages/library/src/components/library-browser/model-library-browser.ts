@@ -18,5 +18,7 @@ export const SORT_ORDER_LABELS = {
   [LibrarySort.Updated]: { ascending: 'oldestFirst', descending: 'newestFirst' },
   [LibrarySort.Title]: { ascending: 'ascending', descending: 'descending' },
   [LibrarySort.Rating]: { ascending: 'lowestFirst', descending: 'highestFirst' },
+  [LibrarySort.Status]: { ascending: 'ascending', descending: 'descending' },
+  [LibrarySort.Episodes]: { ascending: 'lowestFirst', descending: 'highestFirst' },
   [LibrarySort.Year]: { ascending: 'oldestFirst', descending: 'newestFirst' },
 } as const;

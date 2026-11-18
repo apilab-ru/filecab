@@ -1,5 +1,7 @@
 import {
   emptySnapshot,
+  associateCatalog,
+  type CatalogRecord,
   hasSemanticChange,
   previewEntryPatch,
   type Category,
@@ -17,6 +19,7 @@ import {
   type LocalSettings,
   type Preferences,
 } from './database';
+import { recoverLocalMerges } from './merge-recovery';
 import type { LocalSnapshot } from './models/local-snapshot';
 export type { LocalSnapshot } from './models/local-snapshot';
 
@@ -65,6 +68,11 @@ function assertClaims(entry: Entry, rows: LocalEntry[]): void {
   }
 }
 
+/** Reports whether a local entry already holds a server version at least as new as the given one. */
+function hasServerVersion(entry: Entry, serverVersion: string): boolean {
+  return entry.serverVersion !== null && BigInt(entry.serverVersion) >= BigInt(serverVersion);
+}
+
 /** Serializes local writes across popup/full-page instances without a running worker. */
 export class LocalLibraryRepository {
   private closed = false;
@@ -92,7 +100,11 @@ export class LocalLibraryRepository {
   private async locked<T>(action: () => Promise<T>): Promise<T> {
     if (this.closed) throw new LocalLibraryError('STORAGE_UNAVAILABLE');
 
-    return navigator.locks.request(`${this.name}:write`, action);
+    return navigator.locks.request(`${this.name}:write`, async () => {
+      await recoverLocalMerges(this.database);
+
+      return action();
+    });
   }
 
   private async rows(): Promise<LocalEntry[]> {
@@ -152,14 +164,19 @@ export class LocalLibraryRepository {
     return row;
   }
 
-  async create(category: Category, fields: EntryPatch): Promise<LocalEntry> {
+  async create(
+    category: Category,
+    fields: EntryPatch,
+    catalog?: CatalogRecord,
+    entryId: string = crypto.randomUUID(),
+  ): Promise<LocalEntry> {
     return this.locked(async () => {
       const now = new Date().toISOString();
       const entry = previewEntryPatch(
         {
           schemaVersion: 1,
-          entryId: crypto.randomUUID(),
-          catalogId: null,
+          entryId,
+          catalogId: catalog?.catalogId ?? null,
           category,
           userTitle: '',
           status: null,
@@ -167,7 +184,7 @@ export class LocalLibraryRepository {
           progress: 0,
           comment: '',
           sources: [],
-          snapshot: emptySnapshot(),
+          snapshot: catalog?.snapshot ?? emptySnapshot(),
           createdAt: now,
           updatedAt: now,
           serverVersion: null,
@@ -176,7 +193,85 @@ export class LocalLibraryRepository {
         fields,
       );
 
-      return this.save(entry, await this.rows());
+      const rows = await this.rows();
+
+      if (rows.some((row) => row.entryId === entryId)) throw new LocalLibraryError('CONFLICT');
+
+      return this.save(entry, rows);
+    });
+  }
+
+  /** Prepares a local catalog association without changing durable entries. */
+  async previewCatalog(
+    entryId: string,
+    version: number,
+    catalog: CatalogRecord,
+    otherId: string | undefined,
+    otherVersion: number | undefined,
+    fields: EntryPatch,
+  ) {
+    return this.locked(async () => {
+      const rows = await this.rows();
+      const current = rows.find((row) => row.entryId === entryId);
+      const other = otherId ? rows.find((row) => row.entryId === otherId) : undefined;
+
+      if (
+        !current ||
+        current.localRevision !== version ||
+        (otherId && (!other || other.localRevision !== otherVersion))
+      )
+        throw new LocalLibraryError('CONFLICT');
+
+      const proposed = associateCatalog(current.entry, catalog, other?.entry, fields);
+      const finalRows = rows.map((row) => ({
+        ...row,
+        entry: proposed.find((entry) => entry.entryId === row.entryId) ?? row.entry,
+      }));
+      proposed.forEach((entry) => assertClaims(entry, finalRows));
+
+      return { before: [current, ...(other ? [other] : [])], proposed };
+    });
+  }
+
+  /** Confirms a preview after version revalidation and journals every entry before writes. */
+  async applyCatalog(before: LocalEntry[], proposed: Entry[]): Promise<void> {
+    await this.locked(async () => {
+      const rows = await this.rows();
+
+      if (
+        before.some(
+          (row) =>
+            !rows.some(
+              (current) =>
+                current.entryId === row.entryId && current.localRevision === row.localRevision,
+            ),
+        )
+      )
+        throw new LocalLibraryError('CONFLICT');
+
+      const finalRows = rows.map((row) => ({
+        ...row,
+        entry: proposed.find((entry) => entry.entryId === row.entryId) ?? row.entry,
+      }));
+      proposed.forEach((entry) => assertClaims(entry, finalRows));
+      const previous = snapshotOf(rows);
+      const now = Math.max(Date.now(), ...before.map((row) => Date.parse(row.entry.updatedAt)));
+      const committed = [...proposed]
+        .sort((a, b) => Number(b.deleted) - Number(a.deleted))
+        .map((entry, index) => ({
+          entryId: entry.entryId,
+          entry: { ...entry, updatedAt: new Date(now).toISOString() },
+          localRevision: previous.revision + index + 1,
+          localUpdatedAt: now,
+          undoBefore: null,
+          undoUntil: null,
+        }));
+
+      if (!Number.isSafeInteger(previous.revision + committed.length))
+        throw new LocalLibraryError('STORAGE_UNAVAILABLE');
+
+      await this.database.merges.incrementalUpsert({ id: crypto.randomUUID(), rows: committed });
+      await recoverLocalMerges(this.database);
     });
   }
 
@@ -300,6 +395,87 @@ export class LocalLibraryRepository {
         },
         rows,
       );
+      await issue.remove();
+    });
+  }
+
+  /** Resolves one rejected replication row using device fields or its captured server document. */
+  async resolveValidationIssue(
+    id: string,
+    ownerId: string,
+    expectedRevision: number | null,
+    choice: 'device' | 'server',
+  ): Promise<void> {
+    await this.locked(async () => {
+      const issue = await this.database.issues.findOne(id).exec();
+      const binding = await this.database.binding.findOne('device').exec();
+
+      if (
+        !issue ||
+        issue.kind !== 'validation' ||
+        issue.ownerId !== ownerId ||
+        binding?.ownerId !== ownerId ||
+        binding.phase !== 'linked'
+      )
+        throw new LocalLibraryError('CONFLICT');
+
+      const rows = await this.rows();
+      const current = rows.find((row) => row.entryId === issue.proposed.entryId);
+
+      if ((current?.localRevision ?? null) !== expectedRevision)
+        throw new LocalLibraryError('CONFLICT');
+
+      // Keep the issue when its entry is gone so the saved intent is not lost.
+      if (choice === 'device' && !current) throw new LocalLibraryError('NOT_FOUND');
+
+      if (choice === 'device' && current) {
+        const proposed = issue.proposed;
+        await this.save(
+          {
+            ...previewEntryPatch(current.entry, {
+              category: proposed.category,
+              userTitle: proposed.userTitle,
+              status: proposed.status,
+              rating: proposed.rating,
+              progress: proposed.progress,
+              comment: proposed.comment,
+              sourceUrls: proposed.sources.map((source) => source.originalUrl),
+            }),
+            deleted: proposed.deleted,
+            updatedAt: new Date(
+              Math.max(Date.now(), Date.parse(current.entry.updatedAt)),
+            ).toISOString(),
+          },
+          rows,
+        );
+      }
+
+      if (choice === 'server') {
+        const serverDocument = issue.conflict.serverDocument;
+
+        // Rejected rows already return to their master and later pulls may advance it;
+        // rewriting the captured copy would push stale server fields back as a local edit.
+        if (
+          serverDocument &&
+          current &&
+          !hasServerVersion(current.entry, serverDocument.serverVersion)
+        ) {
+          await this.save(serverDocument, rows);
+        } else if (!serverDocument && current && !current.entry.deleted) {
+          await this.save(
+            {
+              ...current.entry,
+              deleted: true,
+              serverVersion: null,
+              updatedAt: new Date(
+                Math.max(Date.now(), Date.parse(current.entry.updatedAt)),
+              ).toISOString(),
+            },
+            rows,
+          );
+        }
+      }
+
       await issue.remove();
     });
   }

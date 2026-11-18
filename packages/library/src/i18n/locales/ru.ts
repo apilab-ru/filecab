@@ -1,6 +1,54 @@
 import type { EN } from './en';
 
 export const RU = {
+  lastPage: 'Последняя страница',
+  catalogRebase: 'Применить актуальные версии и сохранить мой черновик',
+  catalogProviderUnavailable:
+    'Выбранный каталог недоступен. Выберите другой каталог или добавьте запись вручную.',
+  catalogQuery: 'Поиск в каталоге',
+  catalogProvider: 'Каталог',
+  catalogDefaultProvider: 'Каталог по умолчанию',
+  catalogProviderOrder: 'По умолчанию',
+  catalogOffline: 'Нет сети. Сохранённые записи и ручное редактирование доступны.',
+  catalogServiceError:
+    'Ошибка каталога. Введённые данные сохранены. Повторите запрос или добавьте вручную.',
+  catalogEnterQuery: 'Введите название для поиска.',
+  catalogEmpty: 'В каталоге ничего не найдено.',
+  catalogStale: 'Результаты из кеша от {{date}}.',
+  catalogLimited: 'Достигнут предел просмотра каталога. Возможны другие результаты.',
+  catalogSaved: 'Сохранено',
+  catalogIdentityConflict:
+    'Конфликт идентификаторов или категорий. Проверьте записи перед продолжением.',
+  catalogAssociate: 'Связать с этим названием',
+  catalogUseManual: 'Связать ручную запись: {{title}}',
+  catalogMatching: 'Выберите название в каталоге для {{title}}.',
+  catalogDraftDescription: 'Изменения сохраняются только после нажатия «Сохранить».',
+  catalogAssociationDescription:
+    'Проверьте связь с каталогом и сохраняемые поля перед подтверждением.',
+  catalogSaveFailed:
+    'Не удалось сохранить или запись изменилась. Введённые данные сохранены. Проверьте актуальные записи и повторите.',
+  catalogMergeChoices: 'Выберите сохраняемые личные поля. Обе записи показаны в предпросмотре.',
+  catalogKeepManual: 'Ручная запись',
+  catalogKeepSaved: 'Сохранённая запись каталога',
+  catalogPreview: 'Предпросмотр связи',
+  catalogConfirm: 'Подтвердить связь',
+  catalogFindMatch: 'Найти в каталоге',
+  catalogRetainedIdentity: 'ID записи и дата добавления',
+  catalogAction: 'Результат',
+  catalogKeep: 'Сохранить эту запись',
+  catalogFilter_year: 'Год выпуска',
+  catalogFilter_format: 'Формат',
+  catalogFilter_type: 'Формат',
+  catalogFilter_season: 'Сезон выпуска',
+  catalogFilter_providerRating: 'Рейтинг каталога',
+  catalogFilter_myAnimeListId: 'ID MyAnimeList',
+  'catalogOrder_title-asc': 'Название: А–Я',
+  'catalogOrder_title-desc': 'Название: Я–А',
+  'catalogOrder_year-asc': 'Год: сначала старые',
+  'catalogOrder_year-desc': 'Год: сначала новые',
+  'catalogOrder_rating-asc': 'Рейтинг каталога: по возрастанию',
+  'catalogOrder_rating-desc': 'Рейтинг каталога: по убыванию',
+
   account: 'Аккаунт',
   sync: 'Синхронизация',
   syncNow: 'Синхронизировать',
@@ -15,6 +63,12 @@ export const RU = {
   loadingLibrary: 'Загрузка библиотеки…',
   addTitle: 'Добавить запись',
   noPoster: 'Нет постера',
+  approximateProviderRating: 'Приблизительный рейтинг каталогов',
+  episodes: 'Эпизоды',
+  sortColumnAscending: '{{column}}: сортировать по возрастанию',
+  sortColumnDescending: '{{column}}: сортировать по убыванию',
+  yourRating: 'Ваша оценка',
+  clearRating: 'Очистить',
   unknownYear: 'Год неизвестен',
   unrated: 'Без оценки',
   searchLibrary: 'Поиск в библиотеке',
@@ -81,6 +135,8 @@ export const RU = {
     'Не удалось подключиться к API. Проверьте, что он запущен и расширению разрешён доступ.',
   'Add this extension origin to API EXTENSION_ORIGINS, then restart the API.':
     'Добавьте адрес расширения в EXTENSION_ORIGINS и перезапустите API.',
+  'The login service is temporarily unavailable. Check that the API database is running, then retry.':
+    'Сервис входа временно недоступен. Проверьте, что база данных API запущена, и повторите попытку.',
   'Google login is disabled in the API configuration.':
     'Вход через Google отключён в настройках API.',
   'The browser login window failed. Check the service worker console and the API login configuration.':
@@ -147,6 +203,25 @@ export const RU = {
     'Синхронизация приостановлена. Войдите в аккаунт, подключённый к этой библиотеке.',
   'The server rejected a document. Your local data is preserved; retry after correcting it.':
     'Сервер отклонил запись. Данные сохранены; исправьте запись и повторите попытку.',
+  'A library item needs attention': 'Требуется проверить запись в библиотеке',
+  'The server did not save this item. Your device copy is safe. Correct the item, then retry synchronization.':
+    'Сервер не сохранил эту запись. Копия на устройстве сохранена. Исправьте запись и повторите синхронизацию.',
+  'Open your library and review recent changes. The server returned validation details without an item reference.':
+    'Откройте библиотеку и проверьте последние изменения. Сервер вернул ошибку проверки без указания записи.',
+  'Close and edit item': 'Закрыть и изменить запись',
+  'Retry synchronization': 'Повторить синхронизацию',
+  'Resolve synchronization items': 'Разрешить конфликты синхронизации',
+  'Choose which version to keep for each rejected item. You can apply one choice to all items.':
+    'Выберите версию для каждой отклонённой записи. Можно применить один вариант ко всем записям.',
+  'Use device data for all': 'Использовать данные устройства для всех',
+  'Keep server data for all': 'Оставить данные сервера для всех',
+  'Use this device copy': 'Использовать копию с устройства',
+  'Keep the server copy': 'Оставить копию с сервера',
+  'Remove from this device; no server copy exists': 'Удалить с устройства; копии на сервере нет',
+  'Validation details are unavailable. Retry to identify the rejected item.':
+    'Подробности проверки недоступны. Повторите синхронизацию, чтобы определить отклонённую запись.',
+  'Complete resolution and sync': 'Завершить и синхронизировать',
+  'Decide later': 'Решить позже',
   'The API could not be reached. Check its address and connection; saved changes will be retried.':
     'API недоступен. Проверьте адрес и соединение; сохранённые изменения будут отправлены повторно.',
   'The extension worker did not reply. Reload the extension and reopen this page.':

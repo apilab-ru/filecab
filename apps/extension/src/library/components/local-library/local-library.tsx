@@ -5,10 +5,10 @@ import './local-library.scss';
 import { useLocalStore } from '@filecab/library';
 import { LibraryBrowser } from '@filecab/library';
 import type { LibraryContentProps } from '@filecab/library';
-import { useEffect } from 'react';
-import { type LocalEntry } from '../../database';
+import { useWorkspace } from '@filecab/library';
+import { localWorkspaceRepository } from '../../workspace-repository';
+import { useEffect, useMemo } from 'react';
 import { FAILURE_MESSAGES } from '../../models/failure-messages';
-import { EntryEditor } from '../entry-editor/entry-editor';
 import { LocalLibraryError, LocalLibraryRepository } from '../../repository';
 import type { LocalSnapshot } from '../../models/local-snapshot';
 import { exportRawLibrary } from '../../recovery';
@@ -17,15 +17,15 @@ import { downloadJsonFile } from './download-json-file';
 /** Keeps the same durable device library and editor visible across authentication changes. */
 export function LocalLibrary({ category }: LibraryContentProps) {
   const { t } = useTranslation();
+  const workspace = useWorkspace();
   const [
-    { attempt, repository, snapshot, failed, message, editing, now },
+    { attempt, repository, snapshot, failed, message, now },
     {
       attempt: setAttempt,
       repository: setRepository,
       snapshot: setSnapshot,
       failed: setFailed,
       message: setMessage,
-      editing: setEditing,
       now: setNow,
     },
   ] = useLocalStore(() => ({
@@ -34,7 +34,6 @@ export function LocalLibrary({ category }: LibraryContentProps) {
     snapshot: null as LocalSnapshot | null,
     failed: false,
     message: '',
-    editing: undefined as LocalEntry | null | undefined,
     now: Date.now(),
   }));
 
@@ -45,7 +44,6 @@ export function LocalLibrary({ category }: LibraryContentProps) {
 
     setRepository(null);
     setSnapshot(null);
-    setEditing(undefined);
     setFailed(false);
     setMessage('');
 
@@ -85,6 +83,21 @@ export function LocalLibrary({ category }: LibraryContentProps) {
 
     return () => clearInterval(timer);
   }, []);
+
+  const adapter = useMemo(
+    () => (repository ? localWorkspaceRepository(repository) : null),
+    [repository],
+  );
+  useEffect(() => {
+    workspace.register({
+      scope: 'device',
+      rows:
+        snapshot?.rows
+          .filter((row) => !row.entry.deleted)
+          .map((row) => ({ entry: row.entry, version: String(row.localRevision) })) ?? [],
+      repository: failed ? null : adapter,
+    });
+  }, [snapshot, adapter, failed, workspace.register]);
 
   const run = async (action: () => Promise<unknown>) => {
     try {
@@ -131,47 +144,21 @@ export function LocalLibrary({ category }: LibraryContentProps) {
       )}
       {!failed && snapshot && repository && (
         <>
-          {editing !== undefined && (
-            <EntryEditor
-              category={category}
-              key={`${editing?.entryId ?? 'new'}:${editing?.localRevision ?? 0}`}
-              row={editing}
-              cancel={() => setEditing(undefined)}
-              reload={
-                editing
-                  ? async () => {
-                      const fresh = (await repository.snapshot()).rows.find(
-                        (row) => row.entryId === editing.entryId && !row.entry.deleted,
-                      );
-
-                      if (!fresh) throw new LocalLibraryError('NOT_FOUND');
-
-                      setEditing(fresh);
-                    }
-                  : undefined
-              }
-              save={async (category, fields) => {
-                if (editing)
-                  await repository.update(editing.entryId, editing.localRevision, fields);
-                else await repository.create(category, fields);
-
-                setEditing(undefined);
-                setMessage('Saved on this device.');
-              }}
-            />
-          )}
           <div className="local-library__browser">
             <LibraryBrowser
               category={category}
               key={category}
               entries={snapshot.rows.map((row) => row.entry)}
-              onAdd={editing === undefined ? () => setEditing(null) : undefined}
-              onEdit={
-                editing === undefined
-                  ? (entry) =>
-                      setEditing(snapshot.rows.find((row) => row.entryId === entry.entryId))
-                  : undefined
-              }
+              onAdd={() => workspace.open(category)}
+              onEdit={(entry) => {
+                const row = snapshot.rows.find((row) => row.entryId === entry.entryId);
+
+                if (row)
+                  workspace.open(category, {
+                    entry: row.entry,
+                    version: String(row.localRevision),
+                  });
+              }}
               onDelete={(entry) => {
                 const row = snapshot.rows.find((row) => row.entryId === entry.entryId);
 

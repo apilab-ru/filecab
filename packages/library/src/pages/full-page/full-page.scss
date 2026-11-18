@@ -96,7 +96,7 @@
   }
 
   &__categories {
-    padding-right: 104px;
+    padding-right: 0;
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
@@ -144,6 +144,17 @@
       padding-left: 0;
       border: 0;
       background: transparent;
+    }
+  }
+
+  &__views {
+    display: flex;
+    margin-left: auto;
+    flex-shrink: 0;
+
+    [aria-pressed='true'] {
+      background: var(--fc-selected);
+      color: var(--fc-accent);
     }
   }
 }

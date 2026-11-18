@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import '../../styles/interface-controls.scss';
 import './full-page.scss';
 
-import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router-dom';
+import { Navigate, Route, Routes, useMatch, useNavigate, useSearchParams } from 'react-router-dom';
 import { Category } from '@filecab/contracts';
 import { Button, Icon, IconName, FILECAB_ICON_URL, Select } from '@filecab/ui';
 import {
@@ -20,6 +20,13 @@ import type { FullPageProps } from './model-full-page';
 /** Renders full-page navigation and routes while retaining the library adapter. */
 export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }: FullPageProps) {
   const { t } = useTranslation();
+  const [parameters, setParameters] = useSearchParams();
+  const view = parameters.get('view') === 'list' ? 'list' : 'grid';
+  const setView = (value: string) => {
+    const next = new URLSearchParams(parameters);
+    next.set('view', value);
+    setParameters(next, { replace: true });
+  };
   const { locale, setLocale } = useInterfacePreferences();
   const route = useMatch('/:mode/:category');
   const settings = useMatch('/settings');
@@ -36,9 +43,14 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
   const navigate = (nextCategory: Category, nextMode: LibraryMode) => {
     if (nextCategory === category && nextMode === mode) return;
 
-    routerNavigate(
-      nextMode === LibraryMode.Settings ? '/settings' : `/${nextMode}/${nextCategory}`,
-    );
+    if (nextMode === LibraryMode.Settings) {
+      routerNavigate('/settings');
+
+      return;
+    }
+
+    // Keep the chosen layout; other query parameters belong to the previous screen.
+    routerNavigate(`/${nextMode}/${nextCategory}${view === 'list' ? '?view=list' : ''}`);
   };
 
   return (
@@ -92,6 +104,22 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
                 {t(nextCategory)}
               </Button>
             ))}
+            <div className="full-page__views">
+              <Button
+                aria-label={t('listView')}
+                aria-pressed={view === 'list'}
+                onClick={() => setView('list')}
+              >
+                <Icon name={IconName.List} />
+              </Button>
+              <Button
+                aria-label={t('gridView')}
+                aria-pressed={view === 'grid'}
+                onClick={() => setView('grid')}
+              >
+                <Icon name={IconName.Grid} />
+              </Button>
+            </div>
           </nav>
         )}
         <LibraryPage hidden={mode !== LibraryMode.Library}>
@@ -102,9 +130,9 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
           <Route path="/library/anime" element={null} />
           <Route path="/library/films" element={null} />
           <Route path="/library/tv" element={null} />
-          <Route path="/catalog/anime" element={<CatalogPage />} />
-          <Route path="/catalog/films" element={<CatalogPage />} />
-          <Route path="/catalog/tv" element={<CatalogPage />} />
+          <Route path="/catalog/anime" element={<CatalogPage category={category} />} />
+          <Route path="/catalog/films" element={<CatalogPage category={category} />} />
+          <Route path="/catalog/tv" element={<CatalogPage category={category} />} />
           <Route path="/settings" element={<SettingsPage popup={false} />} />
           <Route path="*" element={<Navigate replace to="/library/anime" />} />
         </Routes>

@@ -3,9 +3,6 @@ export enum LibrarySort {
   Title = 'title',
   Rating = 'rating',
   Year = 'year',
-}
-
-export enum LibraryOrder {
-  Ascending = 'asc',
-  Descending = 'desc',
+  Status = 'status',
+  Episodes = 'episodes',
 }

@@ -1,3 +1,6 @@
+import { LibrarySort } from '../../models/library-sort';
+import { SORT_DIRECTIONS } from '../../models/sort-direction';
+import { TitleResults } from '../title-results/title-results';
 import './library-browser.scss';
 
 import { Icon, IconName } from '@filecab/ui';
@@ -59,14 +62,31 @@ export function LibraryBrowser({
         onLayoutChange={setLayout}
         onAdd={onAdd}
       />
-      <div className="library-browser__results">
+      <div className="title-results-region">
         {available && displayed.length === 0 && (
           <div className="library-browser__empty">
             <Icon name={IconName.Library} />
             <p>{rows.length ? t('noMatches') : t('emptyLibrary')}</p>
           </div>
         )}
-        <ul className={`library-browser__entries library-browser__entries--${layout}`}>
+        <TitleResults
+          layout={layout}
+          columns={[
+            { key: LibrarySort.Title, label: t('Title') },
+            { key: LibrarySort.Year, label: t('year') },
+            { key: LibrarySort.Status, label: t('Status') },
+            { key: LibrarySort.Episodes, label: t('episodes') },
+            { key: LibrarySort.Rating, label: t('Rating') },
+          ].map((column) => ({
+            ...column,
+            direction: sort === column.key ? order : undefined,
+            directions: SORT_DIRECTIONS,
+            onSort: (direction) => {
+              setSort(column.key);
+              setOrder(direction);
+            },
+          }))}
+        >
           {displayed.map((entry) => (
             <LibraryCard
               key={entry.entryId}
@@ -75,7 +95,7 @@ export function LibraryBrowser({
               remove={onDelete ? () => onDelete(entry) : undefined}
             />
           ))}
-        </ul>
+        </TitleResults>
       </div>
       <LibraryBrowserPagination
         total={matches.length}

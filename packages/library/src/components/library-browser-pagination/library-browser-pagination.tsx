@@ -1,12 +1,16 @@
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useTranslation } from 'react-i18next';
 import '../../styles/library-browser-shared.scss';
-import './library-browser-pagination.scss';
+import '../../styles/library-pagination.scss';
 
-import { Button, Icon, IconName, Select } from '@filecab/ui';
-import { LibraryOrder, LibrarySort } from '../../models/library-sort';
+import { Button, Icon, IconName } from '@filecab/ui';
+import { SortDirection } from '../../models/sort-direction';
+import { SortControls } from '../sort-controls/sort-controls';
 import { PAGE_SIZE, SORT_ORDER_LABELS } from '../library-browser/model-library-browser';
-import type { LibraryBrowserPaginationProps } from './model-library-browser-pagination';
+import {
+  SORT_FIELDS,
+  type LibraryBrowserPaginationProps,
+} from './model-library-browser-pagination';
 
 /** Renders result counts, sort controls and page navigation. */
 export function LibraryBrowserPagination({
@@ -34,36 +38,18 @@ export function LibraryBrowserPagination({
           : '0'}{' '}
         {t('of')} {numberFormat.format(total)}
       </span>
-      <label className="library-browser__ordering">
-        <span>{t('sortBy')}</span>
-        <Select
-          className="library-browser__select"
-          aria-label={t('sortBy')}
-          placeholder={t('sortBy')}
-          value={sort}
-          onValueChange={onSortChange}
-          options={[
-            { value: LibrarySort.Updated, label: t('recentlyUpdated') },
-            { value: LibrarySort.Title, label: t('Title') },
-            { value: LibrarySort.Rating, label: t('Rating') },
-            { value: LibrarySort.Year, label: t('year') },
-          ]}
-        />
-      </label>
-      <label className="library-browser__ordering">
-        <span>{t('order')}</span>
-        <Select
-          className="library-browser__select"
-          aria-label={t('order')}
-          placeholder={t('order')}
-          value={order}
-          onValueChange={onOrderChange}
-          options={[
-            { value: LibraryOrder.Ascending, label: t(SORT_ORDER_LABELS[sort].ascending) },
-            { value: LibraryOrder.Descending, label: t(SORT_ORDER_LABELS[sort].descending) },
-          ]}
-        />
-      </label>
+      <SortControls
+        field={sort}
+        fields={SORT_FIELDS.map(({ value, label }) => ({ value, label: t(label) }))}
+        fieldPlaceholder={t('sortBy')}
+        onFieldChange={onSortChange}
+        direction={order}
+        directions={[
+          { value: SortDirection.Asc, label: t(SORT_ORDER_LABELS[sort].ascending) },
+          { value: SortDirection.Desc, label: t(SORT_ORDER_LABELS[sort].descending) },
+        ]}
+        onDirectionChange={onOrderChange}
+      />
       <nav className="library-browser__pages" aria-label={t('pagination')}>
         <Button
           aria-label={t('previousPage')}

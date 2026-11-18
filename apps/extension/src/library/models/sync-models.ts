@@ -1,4 +1,4 @@
-import type { Entry, Conflict, Checkpoint } from '@filecab/contracts';
+import type { Entry, Conflict, Checkpoint, ValidationIssue } from '@filecab/contracts';
 
 /** Binds the fixed device library to exactly one owner and compatible metadata generation. */
 export interface SyncBinding {
@@ -15,6 +15,7 @@ export interface SyncIssue {
   ownerId: string;
   proposed: Entry;
   conflict: Conflict;
-  kind: 'conflict' | 'reset';
+  kind: 'conflict' | 'reset' | 'validation';
+  problem?: ValidationIssue;
   recordedAt: string;
 }

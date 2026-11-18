@@ -2,14 +2,12 @@ import { useTranslation, useInterfacePreferences } from '@filecab/library';
 import '../../styles/library-controls-shared.scss';
 import './sync-controls.scss';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocalStore, useSyncSettings } from '@filecab/library';
 import { ApiErrorCode, SyncErrorCode, type AccountInfo } from '@filecab/contracts';
 import { browser } from 'wxt/browser';
 import type { AuthReply } from '../../../auth/worker';
 import { LOCAL_DATABASE_NAME, readCollection } from '../../database';
-import type { LocalLibraryRepository } from '../../repository';
-import type { LocalSnapshot } from '../../models/local-snapshot';
 import { SYNC_MESSAGES, SYNC_PHASE_MESSAGES, type SyncControlsProps } from './model-sync-controls';
 import type { SyncBinding, SyncIssue } from '../../models/sync-models';
 import { startLibraryReplication } from '../../replication';
@@ -18,6 +16,7 @@ import { confirmLink, previewLink, reconcileReset } from '../../sync-session';
 import type { LinkPreview } from '../../models/link-preview';
 import { SYNC_RUN_LOCK } from '../../models/sync-run-lock';
 import { SyncError } from '../../sync-transport';
+import { Button, ConfirmDialog } from '@filecab/ui';
 
 const REFRESH_CHANNEL = `${LOCAL_DATABASE_NAME}:sync-refresh`;
 
@@ -56,7 +55,18 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
   const { setSyncSettings } = useSyncSettings();
   const database = repository.database;
   const [
-    { account, binding, issues, preview, status, lastSuccess, busy, message },
+    {
+      account,
+      binding,
+      issues,
+      preview,
+      status,
+      lastSuccess,
+      busy,
+      message,
+      rejectionOpen,
+      resolutionChoices,
+    },
     {
       account: setAccount,
       binding: setBinding,
@@ -66,6 +76,8 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
       lastSuccess: setLastSuccess,
       busy: setBusy,
       message: setMessage,
+      rejectionOpen: setRejectionOpen,
+      resolutionChoices: setResolutionChoices,
     },
   ] = useLocalStore(() => ({
     account: null as AccountInfo | null,
@@ -76,7 +88,10 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
     lastSuccess: null as number | null,
     busy: false,
     message: '',
+    rejectionOpen: false,
+    resolutionChoices: {} as Record<string, 'device' | 'server'>,
   }));
+  const seenValidationIds = useRef(new Set<string>());
 
   useEffect(() => {
     let active = true;
@@ -205,6 +220,26 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
   };
   const own = binding?.ownerId === account?.ownerId;
   const visibleIssues = issues.filter((issue) => issue.ownerId === binding?.ownerId);
+  const validationIssues = visibleIssues.filter((issue) => issue.kind === 'validation');
+  const rejectedEntry = status.diagnostic?.entryId
+    ? snapshot.rows.find((row) => row.entryId === status.diagnostic?.entryId)?.entry
+    : undefined;
+
+  const validationKey = validationIssues.map((issue) => issue.id).join();
+
+  useEffect(() => {
+    if (status.phase === 'failed' && status.error === ApiErrorCode.ValidationError)
+      setRejectionOpen(true);
+  }, [status.phase, status.error, status.diagnostic?.entryId]);
+
+  // Push succeeds when the server rejects only some rows, so open the dialog for each
+  // newly retained rejection; "Decide later" keeps it closed until another one appears.
+  useEffect(() => {
+    const added = validationIssues.some((issue) => !seenValidationIds.current.has(issue.id));
+    seenValidationIds.current = new Set(validationIssues.map((issue) => issue.id));
+
+    if (added) setRejectionOpen(true);
+  }, [validationKey]);
 
   useEffect(() => {
     let descriptionText = t(synchronizationMessage(binding, own, status), {
@@ -382,6 +417,126 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
           {t(message, { defaultValue: message })}
         </p>
       )}
+      <ConfirmDialog
+        open={rejectionOpen}
+        onOpenChange={setRejectionOpen}
+        title={t('Resolve synchronization items')}
+        description={t(
+          'Choose which version to keep for each rejected item. You can apply one choice to all items.',
+        )}
+      >
+        {validationIssues.length > 0 && (
+          <div className="library-sync__rejection">
+            <div className="library-sync__bulk-choice">
+              <Button
+                onClick={() =>
+                  setResolutionChoices(
+                    Object.fromEntries(validationIssues.map((issue) => [issue.id, 'device'])),
+                  )
+                }
+              >
+                {t('Use device data for all')}
+              </Button>
+              <Button
+                onClick={() =>
+                  setResolutionChoices(
+                    Object.fromEntries(validationIssues.map((issue) => [issue.id, 'server'])),
+                  )
+                }
+              >
+                {t('Keep server data for all')}
+              </Button>
+            </div>
+            {validationIssues.map((issue) => {
+              const serverCopy = issue.conflict.serverDocument;
+
+              return (
+                <fieldset className="library-sync__resolution" key={issue.id}>
+                  <legend>{issue.proposed.userTitle || t('Untitled')}</legend>
+                  {issue.problem && (
+                    <p className="library-sync__problem">
+                      {issue.problem.path.join('.')}: {issue.problem.message}
+                    </p>
+                  )}
+                  <label className="library-sync__choice">
+                    <input
+                      type="radio"
+                      name={`resolve-${issue.id}`}
+                      checked={resolutionChoices[issue.id] === 'device'}
+                      onChange={() =>
+                        setResolutionChoices((current) => ({ ...current, [issue.id]: 'device' }))
+                      }
+                    />
+                    <span>{t('Use this device copy')}</span>
+                  </label>
+                  <label className="library-sync__choice">
+                    <input
+                      type="radio"
+                      name={`resolve-${issue.id}`}
+                      checked={resolutionChoices[issue.id] === 'server'}
+                      onChange={() =>
+                        setResolutionChoices((current) => ({ ...current, [issue.id]: 'server' }))
+                      }
+                    />
+                    <span>
+                      {serverCopy
+                        ? t('Keep the server copy')
+                        : t('Remove from this device; no server copy exists')}
+                    </span>
+                  </label>
+                </fieldset>
+              );
+            })}
+          </div>
+        )}
+        {validationIssues.length === 0 && rejectedEntry && (
+          <div className="library-sync__rejection">
+            <strong>{rejectedEntry.userTitle || t('Untitled')}</strong>
+            <p>{t('Validation details are unavailable. Retry to identify the rejected item.')}</p>
+          </div>
+        )}
+        {validationIssues.length === 0 && !rejectedEntry && (
+          <p>{t('Validation details are unavailable. Retry to identify the rejected item.')}</p>
+        )}
+        <Button
+          disabled={
+            validationIssues.length === 0 ||
+            validationIssues.some((issue) => !resolutionChoices[issue.id]) ||
+            busy
+          }
+          onClick={() => {
+            void run(async () => {
+              for (const issue of validationIssues) {
+                const current = snapshot.rows.find((row) => row.entryId === issue.proposed.entryId);
+                await repository.resolveValidationIssue(
+                  issue.id,
+                  issue.ownerId,
+                  current?.localRevision ?? null,
+                  resolutionChoices[issue.id]!,
+                );
+              }
+              setRejectionOpen(false);
+              setResolutionChoices({});
+              requestSyncRefresh();
+            });
+          }}
+        >
+          {t('Complete resolution and sync')}
+        </Button>
+        {validationIssues.length === 0 && (
+          <Button
+            onClick={() => {
+              setRejectionOpen(false);
+              requestSyncRefresh();
+            }}
+          >
+            {t('Retry synchronization')}
+          </Button>
+        )}
+        <Button disabled={busy} onClick={() => setRejectionOpen(false)}>
+          {t('Decide later')}
+        </Button>
+      </ConfirmDialog>
     </section>
   );
 }

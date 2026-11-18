@@ -1,11 +1,15 @@
 import { useLocalStore } from '@filecab/library';
-import { useEffect } from 'react';
+import { useWorkspace } from '@filecab/library';
+import { localWorkspaceRepository } from '../../workspace-repository';
+import { useEffect, useMemo } from 'react';
 import { LocalLibraryRepository } from '../../repository';
 import type { DeviceSyncState } from './model-device-sync';
+import type { DeviceSyncProps } from './model-device-sync';
 import { SyncControls } from '../sync-controls/sync-controls';
 
 /** Keeps device replication and Settings status active without rendering a popup library page. */
-export function DeviceSync() {
+export function DeviceSync({ registerWorkspace = true }: DeviceSyncProps) {
+  const workspace = useWorkspace();
   const [{ state }, { state: setState }] = useLocalStore(() => ({
     state: null as DeviceSyncState | null,
   }));
@@ -39,6 +43,23 @@ export function DeviceSync() {
       void repository?.close();
     };
   }, []);
+
+  const adapter = useMemo(
+    () => (state ? localWorkspaceRepository(state.repository) : null),
+    [state?.repository],
+  );
+  useEffect(() => {
+    if (!registerWorkspace) return;
+
+    workspace.register({
+      scope: 'device',
+      rows:
+        state?.snapshot.rows
+          .filter((row) => !row.entry.deleted)
+          .map((row) => ({ entry: row.entry, version: String(row.localRevision) })) ?? [],
+      repository: adapter,
+    });
+  }, [state, adapter, registerWorkspace, workspace.register]);
 
   return (
     <div hidden>

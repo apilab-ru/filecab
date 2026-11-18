@@ -64,6 +64,18 @@ export function syncDiagnostic(error: unknown, depth = 0): SyncDiagnostic {
       /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(diagnostic.correlationId)
         ? { correlationId: diagnostic.correlationId }
         : {}),
+      ...(typeof diagnostic.entryId === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(diagnostic.entryId)
+        ? { entryId: diagnostic.entryId }
+        : {}),
+      ...(Array.isArray(diagnostic.issues)
+        ? {
+            issues: diagnostic.issues.slice(0, 20).map((issue) => ({
+              path: issue.path.slice(0, 12),
+              message: issue.message.slice(0, 240),
+            })),
+          }
+        : {}),
     };
   }
 

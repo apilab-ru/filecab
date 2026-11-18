@@ -12,6 +12,8 @@ import {
 import { getRxStorageDexie } from 'rxdb/plugins/storage-dexie';
 import { RxDBMigrationSchemaPlugin } from 'rxdb/plugins/migration-schema';
 import type { Category, Entry, Locale, Status } from '@filecab/contracts';
+import mergeSchema from './merge.schema.json';
+import type { LocalMergeJournal } from './models/local-merge-journal';
 import entrySchema from './entry.schema.json';
 import settingsSchema from './settings.schema.json';
 import bindingSchema from './binding.schema.json';
@@ -50,6 +52,7 @@ export interface LocalSettings {
 
 type Collections = {
   entries: RxCollection<LocalEntry>;
+  merges: RxCollection<LocalMergeJournal>;
   settings: RxCollection<LocalSettings>;
   binding: RxCollection<SyncBinding>;
   issues: RxCollection<SyncIssue>;
@@ -86,7 +89,7 @@ function validatedStorage() {
     createStorageInstance: <T>(
       parameters: Parameters<typeof storage.createStorageInstance<T>>[0],
     ) =>
-      ['entries', 'settings', 'binding', 'issues'].includes(parameters.collectionName)
+      ['entries', 'settings', 'binding', 'issues', 'merges'].includes(parameters.collectionName)
         ? wrapped.createStorageInstance(parameters)
         : storage.createStorageInstance(parameters),
   };
@@ -102,13 +105,17 @@ async function createLocalDatabase(name: string): Promise<LocalDatabase> {
   });
   try {
     await database.addCollections({
+      merges: { schema: mergeSchema as RxJsonSchema<LocalMergeJournal>, migrationStrategies: {} },
       entries: {
         schema: entrySchema as RxJsonSchema<LocalEntry>,
         migrationStrategies: {},
         conflictHandler: libraryConflictHandler(() => database),
       },
       binding: { schema: bindingSchema as RxJsonSchema<SyncBinding>, migrationStrategies: {} },
-      issues: { schema: issueSchema as RxJsonSchema<SyncIssue>, migrationStrategies: {} },
+      issues: {
+        schema: issueSchema as RxJsonSchema<SyncIssue>,
+        migrationStrategies: { 1: (issue) => issue },
+      },
       settings: { schema: settingsSchema as RxJsonSchema<LocalSettings>, migrationStrategies: {} },
     });
 
@@ -133,6 +140,7 @@ export async function readCollection<T>(collection: RxCollection<T>): Promise<T[
 
 /** Checks every persisted collection before exposing a local library. */
 export async function assertStoredRecords(database: LocalDatabase): Promise<void> {
+  await readCollection(database.merges);
   await readCollection(database.entries);
   await readCollection(database.settings);
   await readCollection(database.binding);

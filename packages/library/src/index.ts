@@ -5,7 +5,8 @@ export {
 } from './components/application-shell/application-shell';
 export { LibraryMode, Theme, websitePreferences } from './models/preferences';
 export { LibraryLayout } from './models/library-layout';
-export { LibraryOrder, LibrarySort } from './models/library-sort';
+export { LibrarySort } from './models/library-sort';
+export { SortDirection } from './models/sort-direction';
 export type { InterfacePreferences, PreferenceStorage } from './models/preferences';
 export { browserLocale } from './i18n/browser-locale';
 export { LibraryBrowser } from './components/library-browser/library-browser';
@@ -32,7 +33,10 @@ export { FullPage } from './pages/full-page/full-page';
 export { useInterfacePreferences } from './hooks/use-interface-preferences';
 
 export { LibraryPage } from './pages/library-page/library-page';
-export { SearchPage } from './pages/search-page/search-page';
 export { SettingsPage } from './pages/settings-page/settings-page';
 
 export { useTranslation } from 'react-i18next';
+export { WorkspaceProvider } from './providers/workspace-provider/workspace-provider';
+export { useWorkspace } from './hooks/use-workspace';
+export type { WorkspaceRepository, WorkspaceRow, WorkspacePreview } from './models/workspace';
+export { WorkspaceConflictError } from './models/workspace';

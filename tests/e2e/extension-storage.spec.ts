@@ -642,61 +642,53 @@ test('native RxDB replication adopts explicitly, preserves stale intent and retr
     page = await launched.context.newPage();
     await page.goto(`${launched.origin}/full-page.html`);
     url = `${launched.origin}/storage-test.js`;
-    const restarted = await page.evaluate(
-      async ({ url, ownerId }) => {
-        const module = (await import(url)) as typeof import('./fixtures/storage');
-        const bridge = (
-          globalThis as unknown as {
-            filecabFixture(
-              input: unknown,
-            ): Promise<{ data?: unknown; error?: ApiErrorCode | SyncErrorCode }>;
-          }
-        ).filecabFixture;
-        const request = async <T>(
-          ownerId: string,
-          operation: 'pull' | 'push' | 'snapshot',
-          body?: unknown,
-        ): Promise<T> => {
-          const result = await bridge({ ownerId, operation, body });
+    const restarted = await page.evaluate(async (url) => {
+      const module = (await import(url)) as typeof import('./fixtures/storage');
+      const bridge = (
+        globalThis as unknown as {
+          filecabFixture(
+            input: unknown,
+          ): Promise<{ data?: unknown; error?: ApiErrorCode | SyncErrorCode }>;
+        }
+      ).filecabFixture;
+      const request = async <T>(
+        ownerId: string,
+        operation: 'pull' | 'push' | 'snapshot',
+        body?: unknown,
+      ): Promise<T> => {
+        const result = await bridge({ ownerId, operation, body });
 
-          if (result.error) throw new module.SyncError(result.error);
+        if (result.error) throw new module.SyncError(result.error);
 
-          return result.data as T;
-        };
-        const repository = await module.LocalLibraryRepository.open();
-        const binding = (await module.readCollection(repository.database.binding))[0];
-        await bridge({ operation: 'lose-response' });
-        const state = module.startLibraryReplication(
-          repository.database,
-          binding,
-          () => {},
-          request,
-        );
-        // A lost reply must leave native metadata pending. Cancel the failed cycle,
-        // restart it immediately, and verify the already-committed write is a no-op.
-        await new Promise<void>((resolve) => state.error$.subscribe(() => resolve()));
-        await state.cancel();
-        const resumed = module.startLibraryReplication(
-          repository.database,
-          binding,
-          () => {},
-          request,
-        );
-        await Promise.race([
-          resumed.awaitInSync(),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Restart did not converge')), 10000),
-          ),
-        ]);
-        const rows = (await repository.snapshot()).rows;
-        const issues = await module.readCollection(repository.database.issues);
-        await resumed.cancel();
-        await repository.close();
+        return result.data as T;
+      };
+      const repository = await module.LocalLibraryRepository.open();
+      const binding = (await module.readCollection(repository.database.binding))[0];
+      await bridge({ operation: 'lose-response' });
+      const state = module.startLibraryReplication(repository.database, binding, () => {}, request);
+      // A lost reply must leave native metadata pending. Cancel the failed cycle,
+      // restart it immediately, and verify the already-committed write is a no-op.
+      await new Promise<void>((resolve) => state.error$.subscribe(() => resolve()));
+      await state.cancel();
+      const resumed = module.startLibraryReplication(
+        repository.database,
+        binding,
+        () => {},
+        request,
+      );
+      await Promise.race([
+        resumed.awaitInSync(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Restart did not converge')), 10000),
+        ),
+      ]);
+      const rows = (await repository.snapshot()).rows;
+      const issues = await module.readCollection(repository.database.issues);
+      await resumed.cancel();
+      await repository.close();
 
-        return { comment: rows[0].entry.comment, issues: issues.length };
-      },
-      { url, ownerId },
-    );
+      return { comment: rows[0].entry.comment, issues: issues.length };
+    }, url);
     expect(restarted).toEqual({ comment: 'pending across browser restart', issues: 0 });
     expect(server.revision).toBe(revisionBeforeRestart + 1);
   } finally {

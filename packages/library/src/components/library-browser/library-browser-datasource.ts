@@ -2,8 +2,10 @@ import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useTranslation } from 'react-i18next';
 import { Status, titleFor } from '@filecab/contracts';
 import { useLocalStore } from '../../hooks/use-local-store';
+import { useSearchParams } from 'react-router-dom';
 import { LibraryLayout } from '../../models/library-layout';
-import { LibraryOrder, LibrarySort } from '../../models/library-sort';
+import { LibrarySort } from '../../models/library-sort';
+import { SortDirection } from '../../models/sort-direction';
 import type { LibraryBrowserProps } from './model-library-browser';
 import { PAGE_SIZE } from './model-library-browser';
 
@@ -12,7 +14,7 @@ export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowse
   const { t } = useTranslation();
   const { locale } = useInterfacePreferences();
   const [
-    { query, status, rating, genre, sort, order, layout, page },
+    { query, status, rating, genre, sort, order, page },
     {
       query: setQuery,
       status: setStatus,
@@ -20,7 +22,6 @@ export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowse
       genre: setGenre,
       sort: setSort,
       order: setOrder,
-      layout: setLayout,
       page: setPage,
     },
   ] = useLocalStore(() => ({
@@ -29,10 +30,17 @@ export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowse
     rating: '',
     genre: '',
     sort: LibrarySort.Updated,
-    order: LibraryOrder.Descending,
-    layout: LibraryLayout.Grid,
+    order: SortDirection.Desc,
     page: 1,
   }));
+
+  const [parameters, setParameters] = useSearchParams();
+  const layout = parameters.get('view') === 'list' ? LibraryLayout.List : LibraryLayout.Grid;
+  const setLayout = (value: LibraryLayout) => {
+    const next = new URLSearchParams(parameters);
+    next.set('view', value);
+    setParameters(next, { replace: true });
+  };
 
   const rows = entries.filter((entry) => !entry.deleted && entry.category === category);
   const visible = rows.filter((entry) => status === Status.Hide || entry.status !== Status.Hide);
@@ -71,11 +79,13 @@ export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowse
     else if (sort === LibrarySort.Rating) result = a.rating - b.rating;
     else if (sort === LibrarySort.Year)
       result = (a.snapshot.year ?? -Infinity) - (b.snapshot.year ?? -Infinity);
+    else if (sort === LibrarySort.Status)
+      result = collator.compare(a.status ? t(a.status) : '', b.status ? t(b.status) : '');
+    else if (sort === LibrarySort.Episodes)
+      result = (a.snapshot.episodeCount ?? -1) - (b.snapshot.episodeCount ?? -1);
     else result = a.updatedAt.localeCompare(b.updatedAt);
 
-    return (
-      result * (order === LibraryOrder.Ascending ? 1 : -1) || a.entryId.localeCompare(b.entryId)
-    );
+    return result * (order === SortDirection.Asc ? 1 : -1) || a.entryId.localeCompare(b.entryId);
   });
 
   const pages = Math.max(1, Math.ceil(matches.length / PAGE_SIZE));
@@ -102,7 +112,7 @@ export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowse
     rows,
     setGenre: (value: string) => changeFilter(() => setGenre(value)),
     setLayout,
-    setOrder: (value: LibraryOrder) => changeFilter(() => setOrder(value)),
+    setOrder: (value: SortDirection) => changeFilter(() => setOrder(value)),
     setPage,
     setQuery: (value: string) => changeFilter(() => setQuery(value)),
     setRating: (value: string) => changeFilter(() => setRating(value)),

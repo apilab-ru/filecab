@@ -41,25 +41,6 @@
     }
   }
 
-  &__views {
-    position: absolute;
-    right: 0;
-    top: -59px;
-    display: flex;
-
-    .fc-button {
-      min-height: 34px;
-      padding: 6px 10px;
-      border-radius: 0;
-    }
-
-    [aria-pressed='true'] {
-      background: var(--fc-selected);
-      color: var(--fc-accent);
-      border-color: var(--fc-accent);
-    }
-  }
-
   &__add {
     flex-shrink: 0;
     margin-left: auto;

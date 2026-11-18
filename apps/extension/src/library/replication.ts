@@ -1,13 +1,15 @@
+import { recoverLocalMerges } from './merge-recovery';
 import {
   SyncOperation,
   ApiErrorCode,
   SyncErrorCode,
-  type SyncDiagnostic,
+  ConflictReason,
   type Checkpoint,
   type Entry,
   type ReplicationPullResponse,
   type ReplicationPushResponse,
   type ServerEntry,
+  type ValidationIssue,
 } from '@filecab/contracts';
 import { replicateRxCollection, type RxReplicationState } from 'rxdb/plugins/replication';
 import { getLastCheckpointDoc, type WithDeleted } from 'rxdb/plugins/core';
@@ -31,6 +33,24 @@ export function masterRow(entry: Entry, previous?: LocalEntry): WithDeleted<Loca
     undoUntil: previous?.undoUntil ?? null,
     _deleted: false,
   };
+}
+
+/** Maps server row issues to push indexes, keeping entry field paths relative to the entry. */
+function rowProblems(issues: ValidationIssue[]): Map<number, ValidationIssue> {
+  const problems = new Map<number, ValidationIssue>();
+
+  for (const issue of issues) {
+    const index = issue.path[1];
+
+    if (issue.path[0] !== 'rows' || typeof index !== 'number' || problems.has(index)) continue;
+
+    problems.set(index, {
+      path: issue.path.slice(issue.path[2] === 'proposed' ? 3 : 2),
+      message: issue.message,
+    });
+  }
+
+  return problems;
 }
 
 /** Runs native RxDB replication for the explicitly bound account and metadata generation. */
@@ -85,6 +105,7 @@ export function startLibraryReplication(
       batchSize: 100,
       initialCheckpoint: binding.initialCheckpoint ?? undefined,
       handler: async (checkpoint, batchSize) => {
+        await navigator.locks.request(`${database.name}:write`, () => recoverLocalMerges(database));
         const documents = new Map<string, ServerEntry>();
         let next: Checkpoint | null = checkpoint ?? null;
         // RxDB treats a short batch as exhausted; consume further server pages when
@@ -120,6 +141,7 @@ export function startLibraryReplication(
       batchSize: 50,
       modifier: (row) => (row.entry.deleted && row.entry.serverVersion === null ? null : row),
       handler: async (rows) => {
+        await navigator.locks.request(`${database.name}:write`, () => recoverLocalMerges(database));
         // Validate the persisted pull position before every upload, including retries
         // after long offline periods. Never upload first after history was pruned.
         const checkpoint = await getLastCheckpointDoc<LocalEntry, Checkpoint>(
@@ -131,16 +153,72 @@ export function startLibraryReplication(
           checkpoint: checkpoint ?? binding.initialCheckpoint,
           limit: 1,
         });
-        const result = await call<ReplicationPushResponse>(SyncOperation.Push, {
-          schemaVersion: 1,
-          rows: rows.map((row) => ({
-            assumedMaster: row.assumedMasterState?.entry.serverVersion
-              ? row.assumedMasterState.entry
-              : null,
-            proposed: row.newDocumentState.entry,
-          })),
-        });
+        const orderedRows = [...rows].sort(
+          (a, b) =>
+            Number(b.newDocumentState.entry.deleted) - Number(a.newDocumentState.entry.deleted),
+        );
+        const retainProblems = async (issues: ValidationIssue[]) => {
+          const retained: (typeof orderedRows)[number][] = [];
+
+          for (const [index, problem] of rowProblems(issues)) {
+            const row = orderedRows[index];
+
+            if (!row) continue;
+
+            await retainIntent(
+              database,
+              binding.ownerId,
+              row.newDocumentState.entry,
+              {
+                entryId: row.newDocumentState.entryId,
+                reason: ConflictReason.Version,
+                serverDocument: row.assumedMasterState?.entry.serverVersion
+                  ? (row.assumedMasterState.entry as Entry & { serverVersion: string })
+                  : null,
+              },
+              'validation',
+              problem,
+            );
+            retained.push(row);
+          }
+
+          return retained;
+        };
+        let result: ReplicationPushResponse;
+
+        try {
+          result = await call<ReplicationPushResponse>(SyncOperation.Push, {
+            schemaVersion: 1,
+            rows: orderedRows.map((row) => ({
+              assumedMaster: row.assumedMasterState?.entry.serverVersion
+                ? row.assumedMasterState.entry
+                : null,
+              proposed: row.newDocumentState.entry,
+            })),
+          });
+        } catch (error) {
+          const diagnostic = syncDiagnostic(error);
+
+          // Request-shape failures reject the whole batch, so the rows stay queued for retry.
+          if (diagnostic.code === ApiErrorCode.ValidationError)
+            await retainProblems(diagnostic.issues ?? []);
+
+          throw error;
+        }
         const conflicts: WithDeleted<LocalEntry>[] = [];
+
+        // Rejected rows return to their known master so they stop blocking later pushes;
+        // the retained intent keeps the user's change for recovery.
+        for (const row of await retainProblems(result.issues ?? []))
+          conflicts.push(
+            masterRow(
+              row.assumedMasterState?.entry.serverVersion
+                ? row.assumedMasterState.entry
+                : { ...row.newDocumentState.entry, serverVersion: null, deleted: true },
+              row.newDocumentState,
+            ),
+          );
+
         for (const conflict of result.conflicts) {
           const row = rows.find(
             (candidate) => candidate.newDocumentState.entryId === conflict.entryId,

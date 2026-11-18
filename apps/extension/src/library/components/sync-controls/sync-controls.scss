@@ -27,4 +27,37 @@
     white-space: pre-wrap;
     overflow-wrap: anywhere;
   }
+
+  &__rejection {
+    width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  &__bulk-choice {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+  }
+
+  &__resolution {
+    width: 100%;
+    min-width: 0;
+    margin: 8px 0 0;
+    padding: 10px;
+    border: 1px solid var(--fc-border);
+    border-radius: var(--fc-radius);
+  }
+
+  &__problem {
+    margin: 0 0 8px;
+    color: var(--fc-muted);
+  }
+
+  &__choice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
 }

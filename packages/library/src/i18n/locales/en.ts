@@ -1,4 +1,51 @@
 export const EN = {
+  lastPage: 'Last page',
+  catalogRebase: 'Use current versions and keep my draft',
+  catalogProviderUnavailable:
+    'The selected catalog provider is unavailable. Choose another provider or add manually.',
+  catalogQuery: 'Search catalog',
+  catalogProvider: 'Provider',
+  catalogDefaultProvider: 'Default provider',
+  catalogProviderOrder: 'Default',
+  catalogOffline: 'You are offline. Saved entries and manual editing are still available.',
+  catalogServiceError: 'Catalog service failed. Your input is still here. Retry or save manually.',
+  catalogEnterQuery: 'Enter a title to search this provider.',
+  catalogEmpty: 'No catalog titles found.',
+  catalogStale: 'Cached results from {{date}}.',
+  catalogLimited: 'The provider scan limit was reached. More results may exist.',
+  catalogSaved: 'Saved',
+  catalogIdentityConflict:
+    'Saved identities or categories conflict. Review the entries before continuing.',
+  catalogAssociate: 'Associate this title',
+  catalogUseManual: 'Link manual entry: {{title}}',
+  catalogMatching: 'Choose the catalog title for {{title}}.',
+  catalogDraftDescription: 'Changes are saved only after Save.',
+  catalogAssociationDescription: 'Review the association and retained fields before confirmation.',
+  catalogSaveFailed:
+    'Save failed or an entry changed. Your input is still here. Review current entries and retry.',
+  catalogMergeChoices:
+    'Choose which personal fields to keep. Both entries are shown in the preview.',
+  catalogKeepManual: 'Manual entry',
+  catalogKeepSaved: 'Saved catalog entry',
+  catalogPreview: 'Association preview',
+  catalogConfirm: 'Confirm association',
+  catalogFindMatch: 'Find catalog title',
+  catalogRetainedIdentity: 'Entry ID and added date',
+  catalogAction: 'Result',
+  catalogKeep: 'Keep this entry',
+  catalogFilter_year: 'Release year',
+  catalogFilter_format: 'Format',
+  catalogFilter_type: 'Format',
+  catalogFilter_season: 'Release season',
+  catalogFilter_providerRating: 'Provider rating',
+  catalogFilter_myAnimeListId: 'MyAnimeList ID',
+  'catalogOrder_title-asc': 'Title: A–Z',
+  'catalogOrder_title-desc': 'Title: Z–A',
+  'catalogOrder_year-asc': 'Year: oldest first',
+  'catalogOrder_year-desc': 'Year: newest first',
+  'catalogOrder_rating-asc': 'Provider score: lowest first',
+  'catalogOrder_rating-desc': 'Provider score: highest first',
+
   account: 'Account',
   sync: 'Sync',
   syncNow: 'Sync now',
@@ -12,6 +59,12 @@ export const EN = {
   loadingLibrary: 'Loading your library…',
   addTitle: 'Add title',
   noPoster: 'No poster',
+  approximateProviderRating: 'Approximate provider rating',
+  episodes: 'Episodes',
+  sortColumnAscending: '{{column}}: click for ascending order',
+  sortColumnDescending: '{{column}}: click for descending order',
+  yourRating: 'Your rating',
+  clearRating: 'Clear',
   unknownYear: 'Year unknown',
   unrated: 'Unrated',
   searchLibrary: 'Search your library',
@@ -77,6 +130,8 @@ export const EN = {
     'Cannot reach the API. Check that it is running and that the extension has permission for the API origin.',
   'Add this extension origin to API EXTENSION_ORIGINS, then restart the API.':
     'Add this extension origin to API EXTENSION_ORIGINS, then restart the API.',
+  'The login service is temporarily unavailable. Check that the API database is running, then retry.':
+    'The login service is temporarily unavailable. Check that the API database is running, then retry.',
   'Google login is disabled in the API configuration.':
     'Google login is disabled in the API configuration.',
   'The browser login window failed. Check the service worker console and the API login configuration.':
@@ -143,6 +198,26 @@ export const EN = {
     'Synchronization is paused. Sign in to the account linked to this device library.',
   'The server rejected a document. Your local data is preserved; retry after correcting it.':
     'The server rejected a document. Your local data is preserved; retry after correcting it.',
+  'A library item needs attention': 'A library item needs attention',
+  'The server did not save this item. Your device copy is safe. Correct the item, then retry synchronization.':
+    'The server did not save this item. Your device copy is safe. Correct the item, then retry synchronization.',
+  'Open your library and review recent changes. The server returned validation details without an item reference.':
+    'Open your library and review recent changes. The server returned validation details without an item reference.',
+  'Close and edit item': 'Close and edit item',
+  'Retry synchronization': 'Retry synchronization',
+  'Resolve synchronization items': 'Resolve synchronization items',
+  'Choose which version to keep for each rejected item. You can apply one choice to all items.':
+    'Choose which version to keep for each rejected item. You can apply one choice to all items.',
+  'Use device data for all': 'Use device data for all',
+  'Keep server data for all': 'Keep server data for all',
+  'Use this device copy': 'Use this device copy',
+  'Keep the server copy': 'Keep the server copy',
+  'Remove from this device; no server copy exists':
+    'Remove from this device; no server copy exists',
+  'Validation details are unavailable. Retry to identify the rejected item.':
+    'Validation details are unavailable. Retry to identify the rejected item.',
+  'Complete resolution and sync': 'Complete resolution and sync',
+  'Decide later': 'Decide later',
   'The API could not be reached. Check its address and connection; saved changes will be retried.':
     'The API could not be reached. Check its address and connection; saved changes will be retried.',
   'The extension worker did not reply. Reload the extension and reopen this page.':

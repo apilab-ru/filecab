@@ -26,7 +26,7 @@ export function SettingsPage({ popup }: SettingsPageProps) {
         <div className="settings-sync">
           <Button
             className="fc-button--primary settings-sync__button"
-            disabled={!syncSettings?.enabled || syncSettings.working}
+            disabled={!syncSettings?.enabled}
             onClick={() => syncSettings?.refresh()}
           >
             <Icon name={IconName.Refresh} />

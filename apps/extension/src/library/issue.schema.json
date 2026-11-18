@@ -1,6 +1,6 @@
 {
   "title": "Recoverable synchronization intent",
-  "version": 0,
+  "version": 1,
   "primaryKey": "id",
   "type": "object",
   "properties": {
@@ -18,11 +18,32 @@
     },
     "kind": {
       "type": "string",
-      "enum": ["conflict", "reset"]
+      "enum": ["conflict", "reset", "validation"]
     },
     "recordedAt": {
       "type": "string",
       "format": "date-time"
+    },
+    "problem": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              { "type": "string", "maxLength": 80 },
+              { "type": "integer", "minimum": 0 }
+            ]
+          },
+          "maxItems": 12
+        },
+        "message": {
+          "type": "string",
+          "maxLength": 240
+        }
+      },
+      "required": ["path", "message"],
+      "additionalProperties": false
     },
     "conflict": {
       "type": "object",
