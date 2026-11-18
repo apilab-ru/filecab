@@ -298,14 +298,9 @@ export class LibraryMutationService {
                 current?.snapshot ?? emptySnapshot(),
                 (catalog?.snapshot as unknown as Snapshot | undefined) ?? emptySnapshot(),
               );
-
-        if (!isDeepStrictEqual(snapshot, proposed.snapshot))
-          throw new MutationError(ApiErrorCode.ValidationError, {
-            path: ['proposed', 'snapshot'],
-            message:
-              'Catalog details have changed on the server. Keep the server copy to resolve this item.',
-          });
-
+        // Snapshots are server-owned. Store the authoritative copy instead of rejecting a
+        // stale client copy: a rejection cannot be resolved by keeping the device edit, and
+        // the client receives the stored snapshot on its next pull.
         const now = new Date(
           Math.max(Date.now(), Date.parse(current?.updatedAt ?? '1970-01-01')),
         ).toISOString();

@@ -600,20 +600,6 @@ test('replication creates are retry safe and cannot inject metadata or duplicate
   expect(await app.get(LibraryMutationService).get(first.ownerId, proposed.entryId)).toEqual(
     current,
   );
-  const invalid = await replicate('push', {
-    schemaVersion: 1,
-    rows: [
-      {
-        assumedMaster: current,
-        proposed: { ...current, snapshot: { ...current.snapshot, year: 2020 } },
-      },
-    ],
-  });
-  expect(invalid.status).toBe(200);
-  expect(await invalid.json()).toMatchObject({
-    conflicts: [],
-    issues: [{ path: ['rows', 0, 'proposed', 'snapshot'], message: expect.any(String) }],
-  });
   const sourceConflict = await replicate('push', {
     schemaVersion: 1,
     rows: [{ assumedMaster: current, proposed: { ...current, sources: template.sources } }],
@@ -624,6 +610,23 @@ test('replication creates are retry safe and cannot inject metadata or duplicate
   expect(await app.get(LibraryMutationService).get(first.ownerId, proposed.entryId)).toEqual(
     current,
   );
+  const staleSnapshot = await replicate('push', {
+    schemaVersion: 1,
+    rows: [
+      {
+        assumedMaster: current,
+        proposed: {
+          ...current,
+          comment: 'Kept with a stale snapshot',
+          snapshot: { ...current.snapshot, year: 2020 },
+        },
+      },
+    ],
+  });
+  expect(await staleSnapshot.json()).toEqual({ schemaVersion: 1, conflicts: [] });
+  const kept = await app.get(LibraryMutationService).get(first.ownerId, proposed.entryId);
+  expect(kept.comment).toBe('Kept with a stale snapshot');
+  expect(kept.snapshot).toEqual(current.snapshot);
 });
 
 test('pull batches follow committed revisions and detect unavailable history without leaking other owners', async () => {

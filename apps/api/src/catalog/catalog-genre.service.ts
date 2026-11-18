@@ -2,7 +2,6 @@ import {
   ApiErrorCode,
   type Category,
   type GenreMappingConflict,
-  type GenreMappingReview,
   type GenreRefreshResponse,
   type GenreReviewResponse,
   type GenreResponse,
