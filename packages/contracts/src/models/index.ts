@@ -154,6 +154,9 @@ export interface CatalogProviderCapability {
   operations: ('search' | 'details' | 'resolve-reference' | 'genres')[];
   filters: string[];
   ordering: string[];
+  browse?: boolean;
+  searchFilters?: string[];
+  searchOrdering?: string[];
   referenceNamespaces: string[];
   languages: Locale[];
 }
@@ -279,10 +282,12 @@ export interface Conflict {
   serverDocument: ServerEntry | null;
 }
 
-/** Returns conflicts from a replication push. */
+/** Returns conflicts and rejected rows from a replication push. */
 export interface ReplicationPushResponse {
   schemaVersion: 1;
   conflicts: Conflict[];
+  /** Locates rows the server rejected, as `['rows', index, ...]`; omitted when every row is valid. */
+  issues?: ValidationIssue[];
 }
 
 /** Requests server changes after a checkpoint. */
