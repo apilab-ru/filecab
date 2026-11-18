@@ -2,7 +2,6 @@ import './icon.scss';
 
 import { useContext } from 'react';
 import { IconBase } from '../../models/icon-context';
-import { IconName } from '../../models/icon-name';
 import { ASSETS, type IconProps } from './model-icon';
 
 /** Colors the supplied SVG silhouette with the control's foreground color. */
