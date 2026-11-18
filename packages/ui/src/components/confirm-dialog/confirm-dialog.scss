@@ -12,11 +12,13 @@
   border-radius: var(--fc-radius);
   background: var(--fc-surface);
   color: var(--fc-text);
+  z-index: var(--fc-layer-dialog);
 
   &__backdrop {
     position: fixed;
     inset: 0;
     background: #0008;
+    z-index: var(--fc-layer-backdrop);
   }
 
   &__title {

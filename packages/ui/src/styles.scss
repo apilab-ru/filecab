@@ -12,6 +12,9 @@
   --fc-danger: #b42318;
   --fc-radius: 8px;
   --fc-space: 8px;
+  --fc-layer-backdrop: 1000;
+  --fc-layer-dialog: 1001;
+  --fc-layer-popup: 1002;
   --fc-font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-family: var(--fc-font);
   color: var(--fc-text);

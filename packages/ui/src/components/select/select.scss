@@ -42,7 +42,7 @@
 }
 
 .fc-select__positioner {
-  z-index: 20;
+  z-index: var(--fc-layer-popup);
 }
 
 .fc-select__popup {

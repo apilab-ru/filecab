@@ -7,3 +7,5 @@ export { IconProvider } from './providers/icon-provider/icon-provider';
 export { IconName } from './models/icon-name';
 
 export { FILECAB_ICON_URL } from './models/assets';
+
+export { RatingPicker } from './components/rating-picker/rating-picker';
