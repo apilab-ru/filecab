@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.nx/
+.wxt/
+.output/
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+.DS_Store
+apps/api/src/generated/
+coverage/
+playwright-report/
+test-results/
+
+apps/extension/src/library/generated-*
+!apps/extension/src/library/generated-validators.d.mts
