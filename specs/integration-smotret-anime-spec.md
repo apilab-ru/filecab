@@ -89,6 +89,8 @@ internal catalog ID.
 - Genre capability and genre filtering stay disabled.
 - Never treat unrelated genres as equal. Document any semantic remapping and keep the original reference.
 - Without a dictionary endpoint, use complete bounded pagination or a managed mapping. Never describe a sample as complete.
+- Delete the mappings of ignored and converted IDs. The resolver never reads them.
+- IDs 12, 26 and 28 do not occur in public series. Keep their mappings unverified.
 
 ### Persistence and pagination
 

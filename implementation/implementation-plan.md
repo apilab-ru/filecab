@@ -40,8 +40,8 @@ Rules are in [specs](../specs/index.md).
 - [x] Catalog search and reference resolution.
 - [x] Metadata and search cache with expiry and stale data.
 - [x] Genre administration and provider limits.
-- [ ] Complete catalog integration tests.
-- [ ] Verify genre mappings with providers.
+- [x] Complete catalog integration tests.
+- [x] Verify genre mappings with providers.
 
 ## 15. Catalog search and editing
 

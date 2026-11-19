@@ -106,6 +106,8 @@ automatic installment grouping are not in scope.
 - An unknown provider genre gets a provider-scoped internal candidate and an unverified mapping.
 - A trusted adapter can supply a canonical key only from its curated server-side crosswalk. Never take it from provider text.
 - Keep contradictory canonical keys as review conflicts. Do not replace the existing mapping.
+- Mark a mapping as verified only after two checks. First, find the external ID in the live provider dictionary or in complete bounded pagination. Second, review the meaning of the provider genre and of the internal genre.
+- Keep a mapping unverified when the provider does not return its external ID.
 - Refresh and conflict review require an account in `CATALOG_OPERATOR_ACCOUNT_IDS`. The default list is empty. When `NODE_ENV` is `development`, catalog administration routes do not require sign-in.
 - Public genre reads are read-only. They can return genres whose mappings still need review.
 - Limit response size, item count, elapsed time, concurrency, retries and Retry-After waits by configuration. Return a structured error when a budget is exhausted.

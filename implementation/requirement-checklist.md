@@ -81,11 +81,11 @@ change logs before 18 November 2026.
 | [x]  | [Details and safe enrichment](../specs/catalog-spec.md#details-and-safe-enrichment)                       | 12   | Done    |                                              |
 | [x]  | [Normalized media metadata](../specs/catalog-spec.md#normalized-media-metadata)                           | 12   | Done    |                                              |
 | [ ]  | [Localization](../specs/catalog-spec.md#localization)                                                     | 12   | Partial | Original-title language unknown for Smotret. |
-| [ ]  | [Genres](../specs/catalog-spec.md#genres)                                                                 | 12   | Partial | Mappings unverified. No genre adapter wired. |
+| [ ]  | [Genres](../specs/catalog-spec.md#genres)                                                                 | 12   | Partial | Mappings verified. No refresh adapter wired. |
 | [x]  | [Provider resilience](../specs/catalog-spec.md#provider-resilience)                                       | 12   | Done    |                                              |
 | [x]  | [Metadata cache](../specs/catalog-spec.md#metadata-cache)                                                 | 12   | Done    |                                              |
 | [x]  | [API boundaries](../specs/catalog-spec.md#api-boundaries)                                                 | 12   | Done    |                                              |
-| [ ]  | [Verification](../specs/catalog-spec.md#verification)                                                     | 12   | Partial | Catalog integration tests pending.           |
+| [x]  | [Verification](../specs/catalog-spec.md#verification)                                                     | 12   | Done    | [Step 12](#step-12-catalog-services)         |
 
 ## Smotret adapter
 
@@ -96,11 +96,11 @@ change logs before 18 November 2026.
 
 ## Kinopoisk adapter
 
-| Done | Section                                                                                   | Step | Status  | Note                                                 |
-| ---- | ----------------------------------------------------------------------------------------- | ---- | ------- | ---------------------------------------------------- |
-| [ ]  | [Configuration and scope](../specs/integration-kinopoisk-spec.md#configuration-and-scope) | 14   | Partial | Production entitlement of the account is unknown.    |
-| [ ]  | [Genres](../specs/integration-kinopoisk-spec.md#genres)                                   | 14   | Partial | No verified internal mapping. Genre filter disabled. |
-| [x]  | All other [requirement sections](../specs/integration-kinopoisk-spec.md#requirements)     | 14   | Done    | [Step 14](#step-14-kinopoisk-adapter)                |
+| Done | Section                                                                                   | Step | Status  | Note                                              |
+| ---- | ----------------------------------------------------------------------------------------- | ---- | ------- | ------------------------------------------------- |
+| [ ]  | [Configuration and scope](../specs/integration-kinopoisk-spec.md#configuration-and-scope) | 14   | Partial | Production entitlement of the account is unknown. |
+| [ ]  | [Genres](../specs/integration-kinopoisk-spec.md#genres)                                   | 14   | Partial | Mappings verified. Genre filter disabled.         |
+| [x]  | All other [requirement sections](../specs/integration-kinopoisk-spec.md#requirements)     | 14   | Done    | [Step 14](#step-14-kinopoisk-adapter)             |
 
 ## External list synchronization and Shikimori
 
@@ -192,7 +192,10 @@ propagation, browser-locale start, draft retention, Escape and focus, responsive
 - [Cache](../apps/api/src/catalog/catalog-cache.service.ts) with configurable freshness and stale fallback.
 - [Genre administration](../apps/api/src/catalog/catalog-genre.service.ts) behind `CATALOG_OPERATOR_ACCOUNT_IDS`.
 - Seed: 112 internal genres and 135 unverified provider mappings from 117 source rows (11 November 2026). 12 conflicting Smotret claims are not seeded.
-- [Genre resolver](../apps/api/src/catalog/catalog-genre-resolver.ts) replaces provider genres with mapped internal genres before a snapshot is stored, with Smotret ignore and convert rules. Smotret search now returns genres. A migration maps 31 Kinopoisk genre names (19 November 2026). The mappings are still unverified.
+- [Genre resolver](../apps/api/src/catalog/catalog-genre-resolver.ts) replaces provider genres with mapped internal genres before a snapshot is stored, with Smotret ignore and convert rules. Smotret search now returns genres. A migration maps 31 Kinopoisk genre names (19 November 2026).
+- [Integration tests](../apps/api/src/catalog/catalog-services.integration.test.ts) on PostgreSQL 17: identity across locales, concurrent upserts, reference and category conflicts, genre replacement, cache hits by locale, stale fallback, empty-page replacement, invalid pages, cache clear by provider, genre refresh, candidates, review conflicts and retry budgets. All 50 integration tests pass (19 November 2026).
+- Live genre check (19 November 2026): the Kinopoisk dictionary returned 32 names. All 31 mapped names exist, and `церемония` is ignored. Smotret series pagination read 29,723 series on 61 pages and found 74 genre IDs. All have mappings.
+- [Verification migration](../apps/api/prisma/migrations/20261119020000_verify_catalog_genres/migration.sql): 31 Kinopoisk and 68 Smotret mappings are verified. Kinopoisk `игра` names TV game shows, so it maps to the new `game-show` genre, not to the anime `game` theme. The migration deletes numeric Kinopoisk mappings and the mappings of ignored and converted Smotret IDs. Smotret IDs 12, 26 and 28 do not occur in public series and stay unverified. IMDb mappings stay unverified.
 
 ### Step 13: Smotret adapter
 

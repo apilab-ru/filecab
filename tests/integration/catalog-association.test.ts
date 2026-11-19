@@ -92,7 +92,7 @@ function request(
   };
 }
 
-test('merge commits donor deletion and source transfers in one owner transaction', async () => {
+test('merge commits donor deletion and keeps the survivor viewing link in one transaction', async () => {
   const catalogId = await catalog();
   const manual = await create();
   const donor = await create(catalogId);
@@ -113,14 +113,17 @@ test('merge commits donor deletion and source transfers in one owner transaction
     comment: 'Chosen donor note',
     progress: manual.progress,
     rating: 0,
-    sources: [...manual.sources, ...donor.sources],
+    sources: manual.sources,
     catalogId,
   });
   expect(tombstone?.deleted).toBe(true);
   expect(BigInt(survivor!.serverVersion)).toBeGreaterThan(BigInt(tombstone!.serverVersion));
   expect(
     await database.sourceAssociation.findMany({ where: { ownerId, entryId: survivor!.entryId } }),
-  ).toHaveLength(2);
+  ).toHaveLength(1);
+  expect(
+    await database.sourceAssociation.count({ where: { ownerId, entryId: donor.entryId } }),
+  ).toBe(0);
 });
 
 test('stale previews, category changes and cross-owner access do not mutate entries', async () => {
