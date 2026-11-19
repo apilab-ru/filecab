@@ -7,107 +7,93 @@ Delivery status and evidence for the [specs](../specs/index.md). Steps refer to 
 - **Partial**: some clauses work. The note names what is missing.
 - **Pending**: no delivery yet.
 
+Each item is one line: checkbox, linked section, delivery steps, status and note. Do not use tables in this file.
+
 Record fixture tests and live provider checks separately. Git history keeps the detailed
 change logs before 18 November 2026.
 
 ## Product requirements
 
-| Done | ID                                                                                     | Steps             | Status  | Note                                                                                                                                                             |
-| ---- | -------------------------------------------------------------------------------------- | ----------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [ ]  | [NAV-01–05](../specs/functionality.md#2-surfaces-and-navigation)                       | 10, 11, 16        | Partial | Shell, routes and draft guard done (step 10). Page extraction pending.                                                                                           |
-| [ ]  | [MODEL-01–08](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | Partial | Contracts, server rules and editor validation done. Category conflict review pending.                                                                            |
-| [ ]  | [PAGE-01–04](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | Pending |                                                                                                                                                                  |
-| [ ]  | [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching)                | 4, 15, 16         | Partial | Server association and merge done. Client matching pending.                                                                                                      |
-| [ ]  | [SEARCH-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | Partial | Catalog search, direct Add and rating done. Editor flow pending.                                                                                                 |
-| [ ]  | [EDIT-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | Partial | Editor, validation, conflict choices and the read-only link done. Popup and import add the link (steps 16, 17). Page tab link replacement and link move pending. |
-| [ ]  | [LIB-01–07](../specs/functionality.md#6-library-browsing)                              | 10, 11            | Partial | All clauses done except bulk deletion, which is optional. Release check pending.                                                                                 |
-| [ ]  | [DATA-01–06](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | Partial | Extension and website editing done. Backup preview checks pending.                                                                                               |
-| [ ]  | [BACKUP-01–05](../specs/functionality.md#8-backup-and-restore)                         | 17                | Pending |                                                                                                                                                                  |
-| [ ]  | [API-01–07](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | Partial | Backup and verification errors pending.                                                                                                                          |
-| [ ]  | [LANG-01–06](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | Partial | Interface languages done. Metadata localization partly done.                                                                                                     |
-| [ ]  | [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability)              | 5, 6, 16          | Pending |                                                                                                                                                                  |
-| [ ]  | [UX-01](../specs/functionality.md#11-platform-privacy-and-usability)                   | 10, 11, 21        | Partial | Keyboard, focus and zoom tests for the shell.                                                                                                                    |
-| [ ]  | [AC01–AC25](../specs/functionality.md#12-release-acceptance)                           | 21                | Pending | Run at release.                                                                                                                                                  |
+- [ ] [NAV-01–05](../specs/functionality.md#2-surfaces-and-navigation) (steps 10, 11, 16): Partial. Shell, routes and draft guard done (step 10). Page extraction pending.
+- [ ] [MODEL-01–08](../specs/functionality.md#3-domain-identity-and-validation) (steps 3, 4, 11): Partial. Contracts, server rules and editor validation done. Category conflict review pending.
+- [ ] [PAGE-01–04](../specs/functionality.md#4-page-extraction-and-matching) (step 16): Pending.
+- [ ] [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching) (steps 4, 15, 16): Partial. Server association and merge done. Client matching pending.
+- [ ] [SEARCH-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving) (steps 12–15): Partial. Catalog search, direct Add and rating done. Editor flow pending.
+- [ ] [EDIT-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving) (steps 7, 8, 11): Partial. Editor, validation, conflict choices and the read-only link done. Popup and import add the link (steps 16, 17). Page tab link replacement and link move pending.
+- [ ] [LIB-01–07](../specs/functionality.md#6-library-browsing) (steps 10, 11): Partial. All clauses done except bulk deletion, which is optional. Release check pending.
+- [ ] [DATA-01–06](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) (steps 7–9, 11): Partial. Extension and website editing done. Backup preview checks pending.
+- [ ] [BACKUP-01–05](../specs/functionality.md#8-backup-and-restore) (step 17): Pending.
+- [ ] [API-01–07](../specs/functionality.md#9-backend-and-shared-contracts) (steps 3, 5, 7, 9, 12–15): Partial. Backup and verification errors pending.
+- [ ] [LANG-01–06](../specs/functionality.md#10-english-and-russian) (steps 3, 10–15): Partial. Interface languages done. Metadata localization partly done.
+- [ ] [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability) (steps 5, 6, 16): Pending.
+- [ ] [UX-01](../specs/functionality.md#11-platform-privacy-and-usability) (steps 10, 11, 21): Partial. Keyboard, focus and zoom tests for the shell.
+- [ ] [AC01–AC25](../specs/functionality.md#12-release-acceptance) (step 21): Pending. Run at release.
 
 ## Backend
 
-| Done | Section                                                                                        | Step | Status  | Evidence                                                                       |
-| ---- | ---------------------------------------------------------------------------------------------- | ---- | ------- | ------------------------------------------------------------------------------ |
-| [x]  | [Accounts and sessions](../specs/backend.md#accounts-and-sessions)                             | 6    | Done    | [Step 6](#step-6-google-authentication)                                        |
-| [x]  | [Library data](../specs/backend.md#library-data)                                               | 4, 7 | Done    | [Step 4](#step-4-transactional-persistence), [step 7](#step-7-library-api)     |
-| [x]  | [Library operations](../specs/backend.md#library-operations)                                   | 7    | Done    | [Step 7](#step-7-library-api)                                                  |
-| [x]  | [Extension replication](../specs/backend.md#extension-replication)                             | 9    | Done    | [Step 9](#step-9-extension-replication). History is kept without a time limit. |
-| [ ]  | [Unlisted read-only sharing](../specs/backend.md#unlisted-read-only-sharing)                   | 18   | Pending |                                                                                |
-| [ ]  | [Backup and restore](../specs/backend.md#backup-and-restore)                                   | 17   | Pending |                                                                                |
-| [ ]  | [Server-managed parser configuration](../specs/backend.md#server-managed-parser-configuration) | 16   | Pending |                                                                                |
-| [x]  | [API foundation](../specs/backend.md#api-foundation)                                           | 5    | Done    | [Step 5](#step-5-api-foundation)                                               |
+- [x] [Accounts and sessions](../specs/backend.md#accounts-and-sessions) (step 6): Done. [Step 6](#step-6-google-authentication)
+- [x] [Library data](../specs/backend.md#library-data) (steps 4, 7): Done. [Step 4](#step-4-transactional-persistence), [step 7](#step-7-library-api)
+- [x] [Library operations](../specs/backend.md#library-operations) (step 7): Done. [Step 7](#step-7-library-api)
+- [x] [Extension replication](../specs/backend.md#extension-replication) (step 9): Done. [Step 9](#step-9-extension-replication). History is kept without a time limit.
+- [ ] [Unlisted read-only sharing](../specs/backend.md#unlisted-read-only-sharing) (step 18): Pending.
+- [ ] [Backup and restore](../specs/backend.md#backup-and-restore) (step 17): Pending.
+- [ ] [Server-managed parser configuration](../specs/backend.md#server-managed-parser-configuration) (step 16): Pending.
+- [x] [API foundation](../specs/backend.md#api-foundation) (step 5): Done. [Step 5](#step-5-api-foundation)
 
 ## Extension storage
 
-| Done | Section                                                                      | Step | Status  | Evidence                                              |
-| ---- | ---------------------------------------------------------------------------- | ---- | ------- | ----------------------------------------------------- |
-| [x]  | [Local database](../specs/extension-storage.md#local-database)               | 8    | Done    | [Step 8](#step-8-extension-storage)                   |
-| [x]  | [Entries and revisions](../specs/extension-storage.md#entries-and-revisions) | 8    | Done    | [Step 8](#step-8-extension-storage)                   |
-| [x]  | [Delete and Undo](../specs/extension-storage.md#delete-and-undo)             | 8    | Done    | [Step 8](#step-8-extension-storage)                   |
-| [x]  | [Settings](../specs/extension-storage.md#settings)                           | 8    | Done    | [Step 8](#step-8-extension-storage)                   |
-| [ ]  | [Schemas and recovery](../specs/extension-storage.md#schemas-and-recovery)   | 8    | Partial | Issue schema version 1 upgrade has no automated test. |
-| [x]  | [Replication](../specs/extension-storage.md#replication)                     | 9    | Done    | [Step 9](#step-9-extension-replication)               |
-| [x]  | [Diagnostics](../specs/extension-storage.md#diagnostics)                     | 9    | Done    | [Step 9](#step-9-extension-replication)               |
+- [x] [Local database](../specs/extension-storage.md#local-database) (step 8): Done. [Step 8](#step-8-extension-storage)
+- [x] [Entries and revisions](../specs/extension-storage.md#entries-and-revisions) (step 8): Done. [Step 8](#step-8-extension-storage)
+- [x] [Delete and Undo](../specs/extension-storage.md#delete-and-undo) (step 8): Done. [Step 8](#step-8-extension-storage)
+- [x] [Settings](../specs/extension-storage.md#settings) (step 8): Done. [Step 8](#step-8-extension-storage)
+- [ ] [Schemas and recovery](../specs/extension-storage.md#schemas-and-recovery) (step 8): Partial. Issue schema version 1 upgrade has no automated test.
+- [x] [Replication](../specs/extension-storage.md#replication) (step 9): Done. [Step 9](#step-9-extension-replication)
+- [x] [Diagnostics](../specs/extension-storage.md#diagnostics) (step 9): Done. [Step 9](#step-9-extension-replication)
 
 ## Library UI
 
-| Done | Section                                                                                   | Step | Status  | Evidence                                                             |
-| ---- | ----------------------------------------------------------------------------------------- | ---- | ------- | -------------------------------------------------------------------- |
-| [x]  | [Catalog search](../specs/library-ui.md#catalog-search)                                   | 15   | Done    | [Catalog UI](#catalog-ui)                                            |
-| [ ]  | [Matching results to the library](../specs/library-ui.md#matching-results-to-the-library) | 15   | Partial | Identity match done. Title suggestions pending.                      |
-| [x]  | [Add and rating](../specs/library-ui.md#add-and-rating)                                   | 15   | Done    | [Catalog UI](#catalog-ui)                                            |
-| [ ]  | [Association and merge](../specs/library-ui.md#association-and-merge)                     | 15   | Partial | Preview flow and local journal exist. Complete client tests pending. |
-| [x]  | [Toolbar and views](../specs/library-ui.md#toolbar-and-views)                             | 11   | Done    | [Catalog UI](#catalog-ui)                                            |
-| [x]  | [Cards](../specs/library-ui.md#cards)                                                     | 11   | Done    | [Catalog UI](#catalog-ui)                                            |
-| [x]  | [Ordering](../specs/library-ui.md#ordering)                                               | 11   | Done    | [Catalog UI](#catalog-ui)                                            |
-| [x]  | [Personal rating picker](../specs/library-ui.md#personal-rating-picker)                   | 11   | Done    | [Catalog UI](#catalog-ui)                                            |
-| [x]  | [Pagination and loading](../specs/library-ui.md#pagination-and-loading)                   | 11   | Done    | [Catalog UI](#catalog-ui)                                            |
+- [x] [Catalog search](../specs/library-ui.md#catalog-search) (step 15): Done. [Catalog UI](#catalog-ui)
+- [ ] [Matching results to the library](../specs/library-ui.md#matching-results-to-the-library) (step 15): Partial. Identity match done. Title suggestions pending.
+- [x] [Add and rating](../specs/library-ui.md#add-and-rating) (step 15): Done. [Catalog UI](#catalog-ui)
+- [ ] [Association and merge](../specs/library-ui.md#association-and-merge) (step 15): Partial. Preview flow and local journal exist. Complete client tests pending.
+- [x] [Toolbar and views](../specs/library-ui.md#toolbar-and-views) (step 11): Done. [Catalog UI](#catalog-ui)
+- [x] [Cards](../specs/library-ui.md#cards) (step 11): Done. [Catalog UI](#catalog-ui)
+- [x] [Ordering](../specs/library-ui.md#ordering) (step 11): Done. [Catalog UI](#catalog-ui)
+- [x] [Personal rating picker](../specs/library-ui.md#personal-rating-picker) (step 11): Done. [Catalog UI](#catalog-ui)
+- [x] [Pagination and loading](../specs/library-ui.md#pagination-and-loading) (step 11): Done. [Catalog UI](#catalog-ui)
 
 ## Catalog
 
-| Done | Section                                                                                                   | Step | Status  | Note                                         |
-| ---- | --------------------------------------------------------------------------------------------------------- | ---- | ------- | -------------------------------------------- |
-| [x]  | [Provider adapters and capabilities](../specs/catalog-spec.md#provider-adapters-and-capabilities)         | 12   | Done    | [Step 12](#step-12-catalog-services)         |
-| [x]  | [Routing](../specs/catalog-spec.md#routing)                                                               | 12   | Done    |                                              |
-| [x]  | [Search contract](../specs/catalog-spec.md#search-contract)                                               | 12   | Done    |                                              |
-| [x]  | [Pagination integrity](../specs/catalog-spec.md#pagination-integrity)                                     | 12   | Done    | Adapter fixtures in steps 13 and 14.         |
-| [x]  | [Identity and cross-provider references](../specs/catalog-spec.md#identity-and-cross-provider-references) | 12   | Done    |                                              |
-| [x]  | [Installment boundaries](../specs/catalog-spec.md#installment-boundaries)                                 | 12   | Done    | Granularity stored on `CatalogItem`.         |
-| [x]  | [Details and safe enrichment](../specs/catalog-spec.md#details-and-safe-enrichment)                       | 12   | Done    |                                              |
-| [x]  | [Normalized media metadata](../specs/catalog-spec.md#normalized-media-metadata)                           | 12   | Done    |                                              |
-| [ ]  | [Localization](../specs/catalog-spec.md#localization)                                                     | 12   | Partial | Original-title language unknown for Smotret. |
-| [ ]  | [Genres](../specs/catalog-spec.md#genres)                                                                 | 12   | Partial | Mappings verified. No refresh adapter wired. |
-| [x]  | [Provider resilience](../specs/catalog-spec.md#provider-resilience)                                       | 12   | Done    |                                              |
-| [x]  | [Metadata cache](../specs/catalog-spec.md#metadata-cache)                                                 | 12   | Done    |                                              |
-| [x]  | [API boundaries](../specs/catalog-spec.md#api-boundaries)                                                 | 12   | Done    |                                              |
-| [x]  | [Verification](../specs/catalog-spec.md#verification)                                                     | 12   | Done    | [Step 12](#step-12-catalog-services)         |
+- [x] [Provider adapters and capabilities](../specs/catalog-spec.md#provider-adapters-and-capabilities) (step 12): Done. [Step 12](#step-12-catalog-services)
+- [x] [Routing](../specs/catalog-spec.md#routing) (step 12): Done.
+- [x] [Search contract](../specs/catalog-spec.md#search-contract) (step 12): Done.
+- [x] [Pagination integrity](../specs/catalog-spec.md#pagination-integrity) (step 12): Done. Adapter fixtures in steps 13 and 14.
+- [x] [Identity and cross-provider references](../specs/catalog-spec.md#identity-and-cross-provider-references) (step 12): Done.
+- [x] [Installment boundaries](../specs/catalog-spec.md#installment-boundaries) (step 12): Done. Granularity stored on `CatalogItem`.
+- [x] [Details and safe enrichment](../specs/catalog-spec.md#details-and-safe-enrichment) (step 12): Done.
+- [x] [Normalized media metadata](../specs/catalog-spec.md#normalized-media-metadata) (step 12): Done.
+- [ ] [Localization](../specs/catalog-spec.md#localization) (step 12): Partial. Original-title language unknown for Smotret.
+- [ ] [Genres](../specs/catalog-spec.md#genres) (step 12): Partial. Mappings verified. No refresh adapter wired.
+- [x] [Provider resilience](../specs/catalog-spec.md#provider-resilience) (step 12): Done.
+- [x] [Metadata cache](../specs/catalog-spec.md#metadata-cache) (step 12): Done.
+- [x] [API boundaries](../specs/catalog-spec.md#api-boundaries) (step 12): Done.
+- [x] [Verification](../specs/catalog-spec.md#verification) (step 12): Done. [Step 12](#step-12-catalog-services)
 
 ## Smotret adapter
 
-| Done | Section                                                                             | Step | Status        | Evidence                            |
-| ---- | ----------------------------------------------------------------------------------- | ---- | ------------- | ----------------------------------- |
-| [x]  | All [requirement sections](../specs/integration-smotret-anime-spec.md#requirements) | 13   | Done          | [Step 13](#step-13-smotret-adapter) |
-| [ ]  | Genre filtering and original-title language                                         | 13   | Not available | Provider does not supply them.      |
+- [x] All [requirement sections](../specs/integration-smotret-anime-spec.md#requirements) (step 13): Done. [Step 13](#step-13-smotret-adapter)
+- [ ] Genre filtering and original-title language (step 13): Not available. Provider does not supply them.
 
 ## Kinopoisk adapter
 
-| Done | Section                                                                                   | Step | Status  | Note                                              |
-| ---- | ----------------------------------------------------------------------------------------- | ---- | ------- | ------------------------------------------------- |
-| [ ]  | [Configuration and scope](../specs/integration-kinopoisk-spec.md#configuration-and-scope) | 14   | Partial | Production entitlement of the account is unknown. |
-| [ ]  | [Genres](../specs/integration-kinopoisk-spec.md#genres)                                   | 14   | Partial | Mappings verified. Genre filter disabled.         |
-| [x]  | All other [requirement sections](../specs/integration-kinopoisk-spec.md#requirements)     | 14   | Done    | [Step 14](#step-14-kinopoisk-adapter)             |
+- [ ] [Configuration and scope](../specs/integration-kinopoisk-spec.md#configuration-and-scope) (step 14): Partial. Production entitlement of the account is unknown.
+- [ ] [Genres](../specs/integration-kinopoisk-spec.md#genres) (step 14): Partial. Mappings verified. Genre filter disabled.
+- [x] All other [requirement sections](../specs/integration-kinopoisk-spec.md#requirements) (step 14): Done. [Step 14](#step-14-kinopoisk-adapter)
 
 ## External list synchronization and Shikimori
 
-| Done | Section                                               | Step | Status  |
-| ---- | ----------------------------------------------------- | ---- | ------- |
-| [ ]  | [External list sync](../specs/user-list-sync-spec.md) | 19   | Pending |
-| [ ]  | [Shikimori](../specs/integration-shikimori-spec.md)   | 20   | Pending |
+- [ ] [External list sync](../specs/user-list-sync-spec.md) (step 19): Pending.
+- [ ] [Shikimori](../specs/integration-shikimori-spec.md) (step 20): Pending.
 
 ## Evidence
 

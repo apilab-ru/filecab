@@ -2,6 +2,8 @@
 
 [Important rules for making changes](specs/index.md)
 
+To deliver a plan step, follow the [plan step workflow](specs/contributing.md#plan-step-workflow). It lists the change-size rule and the [local checks](specs/contributing.md#local-checks), including the test database setup.
+
 # Specs
 
 Use ASD-STE100 for all specs.

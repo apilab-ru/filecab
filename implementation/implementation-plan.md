@@ -1,7 +1,8 @@
 # Implementation plan
 
 Delivery order. The [checklist](requirement-checklist.md) records status and evidence.
-Rules are in [specs](../specs/index.md).
+Rules are in [specs](../specs/index.md). Each open step lists its specs, code and tests.
+Read these first. Search the code only when the list is not sufficient.
 
 ## Done
 
@@ -45,6 +46,12 @@ Rules are in [specs](../specs/index.md).
 
 ## 15. Catalog search and editing
 
+Specs: [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching), [SEARCH and EDIT](../specs/functionality.md#5-catalog-search-editing-and-saving), [Catalog search](../specs/library-ui.md#catalog-search), [Popup search](../specs/library-ui.md#popup-search), [Matching](../specs/library-ui.md#matching-results-to-the-library), [Add and rating](../specs/library-ui.md#add-and-rating), [Association and merge](../specs/library-ui.md#association-and-merge), [Merge](../specs/backend.md#merge), [Catalog association](../specs/backend.md#catalog-association), [Search contract](../specs/catalog-spec.md#search-contract).
+
+Code: `packages/library/src/components/catalog-result/`, `packages/library/src/components/catalog-results/`, `packages/library/src/components/workspace-editor/`, `packages/library/src/pages/catalog-page/`, `packages/library/src/hooks/use-catalog-search.ts`, `packages/library/src/domain/catalog-selection.ts`, `apps/extension/src/popup/`, `apps/web/src/online-library/`, `apps/api/src/library/proposals.ts`, `apps/api/src/library/mutation.service.ts`, `apps/extension/src/library/repository.ts`, `apps/extension/src/library/merge-recovery.ts`.
+
+Tests: `tests/e2e/catalog.spec.ts`, `tests/e2e/catalog-extension.spec.ts`, `tests/integration/catalog-association.test.ts`.
+
 - [ ] Connect catalog search to all clients.
 - [ ] Debounce, cancellation, pagination and error states.
 - [ ] Open the editor when a user selects a title.
@@ -58,6 +65,12 @@ Rules are in [specs](../specs/index.md).
 
 ## 16. Page extraction
 
+Specs: [PAGE-01–04 and MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching), [EDIT-03–04](../specs/functionality.md#5-catalog-search-editing-and-saving), [Popup routes](../specs/functionality.md#23-popup-routes), [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability), [Parser configuration](../specs/backend.md#server-managed-parser-configuration), [Viewing sources](../specs/backend.md#viewing-sources), [Source normalization](../specs/domain-contract.md#viewing-source-normalization), [Entries and revisions](../specs/extension-storage.md#entries-and-revisions).
+
+Code: `apps/extension/entrypoints/content.ts`, `apps/extension/entrypoints/background.ts`, `apps/extension/src/popup/`, `apps/extension/src/library/repository.ts`, `apps/api/src/library/proposals.ts`, `apps/api/src/library/mutation.service.ts`. No parser code exists yet.
+
+Tests: `tests/e2e/extension-storage.spec.ts`, `apps/api/src/library/library.integration.test.ts`.
+
 - [ ] Extract titles and IDs from supported sites.
 - [ ] Safe parser rules without remote code.
 - [ ] Parser configuration, validation and rollback.
@@ -70,6 +83,10 @@ Rules are in [specs](../specs/index.md).
 
 ## 17. Backup and restore
 
+Specs: [BACKUP-01–05](../specs/functionality.md#8-backup-and-restore), [Backup and restore](../specs/backend.md#backup-and-restore), [Schemas and recovery](../specs/extension-storage.md#schemas-and-recovery), [Domain contract](../specs/domain-contract.md).
+
+Code: `apps/api/src/library/`, `apps/extension/src/library/recovery.ts`, `apps/extension/src/library/database.ts`, `packages/library/src/pages/settings-page/`. No backup code exists yet.
+
 - [ ] Export the library to JSON.
 - [ ] Validate imports. Reject unsupported formats.
 - [ ] Preview and conflicts before replacement.
@@ -79,6 +96,10 @@ Rules are in [specs](../specs/index.md).
 
 ## 18. Library sharing
 
+Specs: [Unlisted read-only sharing](../specs/backend.md#unlisted-read-only-sharing).
+
+Code: `apps/api/src/library/`, `apps/api/src/auth/`, `apps/web/src/`. No sharing code exists yet.
+
 - [ ] Private read-only links.
 - [ ] Exclude hidden entries and private data.
 - [ ] Public read-only library page.
@@ -86,6 +107,10 @@ Rules are in [specs](../specs/index.md).
 - [ ] Block private API access through shared links.
 
 ## 19. External list synchronization
+
+Specs: [External list sync](../specs/user-list-sync-spec.md).
+
+Code: `apps/api/src/config/environment.ts`. No sync code exists yet.
 
 - [ ] Provider connections and secure token storage.
 - [ ] Match local and remote entries.
@@ -99,6 +124,10 @@ Rules are in [specs](../specs/index.md).
 
 ## 20. Shikimori synchronization
 
+Specs: [Shikimori](../specs/integration-shikimori-spec.md), [External list sync](../specs/user-list-sync-spec.md).
+
+Code: `apps/api/src/config/environment.ts` (`SHIKIMORI_*`). No adapter code exists yet.
+
 - [ ] Shikimori OAuth.
 - [ ] Import anime lists and statuses.
 - [ ] Match anime with catalog entries.
@@ -109,6 +138,10 @@ Rules are in [specs](../specs/index.md).
 - [ ] Test sync and recovery.
 
 ## 21. Release readiness
+
+Specs: [Release acceptance](../specs/functionality.md#12-release-acceptance) and the Verification section of each feature spec.
+
+Code: `tests/`, `README.md`, `.github/`.
 
 - [ ] Verify all required features.
 - [ ] Run unit, integration and browser tests.

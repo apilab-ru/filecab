@@ -6,6 +6,44 @@
 2. Follow [Conventions](conventions.md) and the repository rules in [AGENTS.md](../AGENTS.md).
 3. Run the relevant checks. Record the actual results in the [checklist](../implementation/requirement-checklist.md).
 
+### Change size
+
+- A bug fix, a refactor or a new test that keeps the documented behavior does not need a spec update or a checklist entry.
+- Update the spec first when a change adds or changes behavior, a public API, a shared model or a database schema.
+- Update the spec first when a change touches three or more files and changes behavior.
+
+### Plan step workflow
+
+Use these steps for any agent or person who delivers a step of the [implementation plan](../implementation/implementation-plan.md).
+
+1. Read the step in the plan. Read the specs, code and tests that its context lists. Search other code only when the list is not sufficient.
+2. Find conflicts between the specs and the open decisions. Ask the owner about each one. Do not resolve them silently.
+3. Update the specs. Then implement the open items of the step.
+4. Run the checks in [Local checks](#local-checks) that apply to the changed code.
+5. Mark the done items in the plan. Record the status and the actual results in the checklist.
+6. Update the context of the step when the specs, code or tests that it needs change.
+
+### Local checks
+
+| Check                      | Command                                      |
+| -------------------------- | -------------------------------------------- |
+| Format and lint            | `pnpm format:check`, or `pnpm format` to fix |
+| Types                      | `pnpm typecheck`                             |
+| Unit tests                 | `pnpm test`                                  |
+| Package boundaries         | `pnpm check:boundaries`                      |
+| Database integration tests | `pnpm test:integration`                      |
+| Browser tests              | `pnpm test:e2e`                              |
+
+Database integration tests need a dedicated PostgreSQL 17 test database. They do not read `apps/api/.env`.
+
+1. Start PostgreSQL with `pnpm db:start`.
+2. Create a test database once, for example `createdb filecab_test`.
+3. Set `DATABASE_URL` to that database and set `NODE_ENV=test` in the shell.
+4. Apply the migrations with `pnpm db:deploy`.
+5. Run `pnpm test:integration`.
+
+Every migration folder in `apps/api/prisma/migrations/` must contain `migration.sql`. An empty folder stops `pnpm db:deploy` with error P3015.
+
 ## Code rules
 
 [AGENTS.md](../AGENTS.md) owns the code, model placement, validation, function, constant,
