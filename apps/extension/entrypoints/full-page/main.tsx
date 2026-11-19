@@ -6,7 +6,6 @@ import { AuthProvider, WorkspaceProvider, ApplicationShell, FullPage } from '@fi
 import { API_ORIGIN } from '../../src/auth/connection';
 import { extensionPreferences } from '../../src/models/interface-preferences';
 import { LocalLibrary } from '../../src/library/components/local-library/local-library';
-import { DeviceSync } from '../../src/library/components/device-sync/device-sync';
 import '../../styles.scss';
 
 const ICON_BASE_URL = new URL('.', browser.runtime.getURL('/icons/library.svg')).href;
@@ -21,7 +20,6 @@ createRoot(document.getElementById('root')!).render(
             iconUrl={LOGO_URL}
             renderLibrary={(category) => <LocalLibrary category={category} />}
           />
-          <DeviceSync registerWorkspace={false} />
         </WorkspaceProvider>
       </ApplicationShell>
     </AuthProvider>

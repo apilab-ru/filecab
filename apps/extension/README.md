@@ -201,8 +201,8 @@ pull pages, absent-master conflicts, reset/quota recovery and account isolation.
 
 A failed sync displays a specific **Code**, operation, HTTP status, safe request
 UUID and RxDB wrapper code when available. Worker/native error wrapping preserves
-these details. Reload the extension after rebuilding, reopen its full page and
-choose **Refresh account library** to retry. Share only those diagnostic fields;
+these details in the Settings sync card. Reload the extension after rebuilding,
+reopen its full page and choose **Sync now** in Settings to retry. Share only those diagnostic fields;
 local entries, private notes, raw responses and tokens are excluded from them.
 The library surface's console logs the same safe metadata under `[Filecab sync]`. It never logs native error objects or saved documents.
 

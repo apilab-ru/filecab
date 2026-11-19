@@ -106,6 +106,10 @@ export interface EntryPatch {
   rating?: number;
   progress?: number;
   comment?: string;
+  /**
+   * The viewing link, at most one. A create can set it. An update can only remove it, with `[]`,
+   * or repeat the current value.
+   */
   sourceUrls?: string[];
 }
 
@@ -203,6 +207,14 @@ export interface GenreMappingConflict {
   provenance: Provenance;
   reason: 'target-missing' | 'mapping-change';
   createdAt: string;
+}
+
+/** Reports how many catalog cache rows an operator cleared. A null provider means all providers. */
+export interface CatalogCacheClearResponse {
+  schemaVersion: 1;
+  provider: string | null;
+  searchPages: number;
+  metadata: number;
 }
 
 /** Summarizes one protected provider genre refresh. */
@@ -355,15 +367,6 @@ export interface MergeEntriesRequest {
   fields: EntryPatch;
 }
 
-/** Selects one source movement and both documents' assumed versions. */
-export interface ReassignSourceRequest {
-  fromId: string;
-  fromVersion: string;
-  toId: string;
-  toVersion: string;
-  normalizedUrl: string;
-}
-
 /** Shows a current server document alongside unsaved proposed intent. */
 export interface LibraryPreviewChange {
   before: ServerEntry;
@@ -378,7 +381,7 @@ export interface LibraryMutationPreview {
   changes: LibraryPreviewChange[];
 }
 
-/** Returns all committed documents affected by a merge or source reassignment. */
+/** Returns all committed documents affected by a merge or catalog association. */
 export interface LibraryMutationResult {
   schemaVersion: 1;
   entries: ServerEntry[];

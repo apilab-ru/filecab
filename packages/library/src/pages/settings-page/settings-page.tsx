@@ -13,7 +13,7 @@ import type { SettingsPageProps } from './model-settings-page';
 export function SettingsPage({ popup }: SettingsPageProps) {
   const { t } = useTranslation();
   const { locale, theme, setLocale, setTheme } = useInterfacePreferences();
-  const { syncSettings } = useSyncSettings();
+  const { syncSettings, setSyncPanel } = useSyncSettings();
 
   return (
     <div className="settings-content">
@@ -47,6 +47,7 @@ export function SettingsPage({ popup }: SettingsPageProps) {
           <p className="settings-sync__message" role="status">
             {syncSettings?.message ?? t('syncSignIn')}
           </p>
+          <div className="settings-sync__panel" ref={setSyncPanel} />
         </div>
       </section>
       <section className="settings-card">

@@ -39,6 +39,10 @@ export interface WorkspaceRepository {
     other: WorkspaceRow | undefined,
     fields: EntryPatch,
   ): Promise<WorkspacePreview>;
+  /** Deletes the row and returns its tombstone, which carries the version that Undo needs. */
+  remove(row: WorkspaceRow): Promise<WorkspaceRow>;
+  /** Restores a tombstone that `remove` returned. */
+  restore(tombstone: WorkspaceRow): Promise<void>;
   refresh(): Promise<void>;
 }
 
@@ -58,6 +62,15 @@ export interface WorkspaceDraft {
   other?: WorkspaceRow;
 }
 
+/** Keeps one deletion that the owner can undo until `until`. */
+export interface WorkspaceDeletion {
+  tombstone: WorkspaceRow;
+  title: string;
+  until: number;
+}
+
+export const UNDO_PERIOD = 10_000;
+
 /** Connects catalog screens, platform adapters and the persistent shared editor. */
 export interface WorkspaceContextValue {
   origin: string;
@@ -69,6 +82,10 @@ export interface WorkspaceContextValue {
   open(category: Category, row?: WorkspaceRow, catalog?: CatalogRecord, other?: WorkspaceRow): void;
   close(id?: string): void;
   rebase(): void;
+  deletions: WorkspaceDeletion[];
+  notice: '' | 'deleteFailed' | 'undoFailed';
+  remove(row: WorkspaceRow): Promise<void>;
+  undo(deletion: WorkspaceDeletion): Promise<void>;
 }
 
 export const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);

@@ -65,7 +65,7 @@ describe('catalog association intent', () => {
     expect(manual.catalogId).toBeNull();
   });
 
-  it('keeps the manual UUID and chosen donor fields and combines sources without mutation', () => {
+  it('keeps the manual UUID, chosen donor fields and the survivor link without mutation', () => {
     const manual = entry('manual');
     const donor = { ...entry('donor', catalog.catalogId), comment: 'Other notes' };
     const result = associateCatalog(manual, catalog, donor, { comment: donor.comment, rating: 0 });
@@ -75,7 +75,7 @@ describe('catalog association intent', () => {
       createdAt: manual.createdAt,
       comment: 'Other notes',
       rating: 0,
-      sources: [...manual.sources, ...donor.sources],
+      sources: manual.sources,
     });
     expect(result[1]).toEqual({ ...donor, deleted: true });
     expect(donor.deleted).toBe(false);
@@ -121,5 +121,12 @@ describe('catalog association intent', () => {
     const [result] = associateCatalog(manual, catalog, donor);
 
     expect(result.sources).toEqual(manual.sources);
+  });
+
+  it('gives a survivor without a link the donor link', () => {
+    const donor = entry('donor', catalog.catalogId);
+    const [result] = associateCatalog({ ...entry('manual'), sources: [] }, catalog, donor);
+
+    expect(result.sources).toEqual(donor.sources);
   });
 });

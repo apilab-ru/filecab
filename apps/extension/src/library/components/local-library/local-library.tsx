@@ -8,25 +8,24 @@ import type { LibraryContentProps } from '@filecab/library';
 import { useWorkspace } from '@filecab/library';
 import { localWorkspaceRepository } from '../../workspace-repository';
 import { useEffect, useMemo } from 'react';
-import { FAILURE_MESSAGES } from '../../models/failure-messages';
-import { LocalLibraryError, LocalLibraryRepository } from '../../repository';
+import { LocalLibraryRepository } from '../../repository';
 import type { LocalSnapshot } from '../../models/local-snapshot';
 import { exportRawLibrary } from '../../recovery';
 import { downloadJsonFile } from './download-json-file';
+import { SyncControls } from '../sync-controls/sync-controls';
 
 /** Keeps the same durable device library and editor visible across authentication changes. */
 export function LocalLibrary({ category }: LibraryContentProps) {
   const { t } = useTranslation();
   const workspace = useWorkspace();
   const [
-    { attempt, repository, snapshot, failed, message, now },
+    { attempt, repository, snapshot, failed, message },
     {
       attempt: setAttempt,
       repository: setRepository,
       snapshot: setSnapshot,
       failed: setFailed,
       message: setMessage,
-      now: setNow,
     },
   ] = useLocalStore(() => ({
     attempt: 0,
@@ -34,7 +33,6 @@ export function LocalLibrary({ category }: LibraryContentProps) {
     snapshot: null as LocalSnapshot | null,
     failed: false,
     message: '',
-    now: Date.now(),
   }));
 
   useEffect(() => {
@@ -78,12 +76,6 @@ export function LocalLibrary({ category }: LibraryContentProps) {
     };
   }, [attempt]);
 
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 250);
-
-    return () => clearInterval(timer);
-  }, []);
-
   const adapter = useMemo(
     () => (repository ? localWorkspaceRepository(repository) : null),
     [repository],
@@ -98,19 +90,6 @@ export function LocalLibrary({ category }: LibraryContentProps) {
       repository: failed ? null : adapter,
     });
   }, [snapshot, adapter, failed, workspace.register]);
-
-  const run = async (action: () => Promise<unknown>) => {
-    try {
-      await action();
-      setMessage('Saved on this device.');
-    } catch (error) {
-      setMessage(
-        error instanceof LocalLibraryError
-          ? FAILURE_MESSAGES[error.code]
-          : 'Local save failed. Existing data has been preserved.',
-      );
-    }
-  };
 
   const exportLibraryToFile = async () => {
     try {
@@ -145,44 +124,10 @@ export function LocalLibrary({ category }: LibraryContentProps) {
       {!failed && snapshot && repository && (
         <>
           <div className="local-library__browser">
-            <LibraryBrowser
-              category={category}
-              key={category}
-              entries={snapshot.rows.map((row) => row.entry)}
-              onAdd={() => workspace.open(category)}
-              onEdit={(entry) => {
-                const row = snapshot.rows.find((row) => row.entryId === entry.entryId);
-
-                if (row)
-                  workspace.open(category, {
-                    entry: row.entry,
-                    version: String(row.localRevision),
-                  });
-              }}
-              onDelete={(entry) => {
-                const row = snapshot.rows.find((row) => row.entryId === entry.entryId);
-
-                if (row) void run(() => repository.delete(row.entryId, row.localRevision));
-              }}
-            />
+            <LibraryBrowser category={category} key={category} />
           </div>
-          {snapshot.rows
-            .filter((row) => row.entry.deleted && row.undoUntil && row.undoUntil > now)
-            .map((row) => (
-              <div className="local-library__undo" key={row.entryId}>
-                <span>
-                  {t('Deleted')} {row.undoBefore?.userTitle}
-                </span>
-                <button
-                  className="local-library__button"
-                  onClick={() => {
-                    void run(() => repository.undo(row.entryId, row.localRevision));
-                  }}
-                >
-                  {t('Undo')}
-                </button>
-              </div>
-            ))}
+          {/* Replication runs here; its visible section renders in the Settings sync card. */}
+          <SyncControls repository={repository} snapshot={snapshot} />
         </>
       )}
       {message && (

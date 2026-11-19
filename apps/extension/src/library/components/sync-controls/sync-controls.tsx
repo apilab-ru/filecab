@@ -3,6 +3,7 @@ import '../../styles/library-controls-shared.scss';
 import './sync-controls.scss';
 
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocalStore, useSyncSettings } from '@filecab/library';
 import { ApiErrorCode, SyncErrorCode, type AccountInfo } from '@filecab/contracts';
 import { browser } from 'wxt/browser';
@@ -52,7 +53,7 @@ function requestSyncRefresh() {
 export function SyncControls({ repository, snapshot }: SyncControlsProps) {
   const { t } = useTranslation();
   const { locale } = useInterfacePreferences();
-  const { setSyncSettings } = useSyncSettings();
+  const { setSyncSettings, syncPanel } = useSyncSettings();
   const database = repository.database;
   const [
     {
@@ -246,8 +247,8 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
       defaultValue: synchronizationMessage(binding, own, status),
     });
 
-    if (!account) descriptionText = t('syncSignIn');
-    else if (!binding) descriptionText = t('syncLinkFirst');
+    // A linked device keeps its specific paused message; only an unlinked device needs a next step.
+    if (!binding) descriptionText = account ? t('syncLinkFirst') : t('syncSignIn');
 
     setSyncSettings({
       enabled: !!account && own && binding?.phase === 'linked',
@@ -273,13 +274,8 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
     t,
   ]);
 
-  return (
+  const section = (
     <section className="library-sync" aria-label={t('Account synchronization')}>
-      <p className="local-library__message" role="status">
-        {t(synchronizationMessage(binding, own, status), {
-          defaultValue: synchronizationMessage(binding, own, status),
-        })}
-      </p>
       {binding && own && status.phase === 'failed' && status.diagnostic && (
         <p className="library-sync__diagnostic">
           {t('Code:')} {status.diagnostic.code}
@@ -333,11 +329,6 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
             {t('Cancel link')}
           </button>
         </div>
-      )}
-      {binding && own && binding.phase === 'linked' && (
-        <button className="local-library__button" onClick={requestSyncRefresh}>
-          {t('Refresh account library')}
-        </button>
       )}
       {binding && own && binding.phase !== 'linked' && (
         <div className="library-sync__recovery">
@@ -417,6 +408,12 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
           {t(message, { defaultValue: message })}
         </p>
       )}
+    </section>
+  );
+
+  return (
+    <>
+      {syncPanel && createPortal(section, syncPanel)}
       <ConfirmDialog
         open={rejectionOpen}
         onOpenChange={setRejectionOpen}
@@ -537,6 +534,6 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
           {t('Decide later')}
         </Button>
       </ConfirmDialog>
-    </section>
+    </>
   );
 }

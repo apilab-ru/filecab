@@ -5,6 +5,9 @@ import type { SyncSettings } from './sync-settings';
 export interface SyncSettingsContextValue {
   syncSettings: SyncSettings | null;
   setSyncSettings: (settings: SyncSettings | null) => void;
+  /** The Settings element where a client adapter renders its own synchronization controls. */
+  syncPanel: HTMLElement | null;
+  setSyncPanel: (element: HTMLElement | null) => void;
 }
 
 export const SyncSettingsContext = createContext<SyncSettingsContextValue | null>(null);

@@ -4,11 +4,10 @@ import { localWorkspaceRepository } from '../../workspace-repository';
 import { useEffect, useMemo } from 'react';
 import { LocalLibraryRepository } from '../../repository';
 import type { DeviceSyncState } from './model-device-sync';
-import type { DeviceSyncProps } from './model-device-sync';
 import { SyncControls } from '../sync-controls/sync-controls';
 
-/** Keeps device replication and Settings status active without rendering a popup library page. */
-export function DeviceSync({ registerWorkspace = true }: DeviceSyncProps) {
+/** Keeps popup replication and Settings status active without rendering a library page. */
+export function DeviceSync() {
   const workspace = useWorkspace();
   const [{ state }, { state: setState }] = useLocalStore(() => ({
     state: null as DeviceSyncState | null,
@@ -49,8 +48,6 @@ export function DeviceSync({ registerWorkspace = true }: DeviceSyncProps) {
     [state?.repository],
   );
   useEffect(() => {
-    if (!registerWorkspace) return;
-
     workspace.register({
       scope: 'device',
       rows:
@@ -59,7 +56,7 @@ export function DeviceSync({ registerWorkspace = true }: DeviceSyncProps) {
           .map((row) => ({ entry: row.entry, version: String(row.localRevision) })) ?? [],
       repository: adapter,
     });
-  }, [state, adapter, registerWorkspace, workspace.register]);
+  }, [state, adapter, workspace.register]);
 
   return (
     <div hidden>

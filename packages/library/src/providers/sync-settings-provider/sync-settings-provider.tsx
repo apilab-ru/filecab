@@ -23,6 +23,7 @@ function readSyncSettings(): SyncSettings | null {
 /** Persists synchronization status while retaining refresh actions only in memory. */
 export function SyncSettingsProvider({ children }: PropsWithChildren) {
   const [syncSettings, updateSettings] = useState(readSyncSettings);
+  const [syncPanel, setSyncPanel] = useState<HTMLElement | null>(null);
   const setSyncSettings = useCallback((settings: SyncSettings | null) => {
     updateSettings(settings);
     try {
@@ -36,7 +37,10 @@ export function SyncSettingsProvider({ children }: PropsWithChildren) {
       // Live controls remain usable when browser storage is unavailable.
     }
   }, []);
-  const value = useMemo(() => ({ syncSettings, setSyncSettings }), [syncSettings, setSyncSettings]);
+  const value = useMemo(
+    () => ({ syncSettings, setSyncSettings, syncPanel, setSyncPanel }),
+    [syncSettings, setSyncSettings, syncPanel],
+  );
 
   return <SyncSettingsContext.Provider value={value}>{children}</SyncSettingsContext.Provider>;
 }

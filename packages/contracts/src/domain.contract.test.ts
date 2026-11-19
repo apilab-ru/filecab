@@ -213,10 +213,8 @@ describe('user edit semantics', () => {
     expect(progressExceedsTotal(3, null)).toBe(false);
   });
 
-  test('semantic comparison ignores metadata and key order, but retains source order and original text changes', () => {
-    const before = previewEntryPatch(entry(), {
-      sourceUrls: ['https://EXAMPLE.com/one', 'https://example.com/two'],
-    });
+  test('semantic comparison ignores metadata and key order, but retains original link text changes', () => {
+    const before = previewEntryPatch(entry(), { sourceUrls: ['https://EXAMPLE.com/one'] });
     const reorderedKeys = {
       ...before,
       sources: before.sources.map((source) => ({
@@ -226,15 +224,10 @@ describe('user edit semantics', () => {
       })),
     };
     expect(hasSemanticChange(before, reorderedKeys)).toBe(false);
-    expect(hasSemanticChange(before, { ...before, sources: [...before.sources].reverse() })).toBe(
-      true,
-    );
     expect(
       hasSemanticChange(
         before,
-        previewEntryPatch(before, {
-          sourceUrls: ['https://example.com/one', 'https://example.com/two'],
-        }),
+        previewEntryPatch(before, { sourceUrls: ['https://example.com/one'] }),
       ),
     ).toBe(true);
     expect(

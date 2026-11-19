@@ -52,18 +52,12 @@ function keepsProtectedFields(fields: EntryPatch): boolean {
   return fields.category === undefined && fields.sourceUrls === undefined;
 }
 
-/** Appends sources with unseen normalized URLs and keeps the first occurrence order. */
-function mergeSources(primary: Source[], secondary: Source[]): Source[] {
-  return secondary.reduce(
-    (sources, source) =>
-      sources.some((known) => known.normalizedUrl === source.normalizedUrl)
-        ? sources
-        : [...sources, source],
-    primary,
-  );
+/** Keeps the survivor's link. A survivor without a link takes the donor's link. */
+function keepOneSource(primary: Source[], secondary: Source[]): Source[] {
+  return primary.length ? primary.slice(0, 1) : secondary.slice(0, 1);
 }
 
-/** Prepares a reviewed association while preserving the survivor identity and source order. */
+/** Prepares a reviewed association while preserving the survivor identity and its link. */
 export function associateCatalog(
   entry: Entry,
   catalog: CatalogRecord,
@@ -83,7 +77,7 @@ export function associateCatalog(
     ...previewEntryPatch(entry, fields),
     catalogId: catalog.catalogId,
     snapshot: snapshots.reduce(mergeCatalogSnapshots),
-    sources: mergeSources(entry.sources, other?.sources ?? []),
+    sources: keepOneSource(entry.sources, other?.sources ?? []),
   };
 
   return other ? [survivor, { ...other, deleted: true }] : [survivor];
