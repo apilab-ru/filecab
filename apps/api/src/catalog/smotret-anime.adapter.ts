@@ -76,6 +76,7 @@ const SMOTRET_FIELDS = [
   'posterUrlSmall',
   'titles',
   'links',
+  'genres',
 ].join(',');
 
 interface ProviderFailure {
@@ -299,7 +300,7 @@ function normalizeSeries(
         series.year !== undefined && Number.isSafeInteger(series.year) && series.year > 0
           ? series.year
           : null,
-      genres: detailed ? genres : [],
+      genres,
       format: formatFor(series.type),
       episodeCount:
         series.numberOfEpisodes !== undefined &&

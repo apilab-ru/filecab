@@ -79,6 +79,16 @@ For unsaved results, show an approximate provider rating on a 10-point scale:
 
 If no score is available, show Unrated. Never save a provider score as a personal rating.
 
+### Genres and details
+
+- Show genre icons in a row at the bottom of the poster. Use the genre icon font. Show an icon only for a genre key that has a glyph.
+- Give each icon the localized genre name as its accessible name and tooltip.
+- In library mode, a click on a genre applies the genre filter.
+- Put a Details button at the bottom right of the poster. It opens an overlay on the poster. The card size does not change.
+- The overlay shows the description. If there is no description, it shows the comment, marked as a personal note. If there is no comment, it shows a localized empty text.
+- The overlay also shows all genre names and the viewing links. Open a link in a new tab with `noopener noreferrer`. Show a link only for HTTP and HTTPS.
+- List mode does not show genre icons or the Details button.
+
 ### Grid dimensions
 
 Use the light grid mockup as the size reference.
@@ -146,3 +156,8 @@ Do not show an exact page count when the total is unknown.
 - Hide skeleton shapes from assistive technology. Keep the loading status announcement.
 - Disable skeleton animation when the user requests reduced motion.
 - Remove skeletons on success, failure or offline state.
+
+## Toast messages
+
+- Show a maximum of three toast messages at one time. Include error messages in this limit.
+- When a new message exceeds the limit, remove the oldest message.

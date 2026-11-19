@@ -79,18 +79,7 @@ export function OnlineLibrary({ category }: LibraryContentProps) {
 
   return (
     <>
-      <LibraryBrowser
-        category={category}
-        key={`${account.data?.ownerId ?? 'guest'}:${category}`}
-        entries={library.data?.entries ?? []}
-        available={!!library.data}
-        onAdd={library.data ? () => workspace.open(category) : undefined}
-        onEdit={
-          library.data
-            ? (entry) => workspace.open(category, { entry, version: entry.serverVersion! })
-            : undefined
-        }
-      />
+      <LibraryBrowser category={category} key={`${account.data?.ownerId ?? 'guest'}:${category}`} />
       {!account.data && !account.isPending && (
         <p className="online-library__message">{t('signInLibrary')}</p>
       )}

@@ -87,6 +87,8 @@ never gives a total. A provider series is not automatically an anime season from
 ### Genres
 
 - Genre names are case-normalized provider identities. Remove duplicates in each snapshot.
+- Map genres through `GenreMapping` with the namespace `kinopoisk` and the lowercase name as the external ID.
+- Ignore `церемония`. It is a broadcast format, not a genre.
 - Use Russian labels for verified dictionary names. New labels have an unknown language.
 - Dictionary slugs and detail slugs are different. Do not use them as a crosswalk.
 - Genre filtering stays unavailable until internal mappings are verified.

@@ -98,12 +98,15 @@ automatic installment grouping are not in scope.
 ### Genres
 
 - Use stable internal IDs, localized labels and explicit provider mappings. Equal labels are not enough.
-- Keep unknown genres and source data. Do not reject the record.
-- Library filters use internal IDs. Adapters use only verified mappings.
+- An unknown genre does not reject the record.
+- Library filters use internal IDs.
+- Before you store a catalog snapshot, replace each provider genre with its internal genre from `GenreMapping`. Use verified and unverified mappings. Operator review can correct a mapping.
+- A provider can ignore genre IDs that do not describe a genre. A provider can also convert a subgenre ID to a main genre ID. Keep these rules in the server code.
+- Remove an unmapped provider genre from the snapshot. Report it to Sentry one time for each process. The event names the provider and lists the external IDs and labels of all its new unmapped genres.
 - An unknown provider genre gets a provider-scoped internal candidate and an unverified mapping.
 - A trusted adapter can supply a canonical key only from its curated server-side crosswalk. Never take it from provider text.
 - Keep contradictory canonical keys as review conflicts. Do not replace the existing mapping.
-- Refresh and conflict review require an account in `CATALOG_OPERATOR_ACCOUNT_IDS`. The default list is empty.
+- Refresh and conflict review require an account in `CATALOG_OPERATOR_ACCOUNT_IDS`. The default list is empty. When `NODE_ENV` is `development`, catalog administration routes do not require sign-in.
 - Public genre reads are read-only. They can return genres whose mappings still need review.
 - Limit response size, item count, elapsed time, concurrency, retries and Retry-After waits by configuration. Return a structured error when a budget is exhausted.
 
@@ -130,6 +133,9 @@ page size, page and adapter schema version. Any change of input gives a separate
 - A failed refresh can return an expired page only with a stale marker and the cache time.
 - Never use stale data to hide an empty result or an explicit removal.
 - Exclude private fields.
+- Store the provider with each search page and metadata row.
+- `DELETE /api/v1/catalog/admin/cache` removes the search pages and metadata of all providers. The optional `provider` query (`smotret` or `kinopoisk`) removes only that provider. An unknown provider gives a validation error.
+- Only an account in `CATALOG_OPERATOR_ACCOUNT_IDS` can clear the cache. A clear does not change catalog identities or owner libraries.
 
 ### API boundaries
 

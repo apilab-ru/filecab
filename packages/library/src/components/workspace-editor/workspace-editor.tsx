@@ -1,6 +1,12 @@
-import { useCallback, useContext, useLayoutEffect, useRef } from 'react';
+import { useCallback, useContext, useId, useLayoutEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Category, Status, titleFor, type EntryPatch } from '@filecab/contracts';
+import {
+  Category,
+  Status,
+  progressExceedsTotal,
+  titleFor,
+  type EntryPatch,
+} from '@filecab/contracts';
 import { Button, ConfirmDialog } from '@filecab/ui';
 import { useTranslation } from 'react-i18next';
 import { useWorkspace } from '../../hooks/use-workspace';
@@ -9,7 +15,12 @@ import { useLocalStore } from '../../hooks/use-local-store';
 import { Context } from '../../models/interface-context';
 import { WorkspaceConflictError, type WorkspacePreview } from '../../models/workspace';
 import { retainedFields } from '../../domain/catalog-selection';
-import { MERGE_FIELD_LABELS, type WorkspaceEditorProps } from './model-workspace-editor';
+import { isViewingUrl, sourceLines } from '../../domain/entry-form';
+import {
+  MERGE_FIELD_LABELS,
+  RATING_VALUES,
+  type WorkspaceEditorProps,
+} from './model-workspace-editor';
 import './workspace-editor.scss';
 
 /** Edits catalog and manual drafts with version-bound previews and recoverable failures. */
@@ -22,6 +33,9 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
   const navigate = useNavigate();
   const { setDirty } = useContext(Context);
   const form = useRef<HTMLFormElement>(null);
+  const titleInput = useRef<HTMLInputElement>(null);
+  const sourcesInput = useRef<HTMLTextAreaElement>(null);
+  const progressHint = useId();
   const locked = useRef(false);
   const entry = draft.row?.entry;
   const [values, setters] = useLocalStore(() => ({
@@ -58,10 +72,7 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
       const fields: EntryPatch = {
         ...values.fields,
         category: values.category,
-        sourceUrls: values.sources
-          .split('\n')
-          .map((line) => line.trim())
-          .filter(Boolean),
+        sourceUrls: sourceLines(values.sources),
       };
 
       if (association && draft.row && draft.catalog) {
@@ -105,6 +116,36 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
     }
   };
   saveRef.current = save;
+  const titleRequired = !draft.catalog && !entry?.catalogId;
+  const total = (entry?.snapshot ?? draft.catalog?.snapshot)?.episodeCount || null;
+  const progressAbove = progressExceedsTotal(values.fields.progress, total);
+  useLayoutEffect(() => {
+    titleInput.current?.setCustomValidity(
+      titleRequired && !values.fields.userTitle.trim() ? t('blankTitle') : '',
+    );
+    sourcesInput.current?.setCustomValidity(
+      sourceLines(values.sources).every(isViewingUrl) ? '' : t('invalidSourceUrls'),
+    );
+  });
+  /** Discards the draft fields and loads the latest saved version of the entry. */
+  const reload = () => {
+    const latest = state.rows.find(({ entry: row }) => row.entryId === entry?.entryId);
+
+    if (!latest) {
+      close();
+
+      return;
+    }
+
+    rebase();
+    setters.fields(retainedFields(latest.entry));
+    setters.category(latest.entry.category);
+    setters.sources(latest.entry.sources.map(({ originalUrl }) => originalUrl).join('\n'));
+    setters.dirty(false);
+    setters.preview(null);
+    setters.error('');
+    setters.conflict(false);
+  };
   useLayoutEffect(() => {
     setDirty(values.dirty ? { save: () => saveRef.current(), discard: close } : null);
 
@@ -147,9 +188,10 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
           <label className="workspace-editor__field">
             {t('Title')}
             <input
+              ref={titleInput}
               className="workspace-editor__input"
               name="title"
-              required={!draft.catalog && !entry?.catalogId}
+              required={titleRequired}
               maxLength={10000}
               value={values.fields.userTitle}
               onChange={(event) => change({ userTitle: event.target.value })}
@@ -193,15 +235,19 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
           </label>
           <label className="workspace-editor__field">
             {t('Rating')}
-            <input
+            <select
               className="workspace-editor__input"
-              type="number"
-              min={0}
-              max={10}
-              step={1}
+              aria-label={t('Rating')}
               value={values.fields.rating}
               onChange={(event) => change({ rating: Number(event.target.value) })}
-            />
+            >
+              <option value={0}>{t('unrated')}</option>
+              {RATING_VALUES.map((rating) => (
+                <option key={rating} value={rating}>
+                  {rating}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="workspace-editor__field">
             {t('Progress')}
@@ -211,10 +257,20 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
               min={0}
               max={Number.MAX_SAFE_INTEGER}
               step={1}
+              aria-describedby={progressHint}
               value={values.fields.progress}
               onChange={(event) => change({ progress: Number(event.target.value) })}
             />
           </label>
+          <p
+            id={progressHint}
+            className={`workspace-editor__hint${progressAbove ? ' workspace-editor__hint--warning' : ''}`}
+            role={progressAbove ? 'status' : undefined}
+          >
+            {total === null && t('episodeTotalUnknown')}
+            {total !== null && !progressAbove && t('episodeTotal', { total })}
+            {total !== null && progressAbove && t('progressAboveTotal', { total })}
+          </p>
           <label className="workspace-editor__field">
             {t('Comment')}
             <textarea
@@ -228,6 +284,7 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
           <label className="workspace-editor__field">
             {t('Viewing URLs (one per line)')}
             <textarea
+              ref={sourcesInput}
               className="workspace-editor__input"
               aria-label={t('Viewing URLs (one per line)')}
               disabled={association}
@@ -297,10 +354,18 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
               ))}
             </section>
           )}
-          {values.error && (
+          {values.error && !(draft.row && values.conflict) && (
             <p className="workspace-editor__error" role="alert">
               {t(values.error, { defaultValue: values.error })}
-              {draft.row && values.conflict && (
+            </p>
+          )}
+          {draft.row && values.conflict && (
+            <section className="workspace-editor__conflict" role="alert">
+              <p className="workspace-editor__error">{t('entryConflict')}</p>
+              <div className="workspace-editor__actions">
+                <Button type="button" onClick={reload}>
+                  {t('Reload entry')}
+                </Button>
                 <Button
                   type="button"
                   onClick={() => {
@@ -312,11 +377,14 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
                 >
                   {t('catalogRebase')}
                 </Button>
-              )}
-            </p>
+              </div>
+            </section>
           )}
           <div className="workspace-editor__actions">
-            <Button type="submit" disabled={values.busy || !state.repository}>
+            <Button
+              type="submit"
+              disabled={values.busy || !values.dirty || values.conflict || !state.repository}
+            >
               {t(values.preview ? 'catalogConfirm' : 'save')}
             </Button>
             <Button type="button" disabled={values.busy} onClick={cancel}>

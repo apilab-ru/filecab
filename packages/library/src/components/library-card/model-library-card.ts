@@ -10,6 +10,7 @@ export interface LibraryCardProps {
   alert?: string;
   edit?: () => void;
   remove?: () => void;
+  onGenre?: (genreId: string) => void;
 }
 
 /** Defines a card menu action for saved entries or catalog results. */

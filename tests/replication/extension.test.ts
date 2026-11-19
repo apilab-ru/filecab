@@ -12,6 +12,7 @@ import {
   verifierChallenge,
 } from '../../apps/api/src/auth/credentials';
 import { LibraryMutationService } from '../../apps/api/src/library/mutation.service';
+import { cardAction } from '../e2e/fixtures/library';
 
 /** Verifies the production Chrome worker and native RxDB adapter against real authenticated PostgreSQL APIs. */
 test('explicit linking, offline conflict recovery and delete/Undo converge through the real API', async () => {
@@ -101,10 +102,11 @@ test('explicit linking, offline conflict recovery and delete/Undo converge throu
       { tokens, origin: await app.getUrl() },
     );
     const page = await context.newPage();
-    await page.goto(`chrome-extension://${extensionId}/full-page.html`);
+    await page.goto(`chrome-extension://${extensionId}/full-page.html#/library/anime`);
     await page.getByRole('button', { name: 'Add manual entry' }).click();
     await page.getByLabel('Title', { exact: true }).fill('Real replicated manual entry');
-    await page.getByRole('button', { name: 'Save locally' }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
     const mutations = app.get(LibraryMutationService);
     expect((await mutations.snapshot(tokens.ownerId)).entries).toEqual([]);
     await page.getByRole('button', { name: 'Preview account link' }).click();
@@ -117,14 +119,16 @@ test('explicit linking, offline conflict recovery and delete/Undo converge throu
       .toBe(true);
     const entry = (await mutations.snapshot(tokens.ownerId)).entries[0];
     await context.setOffline(true);
-    await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    await page.getByRole('button', { name: 'Library', exact: true }).click();
+    await cardAction(page, 'Edit');
     await page.getByLabel('Comment').fill('offline rejected intent');
-    await page.getByRole('button', { name: 'Save locally' }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
     const remote = await mutations.update(tokens.ownerId, entry.entryId, entry.serverVersion, {
       comment: 'committed on the server',
     });
     await context.setOffline(false);
-    await page.getByRole('button', { name: 'Refresh account library' }).click();
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
+    await page.getByRole('button', { name: 'Sync now', exact: true }).click();
     await expect.poll(async () => page.locator('.library-sync__summary').count()).toBe(1);
     expect((await mutations.get(tokens.ownerId, entry.entryId)).comment).toBe(remote.comment);
     await page.locator('.library-sync__summary').click();
@@ -138,7 +142,8 @@ test('explicit linking, offline conflict recovery and delete/Undo converge throu
     await expect
       .poll(async () => page.getByText('Account synchronization is up to date.').isVisible())
       .toBe(true);
-    await page.getByRole('button', { name: 'Delete', exact: true }).click();
+    await page.getByRole('button', { name: 'Library', exact: true }).click();
+    await cardAction(page, 'Delete');
     await expect
       .poll(async () => (await mutations.snapshot(tokens.ownerId)).entries.length)
       .toBe(0);

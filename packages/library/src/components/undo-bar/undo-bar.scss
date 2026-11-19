@@ -1,0 +1,40 @@
+.undo-bar {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: var(--fc-layer-popup);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+
+  @media (max-width: 600px) {
+    right: 16px;
+    bottom: 16px;
+  }
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--fc-border);
+    border-radius: var(--fc-radius);
+    background: var(--fc-surface);
+    color: var(--fc-text);
+    box-shadow: 0 6px 20px rgb(0 0 0 / 25%);
+
+    &--error {
+      color: var(--fc-danger);
+    }
+  }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

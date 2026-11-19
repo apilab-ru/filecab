@@ -19,6 +19,9 @@ import { CatalogGenreAdminController } from './catalog/catalog-genre-admin.contr
 import { CatalogGenreService } from './catalog/catalog-genre.service';
 import { SmotretAnimeAdapter } from './catalog/smotret-anime.adapter';
 import { KinopoiskDevAdapter } from './catalog/kinopoisk-dev.adapter';
+import { CatalogGenreResolver } from './catalog/catalog-genre-resolver';
+import { CatalogCacheAdminController } from './catalog/catalog-cache-admin.controller';
+import { CatalogOperatorGuard } from './catalog/catalog-operator';
 
 @Module({})
 export class AppModule {
@@ -36,6 +39,7 @@ export class AppModule {
         ReplicationController,
         CatalogController,
         CatalogGenreAdminController,
+        CatalogCacheAdminController,
       ],
       providers: [
         { provide: AUTH_ENVIRONMENT, useValue: environment },
@@ -45,6 +49,7 @@ export class AppModule {
         },
         AuthService,
         AuthGuard,
+        CatalogOperatorGuard,
         LibraryInputGuard,
         {
           provide: CatalogCacheService,
@@ -90,7 +95,8 @@ export class AppModule {
         {
           provide: CatalogIdentityService,
           inject: [AuthService],
-          useFactory: (auth: AuthService) => new CatalogIdentityService(auth.database),
+          useFactory: (auth: AuthService) =>
+            new CatalogIdentityService(auth.database, new CatalogGenreResolver(auth.database)),
         },
         {
           provide: LibraryMutationService,

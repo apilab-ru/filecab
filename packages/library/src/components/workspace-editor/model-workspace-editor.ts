@@ -12,3 +12,5 @@ export const MERGE_FIELD_LABELS = {
   progress: 'Progress',
   comment: 'Comment',
 } as const;
+
+export const RATING_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];

@@ -33,6 +33,9 @@ export function configureApiApplication(
   diagnostic: (record: RequestDiagnostic) => void,
 ): void {
   const origins = new Set([...environment.websiteOrigins, ...environment.extensionOrigins]);
+  // Local development accepts any origin, so that Swagger, local tools and other ports work.
+  const anyOrigin = environment.mode === 'development';
+  const trusted = (origin: string) => anyOrigin || origins.has(origin);
   app.disable('x-powered-by');
   app.set('trust proxy', environment.mode === 'production' ? 'loopback' : false);
   app.setGlobalPrefix('api/v1');
@@ -71,16 +74,17 @@ export function configureApiApplication(
 
     const origin = request.get('origin');
 
-    if (origin && !origins.has(origin))
+    if (origin && !trusted(origin))
       return sendApiError(
         new ApiException(403, ApiErrorCode.Forbidden, 'Origin is not allowed'),
         response,
       );
 
     if (
+      !anyOrigin &&
       isUnsafe(request) &&
       request.headers.cookie &&
-      (!origin || !origins.has(origin) || request.get('x-filecab-request') !== '1')
+      (!origin || !trusted(origin) || request.get('x-filecab-request') !== '1')
     )
       return sendApiError(
         new ApiException(
@@ -105,7 +109,7 @@ export function configureApiApplication(
     next();
   });
   app.enableCors({
-    origin: [...origins],
+    origin: anyOrigin ? true : [...origins],
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Filecab-Request', 'X-Filecab-Owner'],
@@ -122,7 +126,7 @@ export function configureApiApplication(
       .setTitle('Filecab API')
       .setVersion('1')
       .setDescription(
-        'Versioned API. Health endpoints are anonymous. Owner endpoints require a bearer access token or an HttpOnly session cookie. Unsafe cookie requests also require an exact allowlisted Origin and X-Filecab-Request: 1; Authorization does not bypass cookie CSRF checks. Explicit null clears only fields documented as nullable; omitted fields retain their value. All errors use the common envelope and all responses carry a server-generated X-Correlation-ID. Google login and session endpoints are available; library routes follow in the next step.',
+        'Versioned API. Health endpoints are anonymous. Owner endpoints require a bearer access token or an HttpOnly session cookie. Unsafe cookie requests also require an exact allowlisted Origin and X-Filecab-Request: 1; Authorization does not bypass cookie CSRF checks. In development (NODE_ENV=development) the API accepts any Origin, skips the cookie CSRF check and opens catalog administration routes without sign-in. Explicit null clears only fields documented as nullable; omitted fields retain their value. All errors use the common envelope and all responses carry a server-generated X-Correlation-ID. Google login and session endpoints are available; library routes follow in the next step.',
       )
       .addBearerAuth({
         type: 'http',

@@ -157,6 +157,27 @@ export function onlineWorkspaceRepository(ownerId: string): WorkspaceRepository 
         },
       };
     },
+    async remove(row) {
+      const tombstone = await mutate(() =>
+        ownerRequest<ServerEntry>(
+          ownerId,
+          `/entries/${row.entry.entryId}`,
+          { expectedVersion: row.version },
+          'DELETE',
+        ),
+      );
+      accept([tombstone]);
+
+      return { entry: tombstone, version: tombstone.serverVersion };
+    },
+    async restore(tombstone) {
+      const restored = await mutate(() =>
+        ownerRequest<ServerEntry>(ownerId, `/entries/${tombstone.entry.entryId}/restore`, {
+          expectedVersion: tombstone.version,
+        }),
+      );
+      accept([restored]);
+    },
     refresh,
   };
 }

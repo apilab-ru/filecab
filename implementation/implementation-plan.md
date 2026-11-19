@@ -25,11 +25,14 @@ Rules are in [specs](../specs/index.md).
 - [x] Search, filters, sorting and pagination.
 - [x] Store user preferences.
 - [x] Match the dark mockup and verify layouts at 732 px height.
-- [ ] Connect website and extension data to the shared screens.
-- [ ] Complete entry editors and manual creation.
-- [ ] Show cards with metadata, progress and ratings.
-- [ ] Add Undo and conflict dialogs.
-- [ ] Test website and extension workflows.
+- [x] Connect website and extension data to the shared screens.
+- [x] Complete entry editors and manual creation.
+- [x] Show cards with metadata, progress and ratings.
+- [x] Add Undo and conflict dialogs.
+- [x] Test website and extension workflows.
+- [ ] Confirm URL reassignment between entries (EDIT-04).
+- [x] Show description, genres and viewing links (LIB-01).
+- [x] Update the old browser tests to the current routes and controls.
 
 ## 12. Catalog services
 
@@ -55,6 +58,7 @@ Rules are in [specs](../specs/index.md).
 - [ ] Safe parser rules without remote code.
 - [ ] Parser configuration, validation and rollback.
 - [ ] Manual search when extraction fails.
+- [ ] Complete entry editors and manual creation.
 - [ ] Confirm source URLs before saving.
 - [ ] Limit extension permissions.
 - [ ] Test all required sites.

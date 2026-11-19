@@ -1,5 +1,6 @@
 import { chromium, expect, test } from '@playwright/test';
 import { resolve } from 'node:path';
+import { choose } from './fixtures/select';
 
 test('shared website controls disable pending actions, report failures and recover with sign-out-all', async ({
   page,
@@ -50,7 +51,7 @@ test('shared website controls disable pending actions, report failures and recov
     'Account service unavailable. Please retry.',
   );
   await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeEnabled();
-  await page.getByLabel('Language', { exact: true }).selectOption('ru');
+  await choose(page, 'Language', 'Русский');
   await expect(page.locator('.auth-controls__failure').getByRole('status')).toHaveText(
     'Сервис аккаунтов недоступен. Повторите попытку.',
   );

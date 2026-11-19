@@ -79,11 +79,13 @@ internal catalog ID.
 - The available count includes only listed narrative episode types. The episode array is not a complete total unless verified.
 - Missing or truncated arrays never invent or erase totals.
 - Dubs and translations are not separate episodes.
-- `descriptions`, `genres` and `episodes` are not in the OpenAPI schema. Accept them only as optional validated detail fields.
+- `descriptions`, `genres` and `episodes` are not in the OpenAPI schema. Accept them only as optional validated fields. Request `genres` in search. Use `descriptions` and `episodes` only in detail.
 
 ### Genres
 
-- Keep provider genre IDs and labels as provider-scoped candidates until an operator verifies a mapping.
+- Map genres through `GenreMapping` by the Smotret genre ID.
+- Ignore IDs 46 (award winners) and 50 (adult cast). They do not describe a genre.
+- Convert subgenre IDs before the lookup: 54 to 17 (martial arts), 74 to 22 (romance), 77 to 30 (sports) and 79 to 11 (games).
 - Genre capability and genre filtering stay disabled.
 - Never treat unrelated genres as equal. Document any semantic remapping and keep the original reference.
 - Without a dictionary endpoint, use complete bounded pagination or a managed mapping. Never describe a sample as complete.

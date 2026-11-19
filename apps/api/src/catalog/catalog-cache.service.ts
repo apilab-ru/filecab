@@ -109,7 +109,7 @@ export class CatalogCacheService {
       cachedAt: now.toISOString(),
     };
     const metadataRows = response.results.map((record) =>
-      this.metadataRow(record, response.locale, now),
+      this.metadataRow(record, response.locale, request.provider, now),
     );
 
     await this.database.$transaction(
@@ -118,6 +118,7 @@ export class CatalogCacheService {
           where: { requestKey: keys.requestKey },
           create: {
             requestKey: keys.requestKey,
+            provider: request.provider,
             identityKey: keys.identityKey,
             page: request.page,
             response: cachedResponse as unknown as Prisma.InputJsonValue,
@@ -148,6 +149,7 @@ export class CatalogCacheService {
             },
             create: metadata,
             update: {
+              provider: metadata.provider,
               record: metadata.record,
               provenance: metadata.provenance,
               fetchedAt: metadata.fetchedAt,
@@ -199,6 +201,17 @@ export class CatalogCacheService {
     );
   }
 
+  /** Removes cached search pages and metadata of one provider, or of all providers. */
+  async clear(provider?: string): Promise<{ searchPages: number; metadata: number }> {
+    const where = provider ? { provider } : {};
+    const [searchPages, metadata] = await this.database.$transaction([
+      this.database.catalogSearchCache.deleteMany({ where }),
+      this.database.catalogMetadataCache.deleteMany({ where }),
+    ]);
+
+    return { searchPages: searchPages.count, metadata: metadata.count };
+  }
+
   /** Hashes full request identity separately from its bounded page mapping identity. */
   private searchKeys(
     request: CatalogSearchRequest & { provider: string },
@@ -224,10 +237,11 @@ export class CatalogCacheService {
   }
 
   /** Builds a cache row that retains provider attribution and requested locale. */
-  private metadataRow(record: CatalogRecord, locale: string, now: Date) {
+  private metadataRow(record: CatalogRecord, locale: string, provider: string, now: Date) {
     return {
       catalogId: record.catalogId,
       locale,
+      provider,
       schema: record.schemaVersion,
       record: record as unknown as Prisma.InputJsonValue,
       provenance: metadataProvenance(record.snapshot) as unknown as Prisma.InputJsonValue,

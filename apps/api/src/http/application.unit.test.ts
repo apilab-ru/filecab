@@ -341,3 +341,33 @@ test('anonymous extension configuration is bounded, public and independent of da
   const malformed = await fetch(`${base}/api/v1/auth/extension/config?extensionId=not-a-chrome-id`);
   expect(malformed.status).toBe(400);
 });
+
+test('development accepts any origin and opens catalog administration without sign-in', async () => {
+  const development = await createApiApplication(
+    { ...environment, mode: 'development' },
+    { readiness: { check }, diagnostic: (record) => diagnostics.push(record) },
+  );
+  await development.listen(0, '127.0.0.1');
+  try {
+    const developmentBase = await development.getUrl();
+    const live = await fetch(`${developmentBase}/api/v1/health/live`, {
+      headers: { Origin: 'http://localhost:4000' },
+    });
+    expect(live.status).toBe(200);
+    expect(live.headers.get('access-control-allow-origin')).toBe('http://localhost:4000');
+    const clear = await fetch(`${developmentBase}/api/v1/catalog/admin/cache?provider=smotret`, {
+      method: 'DELETE',
+      headers: { Origin: 'http://localhost:4000', Cookie: 'unrelated=1' },
+    });
+    // The synthetic database is unreachable, so the request passes access checks and then fails.
+    expect([401, 403]).not.toContain(clear.status);
+    const strict = await fetch(`${base}/api/v1/catalog/admin/cache`, { method: 'DELETE' });
+    expect(strict.status).toBe(401);
+    const foreign = await fetch(`${base}/api/v1/health/live`, {
+      headers: { Origin: 'http://localhost:4000' },
+    });
+    expect(foreign.status).toBe(403);
+  } finally {
+    await development.close();
+  }
+});

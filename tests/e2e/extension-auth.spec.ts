@@ -1,5 +1,6 @@
 import { chromium, expect, test } from '@playwright/test';
 import { resolve } from 'node:path';
+import { cardAction } from './fixtures/library';
 
 test('extension worker reports preflight failures and completes a mocked login through real Chrome messaging', async () => {
   const extensionPath = resolve('apps/extension/.output/chrome-mv3');
@@ -18,7 +19,7 @@ test('extension worker reports preflight failures and completes a mocked login t
         );
     });
     const page = await context.newPage();
-    await page.goto(`chrome-extension://${extensionId}/popup.html?debug=1`);
+    await page.goto(`chrome-extension://${extensionId}/popup.html?debug=1#/settings`);
     await page.getByRole('button', { name: 'Sign in with Google' }).click();
     await expect(page.locator('.auth-controls').getByRole('status')).toContainText(
       'EXTENSION_ORIGINS',
@@ -66,23 +67,26 @@ test('extension worker reports preflight failures and completes a mocked login t
         return new Response(JSON.stringify({ schemaVersion: 1, ownerId: 'fixture-owner' }));
       };
     });
-    await page.goto(`chrome-extension://${extensionId}/full-page.html#/anime/library`);
+    await page.goto(`chrome-extension://${extensionId}/full-page.html#/library/anime`);
     await page.getByRole('button', { name: 'Add manual entry' }).click();
     await page.getByLabel('Title', { exact: true }).fill('Guest remains local');
-    await page.getByRole('button', { name: 'Save locally' }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.locator('.local-library__entry-title')).toHaveText('Guest remains local');
-    await page.getByRole('button', { name: 'Sign in with Google' }).click();
-    await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
-    await expect(page.locator('.local-library__scope')).toHaveText('Library on this device');
+    const settings = await context.newPage();
+    await settings.goto(`chrome-extension://${extensionId}/full-page.html#/settings`);
+    await settings.getByRole('button', { name: 'Sign in with Google' }).click();
+    await expect(settings.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
     await expect(page.locator('.local-library__entry-title')).toHaveText('Guest remains local');
-    await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    await cardAction(page, 'Edit');
     await page.getByLabel('Comment').fill('Unsaved while signing out');
     await expect(page.locator('body')).not.toContainText('fixture-refresh-credential');
     await expect(page.locator('body')).not.toContainText('fixture-access-credential');
-    await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-    await expect(page.locator('.local-library__scope')).toHaveText('Library on this device');
-    await expect(page.locator('.local-library__entry-title')).toHaveText('Guest remains local');
+    await settings.getByRole('button', { name: 'Sign out', exact: true }).click();
+    await expect(settings.getByRole('button', { name: 'Sign in with Google' })).toBeVisible();
     await expect(page.getByLabel('Comment')).toHaveValue('Unsaved while signing out');
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'Discard', exact: true }).click();
+    await expect(page.locator('.local-library__entry-title')).toHaveText('Guest remains local');
   } finally {
     await context.close();
   }
@@ -198,10 +202,12 @@ test('link confirmation starts production replication and account changes suspen
     }, ownerId);
     const origin = `chrome-extension://${new URL(worker.url()).host}`;
     const page = await context.newPage();
-    await page.goto(`${origin}/full-page.html`);
+    await page.goto(`${origin}/full-page.html#/library/anime`);
     await page.getByRole('button', { name: 'Add manual entry' }).click();
     await page.getByLabel('Title', { exact: true }).fill('Production linked entry');
-    await page.getByRole('button', { name: 'Save locally' }).click();
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: 'Preview account link' }).click();
     await expect(page.getByText('Confirming authorizes uploading', { exact: false })).toBeVisible();
     expect(
@@ -230,7 +236,6 @@ test('link confirmation starts production replication and account changes suspen
         return previous(input, init);
       };
     });
-    await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await expect(page.getByText('Last successful sync:', { exact: false })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Sync now', exact: true })).toBeEnabled();
     await page.getByRole('button', { name: 'Sync now', exact: true }).click();
@@ -249,8 +254,6 @@ test('link confirmation starts production replication and account changes suspen
       path: 'test-results/settings-extension-linked-dark.png',
       fullPage: true,
     });
-    await page.getByRole('button', { name: 'Library', exact: true }).click();
-
     await worker.evaluate(() => {
       const previous = globalThis.fetch;
       globalThis.fetch = async (input, init) => {
@@ -268,7 +271,7 @@ test('link confirmation starts production replication and account changes suspen
         },
       });
     });
-    await page.getByRole('button', { name: 'Refresh account library' }).click();
+    await page.getByRole('button', { name: 'Sync now', exact: true }).click();
     await expect(page.getByText('The API denied synchronization.', { exact: false })).toBeVisible();
     await expect(page.getByText('Code: FORBIDDEN', { exact: false })).toContainText('HTTP 403');
     await expect(page.getByText('Code: FORBIDDEN', { exact: false })).toContainText(
@@ -279,14 +282,16 @@ test('link confirmation starts production replication and account changes suspen
       (globalThis as unknown as { restoreSyncFetch(): void }).restoreSyncFetch(),
     );
     const popup = await context.newPage();
-    await popup.goto(`${origin}/full-page.html#/anime/library`);
+    await popup.goto(`${origin}/full-page.html#/library/anime`);
     await expect(popup.locator('.local-library__entry-title')).toHaveText(
       'Production linked entry',
     );
-    await page.getByRole('button', { name: 'Edit', exact: true }).click();
+    await page.getByRole('button', { name: 'Library', exact: true }).click();
+    await cardAction(page, 'Edit');
     await page.getByLabel('Comment').fill('Unsaved draft through account switch');
-    await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-    await expect(page.getByText('Synchronization paused:', { exact: false })).toBeVisible();
+    await popup.goto(`${origin}/full-page.html#/settings`);
+    await popup.getByRole('button', { name: 'Sign out', exact: true }).click();
+    await expect(popup.getByText('Synchronization paused:', { exact: false })).toBeVisible();
     await worker.evaluate(async () => {
       const api = (
         globalThis as unknown as {
@@ -312,10 +317,10 @@ test('link confirmation starts production replication and account changes suspen
       });
       await api.runtime.sendMessage({ action: 'auth.changed' });
     });
-    await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+    await expect(popup.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
     await expect(page.getByLabel('Comment')).toHaveValue('Unsaved draft through account switch');
-    await expect(page.getByText('Synchronization paused:', { exact: false })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Preview account link' })).toHaveCount(0);
+    await expect(popup.getByText('Synchronization paused:', { exact: false })).toBeVisible();
+    await expect(popup.getByRole('button', { name: 'Preview account link' })).toHaveCount(0);
     const blocked = await page.evaluate(async (ownerId) => {
       const api = (
         globalThis as unknown as {

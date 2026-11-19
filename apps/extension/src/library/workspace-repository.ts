@@ -46,6 +46,16 @@ export function localWorkspaceRepository(repository: LocalLibraryRepository): Wo
         confirm: () => mapConflict(() => repository.applyCatalog(preview.before, preview.proposed)),
       };
     },
+    async remove(row) {
+      const tombstone = await mapConflict(() =>
+        repository.delete(row.entry.entryId, Number(row.version)),
+      );
+
+      return { entry: tombstone.entry, version: String(tombstone.localRevision) };
+    },
+    async restore(tombstone) {
+      await mapConflict(() => repository.undo(tombstone.entry.entryId, Number(tombstone.version)));
+    },
     async refresh() {
       await repository.snapshot();
     },

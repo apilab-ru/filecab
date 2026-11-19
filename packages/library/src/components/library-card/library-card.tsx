@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useId, useRef } from 'react';
 import { useEntryRating } from '../../hooks/use-entry-rating';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useTranslation } from 'react-i18next';
@@ -8,6 +8,8 @@ import { useLocalStore } from '../../hooks/use-local-store';
 
 import { titleFor } from '@filecab/contracts';
 import { Button, Icon, IconName, RatingPicker } from '@filecab/ui';
+import { TitleGenres } from '../title-genres/title-genres';
+import { TitleDetails } from '../title-details/title-details';
 import type { LibraryCardProps } from './model-library-card';
 
 /** Renders the shared title card with catalog metadata and optional personal state. */
@@ -20,14 +22,18 @@ export function LibraryCard({
   alert,
   edit,
   remove,
+  onGenre,
 }: LibraryCardProps) {
   const { t } = useTranslation();
   const personalRating = useEntryRating(entry);
   const titleElement = useRef<HTMLSpanElement>(null);
   const { locale } = useInterfacePreferences();
-  const [{ failedPoster }, { failedPoster: setFailedPoster }] = useLocalStore(() => ({
-    failedPoster: null as string | null,
-  }));
+  const detailsId = useId();
+  const [{ failedPoster, details }, { failedPoster: setFailedPoster, details: setDetails }] =
+    useLocalStore(() => ({
+      failedPoster: null as string | null,
+      details: false,
+    }));
   const snapshot = entry?.snapshot ?? catalogSnapshot;
 
   if (!snapshot) return null;
@@ -83,6 +89,29 @@ export function LibraryCard({
             {t(entry.status)}
           </span>
         )}
+        {details && (
+          <TitleDetails
+            id={detailsId}
+            snapshot={snapshot}
+            comment={entry?.comment ?? ''}
+            sources={entry?.sources ?? []}
+            onGenre={onGenre}
+            onClose={() => setDetails(false)}
+          />
+        )}
+        <div className="library-card__overlay-bar">
+          <TitleGenres genres={snapshot.genres} onSelect={onGenre} />
+          <button
+            type="button"
+            className="library-card__details-toggle"
+            aria-label={t('details')}
+            aria-expanded={details}
+            aria-controls={details ? detailsId : undefined}
+            onClick={() => setDetails(!details)}
+          >
+            <span aria-hidden="true">i</span>
+          </button>
+        </div>
         {menuActions.length > 0 && (
           <details className="library-card__menu">
             <summary className="library-card__menu-trigger" aria-label={t('entryActions')}>

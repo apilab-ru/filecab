@@ -8,17 +8,15 @@ import { LibraryCard } from '../library-card/library-card';
 import { LibraryBrowserFilters } from '../library-browser-filters/library-browser-filters';
 import { LibraryBrowserPagination } from '../library-browser-pagination/library-browser-pagination';
 import { useLibraryBrowserDatasource } from './library-browser-datasource';
+import { useWorkspace } from '../../hooks/use-workspace';
 import type { LibraryBrowserProps } from './model-library-browser';
 
-/** Renders the library browser from its filtered and paginated datasource. */
-export function LibraryBrowser({
-  category,
-  entries,
-  onAdd,
-  onEdit,
-  onDelete,
-  available = true,
-}: LibraryBrowserProps) {
+/** Renders the active workspace library with shared add, edit and delete actions. */
+export function LibraryBrowser({ category }: LibraryBrowserProps) {
+  const { state, open, remove } = useWorkspace();
+  const available = Boolean(state.repository);
+  const entries = state.rows.map(({ entry }) => entry);
+  const rowFor = (entryId: string) => state.rows.find(({ entry }) => entry.entryId === entryId);
   const {
     current,
     displayed,
@@ -60,7 +58,7 @@ export function LibraryBrowser({
         onRatingChange={setRating}
         onGenreChange={setGenre}
         onLayoutChange={setLayout}
-        onAdd={onAdd}
+        onAdd={available ? () => open(category) : undefined}
       />
       <div className="title-results-region">
         {available && displayed.length === 0 && (
@@ -87,14 +85,19 @@ export function LibraryBrowser({
             },
           }))}
         >
-          {displayed.map((entry) => (
-            <LibraryCard
-              key={entry.entryId}
-              entry={entry}
-              edit={onEdit ? () => onEdit(entry) : undefined}
-              remove={onDelete ? () => onDelete(entry) : undefined}
-            />
-          ))}
+          {displayed.map((entry) => {
+            const row = available ? rowFor(entry.entryId) : undefined;
+
+            return (
+              <LibraryCard
+                key={entry.entryId}
+                entry={entry}
+                edit={row ? () => open(category, row) : undefined}
+                remove={row ? () => void remove(row) : undefined}
+                onGenre={setGenre}
+              />
+            );
+          })}
         </TitleResults>
       </div>
       <LibraryBrowserPagination

@@ -1,13 +1,15 @@
 import type { Category, Entry } from '@filecab/contracts';
 import { LibrarySort } from '../../models/library-sort';
 
+/** Selects the category that the shared library browser shows from the active workspace. */
 export interface LibraryBrowserProps {
   category: Category;
+}
+
+/** Supplies the saved entries that the browser filters, sorts and paginates. */
+export interface LibraryBrowserDatasourceInput {
+  category: Category;
   entries: Entry[];
-  available?: boolean;
-  onAdd?: () => void;
-  onEdit?: (entry: Entry) => void;
-  onDelete?: (entry: Entry) => void;
 }
 
 export const PAGE_SIZE = 8;

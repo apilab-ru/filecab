@@ -6,11 +6,11 @@ import { useSearchParams } from 'react-router-dom';
 import { LibraryLayout } from '../../models/library-layout';
 import { LibrarySort } from '../../models/library-sort';
 import { SortDirection } from '../../models/sort-direction';
-import type { LibraryBrowserProps } from './model-library-browser';
+import type { LibraryBrowserDatasourceInput } from './model-library-browser';
 import { PAGE_SIZE } from './model-library-browser';
 
 /** Owns browser filters and derives the visible, sorted and paginated entries. */
-export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowserProps) {
+export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowserDatasourceInput) {
   const { t } = useTranslation();
   const { locale } = useInterfacePreferences();
   const [

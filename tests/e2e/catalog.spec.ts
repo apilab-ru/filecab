@@ -8,6 +8,7 @@ import {
   type Entry,
   type LibraryMutationPreview,
 } from '../../packages/contracts/src/index';
+import { cardAction } from './fixtures/library';
 
 const timestamp = '2026-11-14T00:00:00.000Z';
 const catalogId = 'ab13b77a-a016-4fe7-a0d8-25c1119af301';
@@ -70,6 +71,8 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
     searches: [] as URL[],
     saves: 0,
     failSave: false,
+    conflictOnce: false,
+    reads: 0,
     lostCreateResponse: false,
     failSearch: false,
     previews: 0,
@@ -81,7 +84,7 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
       'Access-Control-Allow-Origin': 'http://127.0.0.1:5173',
       'Access-Control-Allow-Credentials': 'true',
       'Access-Control-Allow-Headers': 'X-Filecab-Request,X-Filecab-Owner,Content-Type',
-      'Access-Control-Allow-Methods': 'GET,POST,PATCH,OPTIONS',
+      'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
     };
     const json = (body: unknown, status = 200) => route.fulfill({ headers, status, json: body });
 
@@ -128,8 +131,15 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
       });
     }
 
-    if (url.pathname.endsWith('/library'))
-      return json({ schemaVersion: 1, revision: '1', entries: state.entries });
+    if (url.pathname.endsWith('/library')) {
+      state.reads += 1;
+
+      return json({
+        schemaVersion: 1,
+        revision: '1',
+        entries: state.entries.filter((entry) => !entry.deleted),
+      });
+    }
 
     if (url.pathname.endsWith('/library/catalog/preview')) {
       state.previews += 1;
@@ -183,14 +193,39 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
       return json(found ?? {}, found ? 200 : 404);
     }
 
+    const deleting = route.request().method() === 'DELETE';
+    const restoring = url.pathname.endsWith('/restore');
+
+    if ((deleting || restoring) && url.pathname.includes('/library/entries/')) {
+      const input = route.request().postDataJSON();
+      const id = url.pathname.split('/').at(restoring ? -2 : -1);
+      const entry = state.entries.find((item) => item.entryId === id)!;
+      expect(input.expectedVersion).toBe(entry.serverVersion);
+      Object.assign(entry, {
+        deleted: deleting,
+        serverVersion: String(Number(entry.serverVersion) + 1),
+      });
+
+      return json(entry);
+    }
+
     if (route.request().method() === 'PATCH' && url.pathname.includes('/library/entries/')) {
       if (state.failSave) return json({ code: 'SERVICE_UNAVAILABLE' }, 503);
 
       const input = route.request().postDataJSON();
       const entry = state.entries.find((item) => item.entryId === url.pathname.split('/').at(-1))!;
+
+      if (state.conflictOnce) {
+        state.conflictOnce = false;
+        entry.serverVersion = String(Number(entry.serverVersion) + 1);
+
+        return json({ code: 'CONFLICT' }, 409);
+      }
+
       expect(input.expectedVersion).toBe(entry.serverVersion);
+      const { expectedVersion: _version, sourceUrls: _sources, ...fields } = input;
       Object.assign(entry, {
-        rating: input.rating,
+        ...fields,
         serverVersion: String(Number(entry.serverVersion) + 1),
       });
 
@@ -226,6 +261,44 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
 
   return state;
 }
+
+test('website editor keeps a conflicted draft, deletes with Undo and restores the entry', async ({
+  page,
+  context,
+}) => {
+  const state = await backend(context, [saved()]);
+  await page.goto('/#/library/films');
+  await expect(page.locator('.library-card__title:visible')).toHaveText('Catalog title');
+  await cardAction(page, 'Edit');
+  const save = page.getByRole('button', { name: 'Save', exact: true });
+  await expect(save).toBeDisabled();
+  await expect(page.getByText('Episode total unknown')).toBeVisible();
+  await page.getByLabel('Comment', { exact: true }).fill('Changed on the website');
+  await page.getByRole('dialog').getByLabel('Rating', { exact: true }).selectOption('0');
+  state.conflictOnce = true;
+  const reads = state.reads;
+  await save.click();
+  await expect(page.getByRole('alert')).toContainText('changed in another window');
+  await expect(page.getByLabel('Comment', { exact: true })).toHaveValue('Changed on the website');
+  await expect(save).toBeDisabled();
+  await expect.poll(() => state.reads).toBeGreaterThan(reads);
+  await page.getByRole('button', { name: 'Use current versions and keep my draft' }).click();
+  await save.click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(state.entries[0]).toMatchObject({
+    comment: 'Changed on the website',
+    rating: 0,
+    serverVersion: '3',
+  });
+  await cardAction(page, 'Delete');
+  await expect(page.getByRole('status').filter({ hasText: 'Deleted:' })).toHaveText(
+    /Deleted: Catalog title/,
+  );
+  await expect(page.locator('.library-card:visible')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(page.locator('.library-card__title:visible')).toHaveText('Catalog title');
+  expect(state.entries[0]).toMatchObject({ deleted: false, serverVersion: '5' });
+});
 
 test('catalog debounce, late responses, errors and hasMore retain the latest search', async ({
   page,

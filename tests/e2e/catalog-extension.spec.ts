@@ -1,5 +1,4 @@
 import { chromium, expect, test, type BrowserContext } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -27,17 +26,6 @@ const catalog: CatalogRecord = {
     ],
   },
 };
-
-test.beforeAll(() => {
-  execFileSync(
-    'pnpm',
-    ['--filter', '@filecab/extension', 'exec', 'node', 'scripts/build-storage-test.mjs'],
-    { stdio: 'pipe' },
-  );
-});
-test.afterAll(async () => {
-  await rm(join(extensionPath, 'storage-test.js'), { force: true });
-});
 
 /** Starts the production extension with a disposable profile and no provider or account secrets. */
 async function launch(profile: string): Promise<{ context: BrowserContext; origin: string }> {
@@ -138,7 +126,7 @@ test('full-page catalog Add/Edit share durable entries and preserve offline edit
     await popup.getByLabel('Comment', { exact: true }).fill('Offline note');
     await popup.getByLabel('Progress', { exact: true }).fill('24');
     await popup.getByRole('button', { name: 'Save', exact: true }).click();
-    await expect(popup.getByRole('alert')).toContainText('Save failed');
+    await expect(popup.getByRole('alert')).toContainText('changed in another window');
     await expect(popup.getByLabel('Comment', { exact: true })).toHaveValue('Offline note');
     await popup.getByRole('button', { name: 'Use current versions and keep my draft' }).click();
     await popup.getByRole('button', { name: 'Save', exact: true }).click();

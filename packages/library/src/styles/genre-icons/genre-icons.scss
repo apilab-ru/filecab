@@ -1,0 +1,18 @@
+@font-face {
+  font-family: 'filecab-genre-icons';
+  src: url('./genre-icons.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+.genre-icon {
+  font-family: 'filecab-genre-icons';
+  font-style: normal;
+  font-weight: 400;
+  font-variant: normal;
+  line-height: 1;
+  text-transform: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

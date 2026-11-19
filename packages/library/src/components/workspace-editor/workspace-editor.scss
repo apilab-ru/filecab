@@ -25,7 +25,23 @@
   }
 
   &__error {
-    color: var(--fc-danger, #d44);
+    margin: 0;
+    color: var(--fc-danger);
+  }
+
+  &__hint {
+    margin: -8px 0 0;
+    color: var(--fc-muted);
+    font-size: 0.85em;
+
+    &--warning {
+      color: var(--fc-danger);
+    }
+  }
+
+  &__conflict {
+    display: grid;
+    gap: 8px;
   }
 
   &__preview,

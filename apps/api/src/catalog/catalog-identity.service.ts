@@ -9,6 +9,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import type { PrismaClient, Prisma } from '../generated/prisma/client';
 import { ApiException } from '../http/api-error';
+import type { CatalogGenreResolver } from './catalog-genre-resolver';
 
 /** Converts a domain value to JSON accepted by Prisma. */
 function json(value: unknown): Prisma.InputJsonValue {
@@ -27,7 +28,10 @@ function isIdentityRace(error: unknown): boolean {
 
 /** Persists stable catalog identities independently of owner-library documents. */
 export class CatalogIdentityService {
-  constructor(private readonly database: PrismaClient) {}
+  constructor(
+    private readonly database: PrismaClient,
+    private readonly genres: CatalogGenreResolver,
+  ) {}
 
   /** Resolves verified identities and safely enriches the matching catalog record. */
   async observe(
@@ -84,9 +88,11 @@ export class CatalogIdentityService {
           if (current && (current.category !== category || current.granularity !== granularity))
             throw new ApiException(409, ApiErrorCode.Conflict, 'Catalog identity conflicts');
 
-          const storedSnapshot = current
+          const merged = current
             ? mergeCatalogSnapshots(current.snapshot as unknown as Snapshot, snapshot)
             : snapshot;
+          // Resolving after the merge also replaces provider genres that older records stored.
+          const storedSnapshot = { ...merged, genres: await this.genres.resolve(merged.genres) };
 
           if (current) {
             await transaction.catalogItem.update({

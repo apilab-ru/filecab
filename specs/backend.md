@@ -445,6 +445,7 @@ providers are independent.
 - A disallowed origin gets a structured 403.
 - An unsafe request with cookies requires an allowlisted `Origin` and `X-Filecab-Request: 1`. This applies also when the request has an `Authorization` header.
 - Requests without cookies also reject untrusted origins.
+- When `NODE_ENV` is `development`, accept any origin. CORS returns the request origin with credentials. Skip the cookie check for `Origin` and `X-Filecab-Request`. Never use this mode on a public host. `test` and `production` keep the exact allowlist.
 - Preflight allows only supported methods and explicit headers.
 
 ### Production transport
@@ -475,6 +476,7 @@ The API can report failures to Sentry when `SENTRY_DSN` is set. A missing DSN di
 reporting and does not stop startup.
 
 - Report only unexpected errors and 5xx responses. Do not report expected client errors.
+- Also report a missing catalog genre mapping as a warning. See [Catalog genres](catalog-spec.md#genres).
 - Report each response once, through one common path for controllers and middleware.
 - Include the HTTP method and the Express route template. Do not include path parameter values or query text.
 - Omit request bodies, headers, parameter values, user identity, extra data and breadcrumbs.

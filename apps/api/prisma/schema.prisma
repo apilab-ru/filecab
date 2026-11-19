@@ -75,6 +75,8 @@ model CatalogItem {
 /// Bounded provider search pages, keyed by a canonical effective request hash.
 model CatalogSearchCache {
   requestKey     String   @id
+  /// Catalog provider that produced the page; operators clear the cache by provider.
+  provider       String
   identityKey    String
   page           Int
   response       Json
@@ -85,6 +87,7 @@ model CatalogSearchCache {
 
   @@index([identityKey, fetchedAt])
   @@index([expiresAt])
+  @@index([provider])
 }
 
 /// Locale-specific normalized metadata cached independently of private library fields.
@@ -93,6 +96,8 @@ model CatalogMetadataCache {
   catalog    CatalogItem @relation(fields: [catalogId], references: [id], onDelete: Cascade)
   locale     String
   schema     Int
+  /// Catalog provider of the search that stored this metadata.
+  provider   String
   record     Json
   provenance Json
   fetchedAt  DateTime    @db.Timestamptz(3)
@@ -100,6 +105,7 @@ model CatalogMetadataCache {
 
   @@id([catalogId, locale, schema])
   @@index([expiresAt])
+  @@index([provider])
 }
 
 /// Namespaced provider identity mapped to one internal catalog item.

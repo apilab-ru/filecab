@@ -12,22 +12,22 @@ change logs before 18 November 2026.
 
 ## Product requirements
 
-| Done | ID                                                                                     | Steps             | Status  | Note                                                                   |
-| ---- | -------------------------------------------------------------------------------------- | ----------------- | ------- | ---------------------------------------------------------------------- |
-| [ ]  | [NAV-01–05](../specs/functionality.md#2-surfaces-and-navigation)                       | 10, 11, 16        | Partial | Shell, routes and draft guard done (step 10). Page extraction pending. |
-| [ ]  | [MODEL-01–08](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | Partial | Contracts and server rules done. Complete editors pending.             |
-| [ ]  | [PAGE-01–04](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | Pending |                                                                        |
-| [ ]  | [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching)                | 4, 15, 16         | Partial | Server association and merge done. Client matching pending.            |
-| [ ]  | [SEARCH-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | Partial | Catalog search, direct Add and rating done. Editor flow pending.       |
-| [ ]  | [EDIT-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | Pending | Basic extension editor only.                                           |
-| [ ]  | [LIB-01–07](../specs/functionality.md#6-library-browsing)                              | 10, 11            | Partial | Browsing, filters, sort and pagination done. Undo dialogs pending.     |
-| [ ]  | [DATA-01–06](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | Partial | Extension storage and replication done. Website editing pending.       |
-| [ ]  | [BACKUP-01–05](../specs/functionality.md#8-backup-and-restore)                         | 17                | Pending |                                                                        |
-| [ ]  | [API-01–07](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | Partial | Backup and verification errors pending.                                |
-| [ ]  | [LANG-01–06](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | Partial | Interface languages done. Metadata localization partly done.           |
-| [ ]  | [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability)              | 5, 6, 16          | Pending |                                                                        |
-| [ ]  | [UX-01](../specs/functionality.md#11-platform-privacy-and-usability)                   | 10, 11, 21        | Partial | Keyboard, focus and zoom tests for the shell.                          |
-| [ ]  | [AC01–AC25](../specs/functionality.md#12-release-acceptance)                           | 21                | Pending | Run at release.                                                        |
+| Done | ID                                                                                     | Steps             | Status  | Note                                                                                  |
+| ---- | -------------------------------------------------------------------------------------- | ----------------- | ------- | ------------------------------------------------------------------------------------- |
+| [ ]  | [NAV-01–05](../specs/functionality.md#2-surfaces-and-navigation)                       | 10, 11, 16        | Partial | Shell, routes and draft guard done (step 10). Page extraction pending.                |
+| [ ]  | [MODEL-01–08](../specs/functionality.md#3-domain-identity-and-validation)              | 3, 4, 11          | Partial | Contracts, server rules and editor validation done. Category conflict review pending. |
+| [ ]  | [PAGE-01–04](../specs/functionality.md#4-page-extraction-and-matching)                 | 16                | Pending |                                                                                       |
+| [ ]  | [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching)                | 4, 15, 16         | Partial | Server association and merge done. Client matching pending.                           |
+| [ ]  | [SEARCH-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving)          | 12–15             | Partial | Catalog search, direct Add and rating done. Editor flow pending.                      |
+| [ ]  | [EDIT-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving)            | 7, 8, 11          | Partial | Editor, validation and conflict choices done. URL reassignment (EDIT-04) pending.     |
+| [ ]  | [LIB-01–07](../specs/functionality.md#6-library-browsing)                              | 10, 11            | Partial | All clauses done except bulk deletion, which is optional. Release check pending.      |
+| [ ]  | [DATA-01–06](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) | 7–9, 11           | Partial | Extension and website editing done. Backup preview checks pending.                    |
+| [ ]  | [BACKUP-01–05](../specs/functionality.md#8-backup-and-restore)                         | 17                | Pending |                                                                                       |
+| [ ]  | [API-01–07](../specs/functionality.md#9-backend-and-shared-contracts)                  | 3, 5, 7, 9, 12–15 | Partial | Backup and verification errors pending.                                               |
+| [ ]  | [LANG-01–06](../specs/functionality.md#10-english-and-russian)                         | 3, 10–15          | Partial | Interface languages done. Metadata localization partly done.                          |
+| [ ]  | [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability)              | 5, 6, 16          | Pending |                                                                                       |
+| [ ]  | [UX-01](../specs/functionality.md#11-platform-privacy-and-usability)                   | 10, 11, 21        | Partial | Keyboard, focus and zoom tests for the shell.                                         |
+| [ ]  | [AC01–AC25](../specs/functionality.md#12-release-acceptance)                           | 21                | Pending | Run at release.                                                                       |
 
 ## Backend
 
@@ -176,12 +176,22 @@ draft guard, settings and supplied SVG icons. Chromium tests cover locale and th
 propagation, browser-locale start, draft retention, Escape and focus, responsive width and
 200% zoom.
 
+### Step 11: library editing
+
+- `LibraryBrowser` reads rows, Add, Edit and Delete from the shared workspace on the website and in the extension.
+- [Workspace provider](../packages/library/src/providers/workspace-provider/workspace-provider.tsx) deletes through the platform adapter and shows a shared 10-second [Undo bar](../packages/library/src/components/undo-bar/undo-bar.tsx).
+- [Editor](../packages/library/src/components/workspace-editor/workspace-editor.tsx): Save only for a changed entry, a nonblank manual title, HTTP and HTTPS links only, a clearable rating, the episode total and a warning above it. A version conflict offers Reload entry or Keep my draft.
+- [Cards](../packages/library/src/components/library-card/library-card.tsx) show genre icons from the genre icon font over the poster. A click applies the genre filter. The details overlay shows the description, or the comment marked as a note, or empty text, and genres and viewing links.
+- The extension Settings sync card shows the account link, refresh, recovery and review controls. They were hidden. Replication stays mounted on the Library page and in the popup.
+- Browser tests (18 November 2026): the website editor conflict, delete and Undo, and the extension offline add, validation, conflict, quota failure, delete, Undo and restart. All 37 browser tests pass with one worker and in parallel.
+
 ### Step 12: catalog services
 
 - Code in `apps/api/src/catalog/`: capabilities, routing, identity upserts, enrichment, continuation limits.
 - [Cache](../apps/api/src/catalog/catalog-cache.service.ts) with configurable freshness and stale fallback.
 - [Genre administration](../apps/api/src/catalog/catalog-genre.service.ts) behind `CATALOG_OPERATOR_ACCOUNT_IDS`.
 - Seed: 112 internal genres and 135 unverified provider mappings from 117 source rows (11 November 2026). 12 conflicting Smotret claims are not seeded.
+- [Genre resolver](../apps/api/src/catalog/catalog-genre-resolver.ts) replaces provider genres with mapped internal genres before a snapshot is stored, with Smotret ignore and convert rules. Smotret search now returns genres. A migration maps 31 Kinopoisk genre names (19 November 2026). The mappings are still unverified.
 
 ### Step 13: Smotret adapter
 
@@ -204,3 +214,9 @@ pagination during loading and skeletons (15–16 November 2026).
 ### Tooling
 
 TypeScript checks unused locals and parameters in all workspaces (18 November 2026).
+
+### Toast limit
+
+The shared Undo bar keeps a maximum of three messages. New messages remove the
+oldest messages. Error messages count toward the limit. Targeted ESLint, Prettier
+and library TypeScript checks passed (19 November 2026).

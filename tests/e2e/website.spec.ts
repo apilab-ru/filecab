@@ -1,11 +1,16 @@
 import { expect, test } from '@playwright/test';
+import { choose } from './fixtures/select';
+import { Category, Status, emptySnapshot } from '../../packages/contracts/src/index';
 
 test('website bootstraps without extension APIs or console errors', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto('/');
   await expect(page).toHaveTitle('Filecab');
-  await expect(page.getByRole('heading', { name: 'My library' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Library', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
   expect(errors).toEqual([]);
 });
 
@@ -51,7 +56,7 @@ test('language/theme preferences propagate across tabs, persist, and retain URL 
   await page.goto('/?query=keep-me#/library/anime');
   const second = await context.newPage();
   await second.goto('/#/settings');
-  await page.getByLabel('Language', { exact: true }).selectOption('ru');
+  await choose(page, 'Language', 'Русский');
   await expect(page.getByRole('button', { name: 'Библиотека', exact: true })).toBeVisible();
   await expect(second.getByRole('heading', { name: 'Оформление', exact: true })).toBeVisible();
   await expect(second.locator('html')).toHaveAttribute('lang', 'ru');
@@ -89,7 +94,9 @@ test('first visit chooses a supported browser locale', async ({ browser }) => {
     const page = await context.newPage();
     await page.goto('/');
     await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-    await expect(page.getByLabel('Язык')).toHaveValue('ru');
+    await expect(page.getByRole('combobox', { name: 'Язык', exact: true })).toContainText(
+      'Русский',
+    );
   } finally {
     await context.close();
   }
@@ -99,7 +106,6 @@ test('mockup library renders actual snapshot cards, filters, pagination and post
   page,
   context,
 }) => {
-  const { emptySnapshot, Category, Status } = await import('../../packages/contracts/src');
   const entries = Array.from({ length: 15 }, (_, index) => ({
     schemaVersion: 1,
     entryId: `fixture-${index}`,
@@ -138,27 +144,27 @@ test('mockup library renders actual snapshot cards, filters, pagination and post
   });
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto('/');
-  await expect(page.locator('.library-browser__total')).toHaveText('14 titles');
-  await expect(page.locator('.library-card')).toHaveCount(12);
-  await expect(page.locator('.library-card__placeholder')).toHaveCount(12);
+  await expect(page.locator('.library-browser__pagination')).toContainText('1–8 of 14');
+  await expect(page.locator('.library-card')).toHaveCount(8);
+  await expect(page.locator('.library-card__placeholder')).toHaveCount(8);
   await expect(page.locator('.full-page__mark')).toHaveJSProperty('naturalWidth', 567);
   expect(
     await page
-      .locator('.library-browser__entries')
+      .locator('.title-results')
       .evaluate((element) => getComputedStyle(element).gridTemplateColumns.split(' ').length),
   ).toBe(4);
   await page.screenshot({ path: 'test-results/mockup-library-light.png', fullPage: true });
   await page.getByRole('button', { name: 'Next page', exact: true }).click();
-  await expect(page.locator('.library-card')).toHaveCount(2);
-  await page.getByRole('textbox', { name: 'Search your library' }).fill('private note');
+  await expect(page.locator('.library-card')).toHaveCount(6);
+  await page.getByRole('searchbox', { name: 'Search your library' }).fill('private note');
   await expect(page.locator('.library-card')).toHaveCount(1);
   await expect(page.locator('.library-card__title')).toHaveText('Saved title 14');
   await page.getByRole('button', { name: 'List view', exact: true }).click();
-  await expect(page.locator('.library-browser__entries')).toHaveClass(/--list/);
-  await page.getByRole('textbox', { name: 'Search your library' }).fill('');
-  await page.getByRole('combobox', { name: 'Status', exact: true }).selectOption(Status.Hide);
+  await expect(page.locator('.title-results')).toHaveClass(/title-results--list/);
+  await page.getByRole('searchbox', { name: 'Search your library' }).fill('');
+  await choose(page, 'Status', 'Hidden');
   await expect(page.locator('.library-card__title')).toHaveText('Saved title 15');
-  await page.getByRole('combobox', { name: 'Status', exact: true }).selectOption('');
+  await choose(page, 'Status', 'Status');
   await page.getByRole('button', { name: 'Grid view', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
@@ -204,9 +210,9 @@ test('website snapshot errors remain distinct from an empty library and can be r
   await page.goto('/');
   await expect(page.getByRole('alert')).toContainText('Your library could not be loaded');
   await expect(page.getByText('Your library is empty.', { exact: false })).toHaveCount(0);
-  await expect(page.getByRole('textbox', { name: 'Search your library' })).toBeDisabled();
+  await expect(page.getByRole('searchbox', { name: 'Search your library' })).toBeDisabled();
   available = true;
   await page.getByRole('button', { name: 'Retry', exact: true }).click();
-  await expect(page.locator('.library-browser__total')).toHaveText('0 titles');
+  await expect(page.locator('.library-browser__pagination')).toContainText('0 of 0');
   await expect(page.getByText('Your library is empty.', { exact: false })).toBeVisible();
 });
