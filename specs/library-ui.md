@@ -20,7 +20,18 @@ extension full page. [Functionality](functionality.md) owns the product requirem
 - Do not send removed filter values from saved route parameters.
 - Show Release year and Format as compact library-style filters with placeholders, not labels. Use the shared select for Format.
 - Show manual entry creation only in library mode.
-- The popup Search tab is a placeholder. Full-page and website catalog search stay available.
+- The rules of this section apply to full-page and website catalog search. [Popup search](#popup-search) has its own interface.
+
+## Popup search
+
+The popup Search tab uses the same catalog search contract, debounce and cancellation as the full page.
+
+- Show a category select with Anime, Films and TV, and a title field. Do not show other filters, provider controls or ordering.
+- Show compact results that fit the popup width. Do not use the full-page grid or list layout.
+- Load the next page only when `hasMore` is true.
+- Show loading, empty, offline and error states separately.
+- Selecting a result opens the popup editor. See [SEARCH-03](functionality.md#5-catalog-search-editing-and-saving).
+- A search save has no viewing link.
 
 ## Matching results to the library
 
@@ -46,7 +57,7 @@ Edit opens the saved entry. Manual creation does not need a provider response.
 
 - Catalog association uses the entry version. It keeps the entry UUID, added date and user fields.
 - If a second entry has the catalog identity, show both entries and the chosen user fields before the merge.
-- The manual entry survives. Combine sources in their saved order.
+- The manual entry survives. It keeps the link of the entry with the latest modified time. If that entry has no link, it keeps the link of the other entry. The preview shows the kept link.
 - Confirm the preview before apply. Check both versions again before apply.
 - On the website, association and merge use one server transaction.
 - In the extension, a local merge uses a durable journal. Complete journal recovery before reads, writes or replication.

@@ -158,8 +158,10 @@ An owner can have only one active entry for each internal catalog item.
 Keep viewing sources separate from catalog links. Normalize them with
 [Source normalization](domain-contract.md#viewing-source-normalization).
 An entry has at most one link. One normalized link can belong to only one active entry
-for each owner. Only a create and a replicated create can add the link. A PATCH and a
-replicated update that add or change the link get a validation error. They can remove it.
+for each owner. A create, a replicated create, a PATCH and a replicated update can add,
+replace or remove the link. If another active entry of the owner has the same normalized
+link, remove the link from that entry in the same transaction. Give that entry a new
+version and a change record. Do not delete it.
 
 ### Transactional persistence
 
@@ -250,7 +252,7 @@ Preview rules:
 
 - Check ownership, active state, category and catalog compatibility.
 - Do not change entries, revisions or history.
-- Keep the survivor link. A survivor without a link takes the link of the removed entry.
+- Keep the link of the entry with the latest modified time. If that entry has no link, keep the link of the other entry.
 - Category changes and source replacement are separate operations.
 - Return the before and proposed documents. Proposed documents have a null `serverVersion`.
 - Return a token that expires after five minutes. The token is an HMAC bound to the owner, operation, both versions and documents, and the chosen fields.

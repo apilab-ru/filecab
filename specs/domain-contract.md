@@ -22,10 +22,10 @@
 An entry has no viewing link or one viewing link. The link keeps its original URL and its
 normalized URL. One normalized URL can belong to only one active entry of an owner.
 
-- Only a create can add the link: from the extension popup page or from an import.
-- An edit cannot add or change the link. It can only remove it.
-- A merge keeps the survivor link. A survivor without a link takes the link of the removed entry.
-- A link never moves from one entry to another entry.
+- A save from the popup Page tab can add the link to an entry or replace the link of an entry. An import can add the link.
+- Other edits cannot add or change the link. They can only remove it.
+- When a Page tab save uses a link of another active entry, the link moves. One operation removes it from the other entry and adds it to the saved entry. Both entries get a new version.
+- A merge keeps the link of the entry with the latest modified time. If that entry has no link, the merge keeps the link of the other entry.
 
 The `generic-v1` policy:
 
@@ -46,8 +46,8 @@ prove media identity.
 ## Mutation and clearing semantics
 
 An ordinary PATCH accepts `category`, `userTitle`, `status`, `rating`, `progress`,
-`comment` and `sourceUrls`. `sourceUrls` holds at most one URL. In a PATCH it can only
-repeat the current link or be empty.
+`comment` and `sourceUrls`. `sourceUrls` holds at most one URL. In a PATCH it can repeat
+the current link, be empty, or set a new link. Only the popup Page tab sends a new link.
 
 | Input            | Meaning                   |
 | ---------------- | ------------------------- |

@@ -48,6 +48,10 @@ Rules are in [specs](../specs/index.md).
 - [ ] Connect catalog search to all clients.
 - [ ] Debounce, cancellation, pagination and error states.
 - [ ] Open the editor when a user selects a title.
+- [ ] Select a single popup result automatically, one time for each query.
+- [ ] Popup search: category select, title field and compact results.
+- [ ] Merge keeps the link of the entry with the latest modified time.
+- [ ] Remove the URL field from website manual entry.
 - [ ] Show saved entries and personal progress in results.
 - [ ] Match catalog results with manual entries.
 - [ ] Merge confirmation that keeps user data.
@@ -60,6 +64,7 @@ Rules are in [specs](../specs/index.md).
 - [ ] Manual search when extraction fails.
 - [ ] Complete entry editors and manual creation.
 - [ ] Confirm source URLs before saving.
+- [ ] Replace and move the page link on a Page tab save (server and extension).
 - [ ] Limit extension permissions.
 - [ ] Test all required sites.
 

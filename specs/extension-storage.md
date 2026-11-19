@@ -30,6 +30,7 @@ the worker stops.
 - The library revision is the highest revision of all documents, including tombstones. Never remove tombstones physically.
 - An expected local revision prevents stale edits.
 - Check active catalog and source claims under the same lock.
+- A link move from a popup Page tab save writes both entries under the same lock. Each entry gets its next local revision. Replicate the entry that loses the link before the entry that gets it.
 - A semantic no-op keeps the time and revision.
 - Local revisions are safe integers. Fail when they are exhausted.
 

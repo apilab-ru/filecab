@@ -39,7 +39,7 @@ defines colors only.
 
 **NAV-02.** The full page and the website have Library and Catalog routes for anime, films and TV. They start on Library. Unknown and legacy paths go to the Anime Library. Popup Back follows [section 2.3](#23-popup-routes).
 
-**NAV-03.** The website supports the core library operations without extension APIs. Only the extension reads the active tab. The website offers manual entry and an optional URL field.
+**NAV-03.** The website supports the core library operations without extension APIs. Only the extension reads the active tab. The website offers manual entry without a URL field.
 
 **NAV-04.** Explain unavailable tabs, restricted URLs and parser failures. Offer Retry, Search or manual entry. Never show these failures as an empty search result.
 
@@ -148,17 +148,17 @@ can have format `movie`, `tv`, `special`, `ova`, `ona` or `music` and stay in th
 
 **SEARCH-02.** Show loading, results, empty, offline and service error states separately. Retry keeps the query and the editor. An old response cannot replace newer results.
 
-**SEARCH-03.** Selecting a new result prepares an unsaved editor. It sets a missing status to `planned` and fills an empty user title. Persist only after Save or an explicit Add.
+**SEARCH-03.** Selecting a new result prepares an unsaved editor. It sets a missing status to `planned` and fills an empty user title. Persist only after Save or an explicit Add. In the popup, select the result automatically when a search returns exactly one result. Do this one time for each query. The user can go back to the results. Automatic selection does not save the entry and does not prove identity.
 
 **SEARCH-04.** Full-page and website Add persist the entry. A saved result shows status, progress, rating and Edit instead of Add.
 
-**EDIT-01.** Show status, a clearable rating, comment and episode progress. Rating and progress work the same in the popup, the full page and the website. Localize unknown totals. Hidden controls and status changes keep values. Reaching the total never marks the entry as watched.
+**EDIT-01.** Show status, a clearable rating, comment and episode progress. Rating and progress work the same in the popup, the full page and the website. Localize unknown totals. Hidden controls and status changes keep values. Reaching the total never marks the entry as watched, because the total of a series that is not complete can change.
 
 **EDIT-02.** Enable Save only for a valid new or changed entry. Keep popup Save at the bottom without covering content. Block duplicate submissions. Clear the dirty state only after confirmed persistence. An error keeps the input and offers Retry.
 
-**EDIT-03.** Only a create adds the viewing link: a save from the extension popup page after the user accepts the page URL, or an import. A search save and a manual entry have no link. The editor shows the link as read-only and offers only Remove. Accept only HTTP and HTTPS links. Never run a URL as code.
+**EDIT-03.** Only two operations add the viewing link: a save from the popup Page tab after the user accepts the page URL, and an import. A Page tab save adds the link to a new entry or to an existing entry. It replaces a different link of that entry. A search save and a manual entry have no link. The editor shows the link as read-only and offers only Remove. Accept only HTTP and HTTPS links. Never run a URL as code.
 
-**EDIT-04.** A link never moves between entries. If the page URL already belongs to an entry, the popup opens that entry. See [MATCH-01](#4-page-extraction-and-matching).
+**EDIT-04.** If the page URL already belongs to an entry, the popup opens that entry. See [MATCH-01](#4-page-extraction-and-matching). If the user saves the page URL to a different entry from the Page tab, the link moves to that entry. Before Save, the editor shows the title of the entry that loses the link. The save removes the link from that entry and adds it to the saved entry in one operation.
 
 ## 6. Library browsing
 
@@ -256,33 +256,33 @@ Each scenario must pass in the extension. Scenarios that apply to the website mu
 pass on the website. Page extraction needs extension checks. Provider integrations need
 contract or fixture checks, and live checks when available.
 
-| ID   | Scenario and expected result                                                                                                                                                  | Requirements               |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
-| AC01 | Open a supported page. Extract an editable title, category and namespaced references. A parser failure offers the generic fallback.                                           | PAGE-01–04                 |
-| AC02 | On an unknown host or offline, create a manual entry. Open it again with all user fields unchanged.                                                                           | MODEL-04, PAGE-04, DATA-05 |
-| AC03 | Catalog identity and URL suggest different entries. Show the conflict. Do not edit or merge silently.                                                                         | MATCH-01                   |
-| AC04 | Equal numeric IDs from IMDb, TMDB, Kinopoisk and internal namespaces do not identify or delete each other.                                                                    | MODEL-01–02                |
-| AC05 | Add from the popup, the full-page library and the website. Adding the same catalog item again opens the one existing entry.                                                   | MODEL-08, SEARCH-03–04     |
-| AC06 | A failed save keeps the changed values and Retry. A successful edit changes only the modified date.                                                                           | MODEL-07, EDIT-02          |
-| AC07 | Change the status or locale with an unsaved editor. Rating, progress, comment and dirty state stay.                                                                           | EDIT-01, LANG-01           |
-| AC08 | Invalid ratings and noninteger or negative progress are blocked. Excess progress warns without truncation. Rating clears to 0. Reaching the total does not change the status. | MODEL-05, EDIT-01          |
-| AC09 | Remove a link in the editor. Save keeps the entry without a link. An edit cannot add a link.                                                                                  | EDIT-03, EDIT-04           |
-| AC10 | Search titles, descriptions and comments in all available languages. Check the OR, AND and exclusion rules and the hidden default.                                            | LIB-02–04                  |
-| AC11 | Change filters, sort and page size, delete the last item on a page, reopen and switch categories. Pagination and preferences stay valid.                                      | LIB-05–06                  |
-| AC12 | Delete and Undo within 10 seconds restores exactly the selected record.                                                                                                       | LIB-07                     |
-| AC13 | A backup round-trip keeps manual and catalog entries, user fields, links, metadata, provenance and timestamps.                                                                | BACKUP-01–03               |
-| AC14 | Malformed JSON, a wrong schema, conflicting identities or an oversized file leave the library unchanged with actionable errors.                                               | BACKUP-03–05               |
-| AC15 | Cancel replacement or simulate a persistence failure. The library stays. An empty entries array needs explicit confirmation.                                                  | BACKUP-04–05               |
-| AC16 | Two interfaces edit different entries. Both persist. A same-entry conflict and a stale import need deliberate resolution.                                                     | DATA-03                    |
-| AC17 | A storage read fails. Recovery state appears. An empty store does not overwrite existing bytes.                                                                               | DATA-04                    |
-| AC18 | Restore a backup and restart the MV3 worker. Acknowledged data stays without duplicates.                                                                                      | BACKUP-05, DATA-06         |
-| AC19 | A search returns no total. Next works from `hasMore`. Last and the page count are absent. TV results obey TV filtering.                                                       | API-01–03                  |
-| AC20 | A search fails or an older response arrives late. The error is different from an empty result. The newest query keeps control.                                                | SEARCH-02, API-06          |
-| AC21 | New browser languages select Russian or English correctly. An explicit selection persists. Plurals for 1, 2, 5, 11 and 21 are correct.                                        | LANG-01–02                 |
-| AC22 | Switch between English and Russian for the same title online and offline. Identity and user data stay. Field fallback and provenance stay true.                               | LANG-03–06                 |
-| AC23 | Restore nullable metadata and separate provider namespaces. Reject missing or invalid timestamps and old backup formats without library changes.                              | MODEL-02–07, BACKUP-02–03  |
-| AC24 | On the signed-in website without extension APIs, search, add, edit, delete, export and import work. A network failure keeps unsaved input and offers Retry.                   | NAV-03, DATA-01            |
-| AC25 | Keyboard-only editing, 200% zoom, poster failure and malicious imported text do not block core workflows or run content.                                                      | PLAT-03, UX-01             |
+| ID   | Scenario and expected result                                                                                                                                                             | Requirements               |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- |
+| AC01 | Open a supported page. Extract an editable title, category and namespaced references. A parser failure offers the generic fallback.                                                      | PAGE-01–04                 |
+| AC02 | On an unknown host or offline, create a manual entry. Open it again with all user fields unchanged.                                                                                      | MODEL-04, PAGE-04, DATA-05 |
+| AC03 | Catalog identity and URL suggest different entries. Show the conflict. Do not edit or merge silently.                                                                                    | MATCH-01                   |
+| AC04 | Equal numeric IDs from IMDb, TMDB, Kinopoisk and internal namespaces do not identify or delete each other.                                                                               | MODEL-01–02                |
+| AC05 | Add from the popup, the full-page library and the website. Adding the same catalog item again opens the one existing entry.                                                              | MODEL-08, SEARCH-03–04     |
+| AC06 | A failed save keeps the changed values and Retry. A successful edit changes only the modified date.                                                                                      | MODEL-07, EDIT-02          |
+| AC07 | Change the status or locale with an unsaved editor. Rating, progress, comment and dirty state stay.                                                                                      | EDIT-01, LANG-01           |
+| AC08 | Invalid ratings and noninteger or negative progress are blocked. Excess progress warns without truncation. Rating clears to 0. Reaching the total does not change the status.            | MODEL-05, EDIT-01          |
+| AC09 | Remove a link in the editor. Save keeps the entry without a link. A popup Page tab save adds or replaces the page link and removes it from another entry. Other edits cannot add a link. | EDIT-03, EDIT-04           |
+| AC10 | Search titles, descriptions and comments in all available languages. Check the OR, AND and exclusion rules and the hidden default.                                                       | LIB-02–04                  |
+| AC11 | Change filters, sort and page size, delete the last item on a page, reopen and switch categories. Pagination and preferences stay valid.                                                 | LIB-05–06                  |
+| AC12 | Delete and Undo within 10 seconds restores exactly the selected record.                                                                                                                  | LIB-07                     |
+| AC13 | A backup round-trip keeps manual and catalog entries, user fields, links, metadata, provenance and timestamps.                                                                           | BACKUP-01–03               |
+| AC14 | Malformed JSON, a wrong schema, conflicting identities or an oversized file leave the library unchanged with actionable errors.                                                          | BACKUP-03–05               |
+| AC15 | Cancel replacement or simulate a persistence failure. The library stays. An empty entries array needs explicit confirmation.                                                             | BACKUP-04–05               |
+| AC16 | Two interfaces edit different entries. Both persist. A same-entry conflict and a stale import need deliberate resolution.                                                                | DATA-03                    |
+| AC17 | A storage read fails. Recovery state appears. An empty store does not overwrite existing bytes.                                                                                          | DATA-04                    |
+| AC18 | Restore a backup and restart the MV3 worker. Acknowledged data stays without duplicates.                                                                                                 | BACKUP-05, DATA-06         |
+| AC19 | A search returns no total. Next works from `hasMore`. Last and the page count are absent. TV results obey TV filtering.                                                                  | API-01–03                  |
+| AC20 | A search fails or an older response arrives late. The error is different from an empty result. The newest query keeps control.                                                           | SEARCH-02, API-06          |
+| AC21 | New browser languages select Russian or English correctly. An explicit selection persists. Plurals for 1, 2, 5, 11 and 21 are correct.                                                   | LANG-01–02                 |
+| AC22 | Switch between English and Russian for the same title online and offline. Identity and user data stay. Field fallback and provenance stay true.                                          | LANG-03–06                 |
+| AC23 | Restore nullable metadata and separate provider namespaces. Reject missing or invalid timestamps and old backup formats without library changes.                                         | MODEL-02–07, BACKUP-02–03  |
+| AC24 | On the signed-in website without extension APIs, search, add, edit, delete, export and import work. A network failure keeps unsaved input and offers Retry.                              | NAV-03, DATA-01            |
+| AC25 | Keyboard-only editing, 200% zoom, poster failure and malicious imported text do not block core workflows or run content.                                                                 | PLAT-03, UX-01             |
 
 Incomplete core requirements must not be described as working features. Record provider
 exclusions before release.
