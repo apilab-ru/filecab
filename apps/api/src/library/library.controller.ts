@@ -46,11 +46,9 @@ import {
   ExpectedVersionDto,
   UpdateLibraryEntryDto,
   MergeEntriesDto,
-  ReassignSourceDto,
   ApplyMergeDto,
   CatalogAssociationDto,
   ApplyCatalogAssociationDto,
-  ApplyReassignmentDto,
 } from './library.dto';
 import {
   MutationPreviewDto,
@@ -284,38 +282,6 @@ export class LibraryController {
       input.removedId,
       input.removedVersion,
       { ...input.fields },
-      input.previewToken,
-    );
-
-    return { schemaVersion: 1, entries };
-  }
-
-  @Post('sources/reassignment/preview')
-  @HttpCode(200)
-  @ApiBody({ type: ReassignSourceDto })
-  @ApiResponse({ status: 200, type: MutationPreviewDto })
-  previewReassignment(
-    @CurrentAccount() account: AuthIdentity,
-    @Body(new RequestDtoPipe(ReassignSourceDto)) input: ReassignSourceDto,
-  ): Promise<LibraryMutationPreview> {
-    return this.mutations.previewReassignment(account.ownerId, { ...input });
-  }
-
-  @Post('sources/reassignment/apply')
-  @HttpCode(200)
-  @ApiBody({ type: ApplyReassignmentDto })
-  @ApiResponse({ status: 200, type: MutationResultDto })
-  async applyReassignment(
-    @CurrentAccount() account: AuthIdentity,
-    @Body(new RequestDtoPipe(ApplyReassignmentDto)) input: ApplyReassignmentDto,
-  ): Promise<LibraryMutationResult> {
-    const entries = await this.mutations.reassignSource(
-      account.ownerId,
-      input.fromId,
-      input.fromVersion,
-      input.toId,
-      input.toVersion,
-      input.normalizedUrl,
       input.previewToken,
     );
 

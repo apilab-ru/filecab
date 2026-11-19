@@ -20,7 +20,7 @@ test('preview signatures bind owner, operation and canonical choices and expire 
     signer.verify(preview.previewToken, 'another-owner', 'merge', { a: 1, b: 2 }, before),
   ).toThrow();
   expect(() =>
-    signer.verify(preview.previewToken, 'owner', 'reassign-source', { a: 1, b: 2 }, before),
+    signer.verify(preview.previewToken, 'owner', 'associate', { a: 1, b: 2 }, before),
   ).toThrow();
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
   const last = preview.previewToken.at(-1)!;

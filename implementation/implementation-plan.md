@@ -13,7 +13,7 @@ Rules are in [specs](../specs/index.md).
 | 4    | Transactional database operations and change tracking                                                          |
 | 5    | API foundation: validation, CORS, CSRF, errors, health, OpenAPI                                                |
 | 6    | Google authentication, sessions and account isolation                                                          |
-| 7    | Library API: CRUD, snapshots, merges, source reassignment                                                      |
+| 7    | Library API: CRUD, snapshots, merges                                                                           |
 | 8    | Offline extension storage with RxDB and Dexie                                                                  |
 | 9    | Extension replication, linking, conflict recovery and reset                                                    |
 | 10   | Shared UI, English and Russian, navigation, settings, preferences                                              |
@@ -30,7 +30,7 @@ Rules are in [specs](../specs/index.md).
 - [x] Show cards with metadata, progress and ratings.
 - [x] Add Undo and conflict dialogs.
 - [x] Test website and extension workflows.
-- [ ] Confirm URL reassignment between entries (EDIT-04).
+- [x] One read-only viewing link that an edit can only remove (EDIT-03, EDIT-04).
 - [x] Show description, genres and viewing links (LIB-01).
 - [x] Update the old browser tests to the current routes and controls.
 

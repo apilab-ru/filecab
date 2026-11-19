@@ -269,7 +269,7 @@ test('merge previews have no side effects and bind ownership, choices and both v
     entryId: survivor.entryId,
     comment: 'chosen comment',
     serverVersion: null,
-    sources: [...survivor.sources, ...removed.sources],
+    sources: survivor.sources,
   });
   expect(preview.changes[1].proposed.deleted).toBe(true);
   expect(await (await request('')).json()).toEqual(before);
@@ -311,56 +311,46 @@ test('merge previews have no side effects and bind ownership, choices and both v
   ).toBe(409);
 });
 
-test('stale or tampered previews fail while source movement commits both documents atomically', async () => {
-  const from = await create({ sourceUrls: [`https://example.com/${randomUUID()}`] });
-  const to = await create();
-  const input = {
-    fromId: from.entryId,
-    fromVersion: from.serverVersion,
-    toId: to.entryId,
-    toVersion: to.serverVersion,
-    normalizedUrl: from.sources[0].normalizedUrl,
-  };
-  const preview = (await (
-    await request('/sources/reassignment/preview', 'POST', input)
-  ).json()) as LibraryMutationPreview;
-  const tampered =
-    preview.previewToken.slice(0, -1) + (preview.previewToken.endsWith('a') ? 'b' : 'a');
-  expect(
-    (await request('/sources/reassignment/apply', 'POST', { ...input, previewToken: tampered }))
-      .status,
-  ).toBe(409);
-  const updated = (await (
-    await request(`/entries/${to.entryId}`, 'PATCH', {
-      expectedVersion: to.serverVersion,
-      comment: 'edited after preview',
-    })
-  ).json()) as ServerEntry;
+test('an entry keeps at most one link that only a create adds and an update can only remove', async () => {
+  const link = `https://example.com/${randomUUID()}`;
   expect(
     (
-      await request('/sources/reassignment/apply', 'POST', {
-        ...input,
-        previewToken: preview.previewToken,
+      await request('/entries', 'POST', {
+        category: 'anime',
+        userTitle: 'Two links',
+        sourceUrls: [link, `${link}/second`],
       })
     ).status,
-  ).toBe(409);
-  input.toVersion = updated.serverVersion;
-  const fresh = (await (
-    await request('/sources/reassignment/preview', 'POST', input)
-  ).json()) as LibraryMutationPreview;
-  const result = await request('/sources/reassignment/apply', 'POST', {
-    ...input,
-    previewToken: fresh.previewToken,
+  ).toBe(400);
+  const linked = await create({ sourceUrls: [link] });
+  expect(linked.sources.map((source) => source.originalUrl)).toEqual([link]);
+  const replace = await request(`/entries/${linked.entryId}`, 'PATCH', {
+    expectedVersion: linked.serverVersion,
+    sourceUrls: [`${link}/other`],
   });
-  expect(result.status).toBe(200);
-  const { entries } = (await result.json()) as LibraryMutationResult;
-  expect(entries[0].sources).toEqual([]);
-  expect(entries[1].sources).toEqual(from.sources);
-  const history = await auth.database.entryChange.findMany({
-    where: { ownerId: first.ownerId, revision: { gte: BigInt(entries[0].serverVersion) } },
-    orderBy: { revision: 'asc' },
+  expect(replace.status).toBe(400);
+  const unchanged = await request(`/entries/${linked.entryId}`, 'PATCH', {
+    expectedVersion: linked.serverVersion,
+    comment: 'same link kept',
+    sourceUrls: [link],
   });
-  expect(history.map((change) => change.entryId)).toEqual([from.entryId, to.entryId]);
+  expect(unchanged.status).toBe(200);
+  const kept = (await unchanged.json()) as ServerEntry;
+  const removed = (await (
+    await request(`/entries/${linked.entryId}`, 'PATCH', {
+      expectedVersion: kept.serverVersion,
+      sourceUrls: [],
+    })
+  ).json()) as ServerEntry;
+  expect(removed.sources).toEqual([]);
+  expect(
+    (
+      await request(`/entries/${linked.entryId}`, 'PATCH', {
+        expectedVersion: removed.serverVersion,
+        sourceUrls: [link],
+      })
+    ).status,
+  ).toBe(400);
 });
 
 test('snapshot revision and entries stay consistent while a later mutation commits between queries', async () => {
@@ -446,7 +436,7 @@ test('OpenAPI describes complete snapshots, nullable metadata, versions and prot
   });
 });
 
-test('catalog association uses server metadata and merge preserves manual identity without losing sources', async () => {
+test('catalog association uses server metadata and merge keeps the manual identity and link', async () => {
   const manual = await create({
     userTitle: 'manual identity',
     sourceUrls: [`https://example.com/${randomUUID()}`],
@@ -496,7 +486,7 @@ test('catalog association uses server metadata and merge preserves manual identi
     userTitle: manual.userTitle,
     catalogId,
     snapshot,
-    sources: [...manual.sources, ...linked.sources],
+    sources: manual.sources,
   });
   expect(
     (
@@ -600,12 +590,13 @@ test('replication creates are retry safe and cannot inject metadata or duplicate
   expect(await app.get(LibraryMutationService).get(first.ownerId, proposed.entryId)).toEqual(
     current,
   );
+  const duplicate = { ...template, entryId: randomUUID(), serverVersion: null };
   const sourceConflict = await replicate('push', {
     schemaVersion: 1,
-    rows: [{ assumedMaster: current, proposed: { ...current, sources: template.sources } }],
+    rows: [{ assumedMaster: null, proposed: duplicate }],
   });
   expect(await sourceConflict.json()).toMatchObject({
-    conflicts: [{ reason: 'SOURCE', serverDocument: current }],
+    conflicts: [{ reason: 'SOURCE', serverDocument: null }],
   });
   expect(await app.get(LibraryMutationService).get(first.ownerId, proposed.entryId)).toEqual(
     current,

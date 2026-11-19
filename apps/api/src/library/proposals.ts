@@ -1,5 +1,6 @@
 import {
   ApiErrorCode,
+  MAX_ENTRY_SOURCES,
   type EntryPatch,
   type FieldPath,
   type ServerEntry,
@@ -42,10 +43,10 @@ export function validateEntry(entry: ServerEntry, path: FieldPath = []): void {
       message: 'A title is required when the entry has no catalog item.',
     });
 
-  if (entry.sources.length > 100)
+  if (entry.sources.length > MAX_ENTRY_SOURCES)
     throw new MutationError(ApiErrorCode.ValidationError, {
       path: [...path, 'sources'],
-      message: 'An entry can have no more than 100 source links.',
+      message: 'An entry can have at most one link.',
     });
 }
 
@@ -71,33 +72,10 @@ export function proposeMerge(
 
   if (!survivor.catalogId && removed.catalogId) merged.snapshot = removed.snapshot;
 
-  merged.sources = [...survivor.sources];
-
-  for (const source of removed.sources)
-    if (!merged.sources.some((known) => known.normalizedUrl === source.normalizedUrl))
-      merged.sources.push(source);
+  // The survivor keeps its link. A survivor without a link takes the removed entry's link.
+  merged.sources = (survivor.sources.length ? survivor.sources : removed.sources).slice(0, 1);
 
   validateEntry(merged);
 
   return [merged, { ...removed, deleted: true }];
-}
-
-/** Proposes one source move without releasing its current active claim. */
-export function proposeReassignment(
-  from: ServerEntry,
-  to: ServerEntry,
-  normalizedUrl: string,
-): [ServerEntry, ServerEntry] {
-  const source = from.sources.find((value) => value.normalizedUrl === normalizedUrl);
-
-  if (from.entryId === to.entryId || from.deleted || to.deleted || !source)
-    throw new MutationError(ApiErrorCode.Conflict);
-
-  const moved: [ServerEntry, ServerEntry] = [
-    { ...from, sources: from.sources.filter((value) => value !== source) },
-    { ...to, sources: [...to.sources, source] },
-  ];
-  moved.forEach((entry) => validateEntry(entry));
-
-  return moved;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isViewingUrl, sourceLines } from './entry-form';
+import { isViewingUrl } from './entry-form';
 
 describe('entry form', () => {
   it('accepts only absolute HTTP and HTTPS viewing links', () => {
@@ -8,12 +8,5 @@ describe('entry form', () => {
     expect(isViewingUrl('javascript:alert(1)')).toBe(false);
     expect(isViewingUrl('ftp://example.test/file')).toBe(false);
     expect(isViewingUrl('example.test/watch')).toBe(false);
-  });
-
-  it('ignores blank lines and surrounding spaces', () => {
-    expect(sourceLines('  https://a.test \n\n https://b.test\n')).toEqual([
-      'https://a.test',
-      'https://b.test',
-    ]);
   });
 });

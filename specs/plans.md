@@ -6,7 +6,7 @@ Optional ideas. They are not in the release scope. The
 | Priority | Idea                                          | Boundary                                                        |
 | -------- | --------------------------------------------- | --------------------------------------------------------------- |
 | High     | Import merge with per-field preview           | Keep atomic replacement as a separate action                    |
-| High     | Better viewing-source presentation            | Multiple source links are already required                      |
+| High     | Better viewing-link presentation              | An entry has at most one link                                   |
 | High     | Popup draft recovery                          | Show drafts separately from saved entries                       |
 | Medium   | Settings backup                               | Extend the versioned format with non-sensitive preferences      |
 | Medium   | More parser hosts                             | Hosts beyond the PAGE-03 set                                    |

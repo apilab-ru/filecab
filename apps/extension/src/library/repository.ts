@@ -2,7 +2,9 @@ import {
   emptySnapshot,
   associateCatalog,
   type CatalogRecord,
+  addsSource,
   hasSemanticChange,
+  MAX_ENTRY_SOURCES,
   previewEntryPatch,
   type Category,
   type Entry,
@@ -42,11 +44,18 @@ function snapshotOf(rows: LocalEntry[]): LocalSnapshot {
   };
 }
 
+/** Carries only a link removal from saved intent. An update never adds a link. */
+function linkRemoval(proposed: Entry): string[] | undefined {
+  return proposed.sources.length ? undefined : [];
+}
+
 /** Enforces local identity/claim invariants before a durable write. */
 function assertClaims(entry: Entry, rows: LocalEntry[]): void {
   if (entry.deleted) return;
 
   if (!entry.catalogId && !entry.userTitle.trim()) throw new LocalLibraryError('INVALID_ENTRY');
+
+  if (entry.sources.length > MAX_ENTRY_SOURCES) throw new LocalLibraryError('INVALID_ENTRY');
 
   const normalized = new Set<string>();
   for (const source of entry.sources) {
@@ -281,6 +290,9 @@ export class LocalLibraryRepository {
 
       const entry = previewEntryPatch(before.entry, fields);
 
+      // Only a create adds the link. An edit can keep or remove it.
+      if (addsSource(before.entry, entry)) throw new LocalLibraryError('INVALID_ENTRY');
+
       return hasSemanticChange(before.entry, entry)
         ? {
             ...entry,
@@ -386,7 +398,7 @@ export class LocalLibraryRepository {
             rating: proposed.rating,
             progress: proposed.progress,
             comment: proposed.comment,
-            sourceUrls: proposed.sources.map((source) => source.originalUrl),
+            sourceUrls: linkRemoval(proposed),
           }),
           deleted: proposed.deleted,
           updatedAt: new Date(
@@ -439,7 +451,7 @@ export class LocalLibraryRepository {
               rating: proposed.rating,
               progress: proposed.progress,
               comment: proposed.comment,
-              sourceUrls: proposed.sources.map((source) => source.originalUrl),
+              sourceUrls: linkRemoval(proposed),
             }),
             deleted: proposed.deleted,
             updatedAt: new Date(

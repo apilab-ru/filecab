@@ -81,44 +81,8 @@ export class MergeEntriesDto {
   fields!: EntryPatchDto;
 }
 
-/** Selects exactly one source transfer, protected by both entry versions. */
-export class ReassignSourceDto {
-  @ApiProperty({ type: String, format: 'uuid' })
-  @IsUUID('all')
-  fromId!: string;
-
-  @ApiProperty({ type: String, pattern: '^[1-9][0-9]{0,127}$' })
-  @Matches(/^[1-9][0-9]{0,127}$/)
-  fromVersion!: string;
-
-  @ApiProperty({ type: String, format: 'uuid' })
-  @IsUUID('all')
-  toId!: string;
-
-  @ApiProperty({ type: String, pattern: '^[1-9][0-9]{0,127}$' })
-  @Matches(/^[1-9][0-9]{0,127}$/)
-  toVersion!: string;
-
-  @ApiProperty({
-    type: String,
-    maxLength: 8192,
-    description: 'Exact normalized URL currently attached to fromId.',
-  })
-  @IsString()
-  @MaxLength(8192)
-  normalizedUrl!: string;
-}
-
 /** Confirms the exact previously previewed merge choices. */
 export class ApplyMergeDto extends MergeEntriesDto {
-  @ApiProperty({ type: String, maxLength: 256 })
-  @IsString()
-  @MaxLength(256)
-  previewToken!: string;
-}
-
-/** Confirms the exact previously previewed source movement. */
-export class ApplyReassignmentDto extends ReassignSourceDto {
   @ApiProperty({ type: String, maxLength: 256 })
   @IsString()
   @MaxLength(256)

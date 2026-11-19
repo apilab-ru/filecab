@@ -106,7 +106,7 @@ can have format `movie`, `tv`, `special`, `ova`, `ona` or `music` and stay in th
 
 **MODEL-02.** Keep provider namespaces and string IDs separate. Keep prefixes and leading zeros, for example IMDb `tt1234567`. IMDb, TMDB, MAL, Shikimori, Kinopoisk and internal IDs are not interchangeable.
 
-**MODEL-03.** An entry keeps category, user title, viewing sources, status, rating, progress, comment, added and modified times, references and a snapshot. The snapshot has original and localized titles, poster, description, year, genre IDs, format and an optional episode total.
+**MODEL-03.** An entry keeps category, user title, at most one viewing link, status, rating, progress, comment, added and modified times, references and a snapshot. The snapshot has original and localized titles, poster, description, year, genre IDs, format and an optional episode total.
 
 **MODEL-04.** A manual entry requires a category and a nonblank user title. A catalog entry needs a fallback title for display. Missing descriptions, posters, original titles, genres, years and totals must display safely.
 
@@ -156,13 +156,13 @@ can have format `movie`, `tv`, `special`, `ova`, `ona` or `music` and stay in th
 
 **EDIT-02.** Enable Save only for a valid new or changed entry. Keep popup Save at the bottom without covering content. Block duplicate submissions. Clear the dirty state only after confirmed persistence. An error keeps the input and offers Retry.
 
-**EDIT-03.** A page save attaches URLs only after the user accepts them. A search save attaches no URL unless the user enters one. Accept only HTTP and HTTPS viewing links. Never run a URL as code.
+**EDIT-03.** Only a create adds the viewing link: a save from the extension popup page after the user accepts the page URL, or an import. A search save and a manual entry have no link. The editor shows the link as read-only and offers only Remove. Accept only HTTP and HTTPS links. Never run a URL as code.
 
-**EDIT-04.** If a normalized URL belongs to another entry, show that entry and ask for reassignment confirmation. Move the association atomically. Keep both entries and update both modification times. Cancel changes nothing.
+**EDIT-04.** A link never moves between entries. If the page URL already belongs to an entry, the popup opens that entry. See [MATCH-01](#4-page-extraction-and-matching).
 
 ## 6. Library browsing
 
-**LIB-01.** For the selected category, filter, then sort stably, then paginate. Cards show title, poster fallback, known year, episodes, status, rating, progress, viewing links, genres and description. If the description is missing, show the comment, then a localized empty text. Keep notes visually different.
+**LIB-01.** For the selected category, filter, then sort stably, then paginate. Cards show title, poster fallback, known year, episodes, status, rating, progress, the viewing link, genres and description. If the description is missing, show the comment, then a localized empty text. Keep notes visually different.
 
 **LIB-02.** Local search is case-insensitive. It covers user, original and localized titles, descriptions and comments. Filtering of saved data works offline.
 
@@ -192,11 +192,11 @@ can have format `movie`, `tv`, `special`, `ova`, `ona` or `music` and stay in th
 
 ## 8. Backup and restore
 
-**BACKUP-01.** Export `backup.json` in the [v1 format](domain-contract.md#backup-format). Include active UUIDs, optional catalog IDs, user fields, ordered sources, snapshots with provenance and timestamps. Exclude tombstones, per-entry `schemaVersion`, server versions, deletion state, credentials, account data and settings.
+**BACKUP-01.** Export `backup.json` in the [v1 format](domain-contract.md#backup-format). Include active UUIDs, optional catalog IDs, user fields, the viewing link, snapshots with provenance and timestamps. Exclude tombstones, per-entry `schemaVersion`, server versions, deletion state, credentials, account data and settings.
 
 **BACKUP-02.** Round-trip only the current versioned format. Reject old arrays, grouped `data`, `_filecab` and unsupported versions. Do not convert old data or infer timestamps.
 
-**BACKUP-03.** Validate the shape, categories, enums, types, bounds, dates, HTTP and HTTPS URLs and entry, catalog and source conflicts. Report errors with their index. Never discard or merge invalid entries silently.
+**BACKUP-03.** Validate the shape, categories, enums, types, bounds, dates, HTTP and HTTPS URLs, at most one link for each entry, and entry, catalog and link conflicts. Report errors with their index. Never discard or merge invalid entries silently.
 
 **BACKUP-04.** Before replacement, show counts and conflicts and offer a pre-restore backup. Require confirmation bound to the owner, payload digest and revision. Invalid data cannot replace the library. An empty replacement needs a separate confirmation.
 
@@ -266,11 +266,11 @@ contract or fixture checks, and live checks when available.
 | AC06 | A failed save keeps the changed values and Retry. A successful edit changes only the modified date.                                                                           | MODEL-07, EDIT-02          |
 | AC07 | Change the status or locale with an unsaved editor. Rating, progress, comment and dirty state stay.                                                                           | EDIT-01, LANG-01           |
 | AC08 | Invalid ratings and noninteger or negative progress are blocked. Excess progress warns without truncation. Rating clears to 0. Reaching the total does not change the status. | MODEL-05, EDIT-01          |
-| AC09 | Reassign a URL. Cancel changes nothing. Confirmation keeps both entries with one URL owner.                                                                                   | EDIT-04                    |
+| AC09 | Remove a link in the editor. Save keeps the entry without a link. An edit cannot add a link.                                                                                  | EDIT-03, EDIT-04           |
 | AC10 | Search titles, descriptions and comments in all available languages. Check the OR, AND and exclusion rules and the hidden default.                                            | LIB-02–04                  |
 | AC11 | Change filters, sort and page size, delete the last item on a page, reopen and switch categories. Pagination and preferences stay valid.                                      | LIB-05–06                  |
 | AC12 | Delete and Undo within 10 seconds restores exactly the selected record.                                                                                                       | LIB-07                     |
-| AC13 | A backup round-trip keeps manual and catalog entries, user fields, ordered sources, metadata, provenance and timestamps.                                                      | BACKUP-01–03               |
+| AC13 | A backup round-trip keeps manual and catalog entries, user fields, links, metadata, provenance and timestamps.                                                                | BACKUP-01–03               |
 | AC14 | Malformed JSON, a wrong schema, conflicting identities or an oversized file leave the library unchanged with actionable errors.                                               | BACKUP-03–05               |
 | AC15 | Cancel replacement or simulate a persistence failure. The library stays. An empty entries array needs explicit confirmation.                                                  | BACKUP-04–05               |
 | AC16 | Two interfaces edit different entries. Both persist. A same-entry conflict and a stale import need deliberate resolution.                                                     | DATA-03                    |

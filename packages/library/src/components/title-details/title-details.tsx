@@ -5,7 +5,7 @@ import { isViewingUrl } from '../../domain/entry-form';
 import type { TitleDetailsProps } from './model-title-details';
 import './title-details.scss';
 
-/** Shows the description, genres and viewing links over a poster. A personal note is marked. */
+/** Shows the description, genres and the viewing link over a poster. A personal note is marked. */
 export function TitleDetails({
   id,
   snapshot,
@@ -17,6 +17,7 @@ export function TitleDetails({
   const { t } = useTranslation();
   const { locale } = useInterfacePreferences();
   const description = descriptionFor(snapshot, locale, comment, t('noDescription'));
+  const link = sources[0]?.originalUrl;
 
   return (
     <div
@@ -57,27 +58,21 @@ export function TitleDetails({
           </ul>
         </>
       )}
-      {sources.length > 0 && (
+      {link && (
         <>
-          <p className="title-details__label">{t('viewingLinks')}</p>
-          <ul className="title-details__links">
-            {sources.map(({ originalUrl }) => (
-              <li className="title-details__link-item" key={originalUrl}>
-                {isViewingUrl(originalUrl) ? (
-                  <a
-                    className="title-details__link"
-                    href={originalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {new URL(originalUrl).hostname}
-                  </a>
-                ) : (
-                  <span className="title-details__link">{originalUrl}</span>
-                )}
-              </li>
-            ))}
-          </ul>
+          <p className="title-details__label">{t('ViewingLink')}</p>
+          {isViewingUrl(link) ? (
+            <a
+              className="title-details__link"
+              href={link}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {new URL(link).hostname}
+            </a>
+          ) : (
+            <span className="title-details__link">{link}</span>
+          )}
         </>
       )}
     </div>

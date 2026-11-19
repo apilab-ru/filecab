@@ -234,18 +234,16 @@ The authenticated routes below are relative to `/api/v1` and use the owner from
 the access cookie or extension bearer token. No route accepts a submitted owner or client snapshot.
 Catalog providers can be disabled while creating and editing manual entries.
 
-| Method and path                              | Request / result                                                                             |
-| -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `GET /library`                               | Complete active private library and revision; includes hidden entries, excludes tombstones.  |
-| `GET /library/entries/:entryId`              | Active owned document; deleted or foreign entries return 404.                                |
-| `POST /library/entries`                      | Editable fields and required category; optional UUID/catalogId. Returns the server document. |
-| `PATCH /library/entries/:entryId`            | `expectedVersion` plus editable fields.                                                      |
-| `DELETE /library/entries/:entryId`           | `expectedVersion`; returns the deletion tombstone.                                           |
-| `POST /library/entries/:entryId/restore`     | Tombstone `expectedVersion`; restores unless identity/source claims conflict.                |
-| `POST /library/merges/preview`               | Survivor/removed IDs and versions, plus `fields` choices.                                    |
-| `POST /library/merges/apply`                 | The same choices plus `previewToken`.                                                        |
-| `POST /library/sources/reassignment/preview` | From/to IDs and versions, plus the saved `normalizedUrl`.                                    |
-| `POST /library/sources/reassignment/apply`   | The same source movement plus `previewToken`.                                                |
+| Method and path                          | Request / result                                                                             |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `GET /library`                           | Complete active private library and revision; includes hidden entries, excludes tombstones.  |
+| `GET /library/entries/:entryId`          | Active owned document; deleted or foreign entries return 404.                                |
+| `POST /library/entries`                  | Editable fields and required category; optional UUID/catalogId. Returns the server document. |
+| `PATCH /library/entries/:entryId`        | `expectedVersion` plus editable fields.                                                      |
+| `DELETE /library/entries/:entryId`       | `expectedVersion`; returns the deletion tombstone.                                           |
+| `POST /library/entries/:entryId/restore` | Tombstone `expectedVersion`; restores unless identity/source claims conflict.                |
+| `POST /library/merges/preview`           | Survivor/removed IDs and versions, plus `fields` choices.                                    |
+| `POST /library/merges/apply`             | The same choices plus `previewToken`.                                                        |
 
 Request/response schemas and synthetic examples are available in `/api/docs`
 outside production.
@@ -263,8 +261,9 @@ change catalog identity, creation time or snapshot metadata.
 
 Versions are canonical positive decimal **strings**. Updating a document with
 its current version and unchanged fields is a no-op. Status null clears status;
-rating/progress zero, an empty comment and an empty source list are explicit
-clearing operations. Progress above a known total is retained without an
+rating/progress zero, an empty comment and an empty `sourceUrls` list are explicit
+clearing operations. An entry has at most one viewing link: only a create can add it,
+and an update can only remove it. Progress above a known total is retained without an
 automatic status change; UI warnings/editing controls follow in step 11.
 
 Snapshot revision and entries come from one RepeatableRead transaction. Display
@@ -276,9 +275,8 @@ proposals. Their HMAC confirmation expires after five minutes and binds the owne
 operation, versions, source order and choices. Apply revalidates everything under
 the same library lock used to publish all affected changes. A stale, altered or
 expired preview returns 409 without partial writes. Merges preserve the selected
-survivor identity and tombstone the removed identity; source lists are combined
-without truncation. A result above 100 sources is rejected until sources are
-reduced explicitly. Website cookie mutations also require the existing Origin
+survivor identity and tombstone the removed identity; the survivor keeps its link,
+or takes the removed entry's link when it has none. Website cookie mutations also require the existing Origin
 and `X-Filecab-Request: 1` protections.
 
 This is the API delivery; library screens, offline persistence, replication and

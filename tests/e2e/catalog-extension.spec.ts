@@ -233,10 +233,7 @@ test('a confirmed interrupted local merge recovers after browser restart without
       createdAt: before.createdAt,
       catalogId: catalog.catalogId,
       comment: 'Private manual note',
-      sources: [
-        expect.objectContaining({ originalUrl: 'https://watch.test/manual' }),
-        expect.objectContaining({ originalUrl: 'https://watch.test/donor' }),
-      ],
+      sources: [expect.objectContaining({ originalUrl: 'https://watch.test/manual' })],
     });
   } finally {
     await context.close();

@@ -44,13 +44,7 @@ test('offline edits across full-page tabs validate input, resolve conflicts, und
     );
     await popup.getByLabel('Title', { exact: true }).fill('  Offline title  ');
     await popup.getByLabel('Comment').fill('  exact note\nsecond line  ');
-    await popup.getByLabel('Viewing URLs').fill('javascript:alert(1)');
-    await save.click();
-    await expect(popup.getByLabel('Viewing URLs')).toHaveJSProperty(
-      'validationMessage',
-      'Enter only HTTP or HTTPS links, one per line.',
-    );
-    await popup.getByLabel('Viewing URLs').fill('https://example.test/watch?id=001#episode');
+    await expect(popup.getByText('Viewing link')).toHaveCount(0);
     await expect(popup.getByText('Episode total unknown')).toBeVisible();
     await popup.getByRole('dialog').getByLabel('Rating', { exact: true }).selectOption('7');
     await save.click();
@@ -112,9 +106,6 @@ test('offline edits across full-page tabs validate input, resolve conflicts, und
     await expect(reopened.locator('.fc-rating-picker__trigger')).toHaveText('7 / 10');
     await cardAction(reopened, 'Edit');
     await expect(reopened.getByLabel('Comment')).toHaveValue('  exact note\nsecond line  ');
-    await expect(reopened.getByLabel('Viewing URLs')).toHaveValue(
-      'https://example.test/watch?id=001#episode',
-    );
   } finally {
     await context.close();
     await rm(profile, { recursive: true, force: true });
@@ -192,9 +183,16 @@ test('repository commits revisions atomically across instances, shares one datab
             status: Status.Hide,
             progress: 150,
             rating: 10,
-            sourceUrls: ['https://example.test/source'],
             comment: ' note ',
           });
+          let linkAdded = true;
+          try {
+            await repository.update(entryId, changed.localRevision, {
+              sourceUrls: ['https://example.test/source'],
+            });
+          } catch {
+            linkAdded = false;
+          }
           const cleared = await repository.update(entryId, changed.localRevision, {
             status: null,
             progress: 0,
@@ -265,6 +263,7 @@ test('repository commits revisions atomically across instances, shares one datab
 
           return {
             unchanged: JSON.stringify(before) === JSON.stringify(unchanged),
+            linkAdded,
             cleared: cleared.entry,
             exactUndo,
             expired,
@@ -289,6 +288,7 @@ test('repository commits revisions atomically across instances, shares one datab
       { url, entryId: created[0].entryId },
     );
     expect(result.unchanged).toBe(true);
+    expect(result.linkAdded).toBe(false);
     expect(result.cleared).toMatchObject({
       status: null,
       progress: 0,

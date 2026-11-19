@@ -119,13 +119,13 @@ export class EntryPatchDto {
 
   @ValidateIf((_, value) => value !== undefined)
   @IsArray()
-  @ArrayMaxSize(100)
+  @ArrayMaxSize(1)
   @Validate(SourceUrlsConstraint)
   @ApiPropertyOptional({
     type: [String],
-    maxItems: 100,
+    maxItems: 1,
     description:
-      'Unique absolute HTTP(S) URLs, each at most 8192 characters. Empty array clears all sources.',
+      'At most one absolute HTTP(S) viewing link of at most 8192 characters. A create can set it. An update can only remove it with an empty array or repeat the current link.',
   })
   sourceUrls?: string[];
 }

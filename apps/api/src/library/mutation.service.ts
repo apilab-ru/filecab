@@ -1,5 +1,6 @@
 import {
   ApiErrorCode,
+  addsSource,
   associateCatalog,
   CatalogAssociationConflictError,
   mergeCatalogSnapshots,
@@ -18,7 +19,6 @@ import {
   type Category,
   type OwnerSnapshot,
   type MergeEntriesRequest,
-  type ReassignSourceRequest,
   type LibraryMutationPreview,
 } from '@filecab/contracts';
 import { createHash } from 'node:crypto';
@@ -26,16 +26,18 @@ import { isDeepStrictEqual } from 'node:util';
 import { ApiException } from '../http/api-error';
 import type { PrismaClient, Prisma } from '../generated/prisma/client';
 
-import {
-  MutationError,
-  patchDocument,
-  validateEntry,
-  proposeMerge,
-  proposeReassignment,
-} from './proposals';
+import { MutationError, patchDocument, validateEntry, proposeMerge } from './proposals';
 import { LibraryPreviewSigner } from './preview';
 
 export { MutationError } from './proposals';
+
+/** Rejects a link that an update adds. Only a create can set the link; an update can remove it. */
+function linkAddedAfterCreate(path: FieldPath = []): MutationError {
+  return new MutationError(ApiErrorCode.ValidationError, {
+    path: [...path, 'sources'],
+    message: 'A link can only be added when the entry is created. An update can only remove it.',
+  });
+}
 
 /** Carries a new entry without accepting client ownership or server timestamps. */
 export interface CreateEntry {
@@ -312,6 +314,9 @@ export class LibraryMutationService {
           createdAt: current?.createdAt ?? now,
           updatedAt: now,
         };
+
+        if (current && addsSource(current, document)) throw linkAddedAfterCreate(['proposed']);
+
         validateEntry(document, ['proposed']);
         await this.publish(tx, ownerId, document, !current);
 
@@ -395,6 +400,9 @@ export class LibraryMutationService {
       if (before.deleted) throw new MutationError(ApiErrorCode.Conflict);
 
       const after = patchDocument(before, patch);
+
+      if (addsSource(before, after)) throw linkAddedAfterCreate();
+
       await this.checkCatalog(tx, after.catalogId, after.category);
       validateEntry(after);
 
@@ -490,57 +498,6 @@ export class LibraryMutationService {
       if (!this.previews) throw new MutationError(ApiErrorCode.Conflict);
 
       return this.previews.create(ownerId, 'merge', input, [survivor, removed], proposed);
-    });
-  }
-
-  async previewReassignment(
-    ownerId: string,
-    input: ReassignSourceRequest,
-  ): Promise<LibraryMutationPreview> {
-    return this.transaction(ownerId, async (tx) => {
-      const from = await this.load(tx, ownerId, input.fromId, input.fromVersion);
-      const to = await this.load(tx, ownerId, input.toId, input.toVersion);
-      const proposed = proposeReassignment(from, to, input.normalizedUrl);
-
-      if (!this.previews) throw new MutationError(ApiErrorCode.Conflict);
-
-      return this.previews.create(ownerId, 'reassign-source', input, [from, to], proposed);
-    });
-  }
-
-  async reassignSource(
-    ownerId: string,
-    fromId: string,
-    fromVersion: string,
-    toId: string,
-    toVersion: string,
-    normalizedUrl: string,
-    previewToken?: string,
-  ): Promise<ServerEntry[]> {
-    return this.transaction(ownerId, async (tx) => {
-      const from = await this.load(tx, ownerId, fromId, fromVersion);
-      const to = await this.load(tx, ownerId, toId, toVersion);
-      const proposed = proposeReassignment(from, to, normalizedUrl);
-
-      if (previewToken !== undefined) {
-        if (!this.previews) throw new MutationError(ApiErrorCode.Conflict);
-
-        this.previews.verify(
-          previewToken,
-          ownerId,
-          'reassign-source',
-          { fromId, fromVersion, toId, toVersion, normalizedUrl },
-          [from, to],
-        );
-      }
-
-      const updatedAt = new Date(
-        Math.max(Date.now(), Date.parse(from.updatedAt), Date.parse(to.updatedAt)),
-      ).toISOString();
-      const first = await this.publish(tx, ownerId, { ...proposed[0], updatedAt });
-      const second = await this.publish(tx, ownerId, { ...proposed[1], updatedAt });
-
-      return [first, second];
     });
   }
 

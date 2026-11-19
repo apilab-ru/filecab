@@ -157,8 +157,9 @@ An owner can have only one active entry for each internal catalog item.
 
 Keep viewing sources separate from catalog links. Normalize them with
 [Source normalization](domain-contract.md#viewing-source-normalization).
-One normalized source can belong to only one active entry for each owner.
-Reassignment is explicit and atomic.
+An entry has at most one link. One normalized link can belong to only one active entry
+for each owner. Only a create and a replicated create can add the link. A PATCH and a
+replicated update that add or change the link get a validation error. They can remove it.
 
 ### Transactional persistence
 
@@ -239,19 +240,17 @@ version and the current catalog and source claims. It restores the exact entry.
 Semantic edits update the modification time. No-ops and catalog refresh do not.
 Client timestamps never set the replication order.
 
-### Merge and source reassignment
+### Merge
 
-| Operation           | Preview                                      | Apply                                      | Input                                                         |
-| ------------------- | -------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------- |
-| Merge               | `POST /library/merges/preview`               | `POST /library/merges/apply`               | Survivor and removed UUIDs, both versions, chosen user fields |
-| Source reassignment | `POST /library/sources/reassignment/preview` | `POST /library/sources/reassignment/apply` | From and to UUIDs, both versions, normalized source URL       |
+| Operation | Preview                        | Apply                        | Input                                                         |
+| --------- | ------------------------------ | ---------------------------- | ------------------------------------------------------------- |
+| Merge     | `POST /library/merges/preview` | `POST /library/merges/apply` | Survivor and removed UUIDs, both versions, chosen user fields |
 
 Preview rules:
 
-- Check ownership, active state, category and catalog compatibility, and source limits.
+- Check ownership, active state, category and catalog compatibility.
 - Do not change entries, revisions or history.
-- Combine sources in stable order without loss.
-- Reject a result with more than 100 viewing sources. Do not truncate.
+- Keep the survivor link. A survivor without a link takes the link of the removed entry.
 - Category changes and source replacement are separate operations.
 - Return the before and proposed documents. Proposed documents have a null `serverVersion`.
 - Return a token that expires after five minutes. The token is an HMAC bound to the owner, operation, both versions and documents, and the chosen fields.

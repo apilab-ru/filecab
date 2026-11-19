@@ -15,7 +15,7 @@ import { useLocalStore } from '../../hooks/use-local-store';
 import { Context } from '../../models/interface-context';
 import { WorkspaceConflictError, type WorkspacePreview } from '../../models/workspace';
 import { retainedFields } from '../../domain/catalog-selection';
-import { isViewingUrl, sourceLines } from '../../domain/entry-form';
+import { isViewingUrl } from '../../domain/entry-form';
 import {
   MERGE_FIELD_LABELS,
   RATING_VALUES,
@@ -34,7 +34,6 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
   const { setDirty } = useContext(Context);
   const form = useRef<HTMLFormElement>(null);
   const titleInput = useRef<HTMLInputElement>(null);
-  const sourcesInput = useRef<HTMLTextAreaElement>(null);
   const progressHint = useId();
   const locked = useRef(false);
   const entry = draft.row?.entry;
@@ -51,7 +50,8 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
           comment: '',
         },
     category: entry?.category ?? draft.category,
-    sources: entry?.sources.map(({ originalUrl }) => originalUrl).join('\n') ?? '',
+    // The link is read-only. An edit can only remove it.
+    link: entry?.sources[0]?.originalUrl ?? '',
     dirty: Boolean(draft.catalog),
     busy: false,
     error: '',
@@ -72,7 +72,7 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
       const fields: EntryPatch = {
         ...values.fields,
         category: values.category,
-        sourceUrls: sourceLines(values.sources),
+        ...(entry ? { sourceUrls: values.link ? [values.link] : [] } : {}),
       };
 
       if (association && draft.row && draft.catalog) {
@@ -123,9 +123,6 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
     titleInput.current?.setCustomValidity(
       titleRequired && !values.fields.userTitle.trim() ? t('blankTitle') : '',
     );
-    sourcesInput.current?.setCustomValidity(
-      sourceLines(values.sources).every(isViewingUrl) ? '' : t('invalidSourceUrls'),
-    );
   });
   /** Discards the draft fields and loads the latest saved version of the entry. */
   const reload = () => {
@@ -140,7 +137,7 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
     rebase();
     setters.fields(retainedFields(latest.entry));
     setters.category(latest.entry.category);
-    setters.sources(latest.entry.sources.map(({ originalUrl }) => originalUrl).join('\n'));
+    setters.link(latest.entry.sources[0]?.originalUrl ?? '');
     setters.dirty(false);
     setters.preview(null);
     setters.error('');
@@ -281,20 +278,40 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
               onChange={(event) => change({ comment: event.target.value })}
             />
           </label>
-          <label className="workspace-editor__field">
-            {t('Viewing URLs (one per line)')}
-            <textarea
-              ref={sourcesInput}
-              className="workspace-editor__input"
-              aria-label={t('Viewing URLs (one per line)')}
-              disabled={association}
-              value={values.sources}
-              onChange={(event) => {
-                setters.sources(event.target.value);
-                setters.dirty(true);
-              }}
-            />
-          </label>
+          {entry && (
+            <div className="workspace-editor__field">
+              {t('ViewingLink')}
+              <div className="workspace-editor__link">
+                {values.link && isViewingUrl(values.link) && (
+                  <a
+                    className="workspace-editor__link-url"
+                    href={values.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {values.link}
+                  </a>
+                )}
+                {values.link && !isViewingUrl(values.link) && (
+                  <span className="workspace-editor__link-url">{values.link}</span>
+                )}
+                {!values.link && <span className="workspace-editor__hint">{t('noLink')}</span>}
+                {values.link && (
+                  <Button
+                    type="button"
+                    disabled={association}
+                    onClick={() => {
+                      setters.link('');
+                      setters.dirty(true);
+                      setters.preview(null);
+                    }}
+                  >
+                    {t('removeLink')}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
           {draft.other && (
             <section className="workspace-editor__merge">
               <p>{t('catalogMergeChoices')}</p>
@@ -341,8 +358,8 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
                     <dd>{proposed.progress}</dd>
                     <dt>{t('Comment')}</dt>
                     <dd>{proposed.comment}</dd>
-                    <dt>{t('Viewing URLs (one per line)')}</dt>
-                    <dd>{proposed.sources.map(({ originalUrl }) => originalUrl).join('\n')}</dd>
+                    <dt>{t('ViewingLink')}</dt>
+                    <dd>{proposed.sources[0]?.originalUrl ?? t('noLink')}</dd>
                     <dt>{t('catalogRetainedIdentity')}</dt>
                     <dd>
                       {proposed.entryId} · {proposed.createdAt}

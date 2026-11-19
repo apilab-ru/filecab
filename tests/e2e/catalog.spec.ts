@@ -223,9 +223,10 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
       }
 
       expect(input.expectedVersion).toBe(entry.serverVersion);
-      const { expectedVersion: _version, sourceUrls: _sources, ...fields } = input;
+      const { expectedVersion: _version, sourceUrls, ...fields } = input;
       Object.assign(entry, {
         ...fields,
+        ...(sourceUrls?.length === 0 ? { sources: [] } : {}),
         serverVersion: String(Number(entry.serverVersion) + 1),
       });
 
@@ -262,7 +263,7 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
   return state;
 }
 
-test('website editor keeps a conflicted draft, deletes with Undo and restores the entry', async ({
+test('website editor keeps a conflicted draft, removes the link, deletes with Undo and restores the entry', async ({
   page,
   context,
 }) => {
@@ -290,6 +291,13 @@ test('website editor keeps a conflicted draft, deletes with Undo and restores th
     rating: 0,
     serverVersion: '3',
   });
+  await cardAction(page, 'Edit');
+  await expect(page.getByRole('link', { name: `https://watch.test/${manualId}` })).toBeVisible();
+  await page.getByRole('button', { name: 'Remove link', exact: true }).click();
+  await expect(page.getByText('No link', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(state.entries[0].sources).toEqual([]);
   await cardAction(page, 'Delete');
   await expect(page.getByRole('status').filter({ hasText: 'Deleted:' })).toHaveText(
     /Deleted: Catalog title/,
@@ -297,7 +305,7 @@ test('website editor keeps a conflicted draft, deletes with Undo and restores th
   await expect(page.locator('.library-card:visible')).toHaveCount(0);
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(page.locator('.library-card__title:visible')).toHaveText('Catalog title');
-  expect(state.entries[0]).toMatchObject({ deleted: false, serverVersion: '5' });
+  expect(state.entries[0]).toMatchObject({ deleted: false, serverVersion: '6' });
 });
 
 test('catalog debounce, late responses, errors and hasMore retain the latest search', async ({

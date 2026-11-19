@@ -86,7 +86,7 @@ If no score is available, show Unrated. Never save a provider score as a persona
 - In library mode, a click on a genre applies the genre filter.
 - Put a Details button at the bottom right of the poster. It opens an overlay on the poster. The card size does not change.
 - The overlay shows the description. If there is no description, it shows the comment, marked as a personal note. If there is no comment, it shows a localized empty text.
-- The overlay also shows all genre names and the viewing links. Open a link in a new tab with `noopener noreferrer`. Show a link only for HTTP and HTTPS.
+- The overlay also shows all genre names and the viewing link. Open a link in a new tab with `noopener noreferrer`. Show a link only for HTTP and HTTPS.
 - List mode does not show genre icons or the Details button.
 
 ### Grid dimensions
