@@ -88,3 +88,13 @@ For example:
 Write tests only when they verify meaningful behavior or prevent regressions. Avoid redundant tests and tests that merely mirror the implementation.
 
 Use primitive types (`string`, `number`, etc.) directly instead of branded types or aliases for individual IDs, timestamps, versions and cursors.
+
+# Developing
+
+Before starting a task:
+
+1. Analyze all requirements and identify ambiguities.
+2. If clarification is needed, ask all questions in one batch.
+3. Review the answers and clarify any remaining critical uncertainties.
+4. Once requirements are clear, execute the task.
+5. Skip questions when requirements are already clear. Use existing project conventions for minor details.
