@@ -25,7 +25,7 @@ Organize code by feature, then by responsibility, then by component or module:
 
 - An app or package with one feature omits the feature level, for example `src/components/`.
 - `packages/library` uses top-level `components/`, `providers/`, `pages/`, `hooks/` and `models/`. Translations stay in `i18n/`.
-- The website uses `auth/` and `online-library/`. The extension uses `auth/`, `library/` and `popup/`. The API uses `auth/`, `health/`, `catalog/` and `library/`.
+- The website uses `auth/` and `online-library/`. The extension uses `auth/`, `library/`, `page/` and `popup/`. The API uses `auth/`, `health/`, `catalog/`, `library/` and `page-rules/`.
 - Shared contracts use `models/` and `domain/`.
 - Keep the styles, types, hooks and utilities of a component in its folder. Keep shared hooks and models in their responsibility groups.
 - Use `.tsx` for React components and `.ts` for logic and types. Name hooks `useSomething`.

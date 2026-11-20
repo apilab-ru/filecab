@@ -7,7 +7,7 @@ export default defineConfig({
   manifest: {
     name: '__MSG_extensionName__',
     default_locale: 'en',
-    permissions: ['identity', 'storage'],
+    permissions: ['identity', 'storage', 'activeTab', 'scripting'],
     host_permissions: [`${new URL(apiOrigin).origin}/*`],
     description: '__MSG_extensionDescription__',
     icons: { 48: 'wish-list-icon.png' },

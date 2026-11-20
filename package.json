@@ -18,6 +18,8 @@
     "test:contracts": "vitest run --project contracts",
     "test:integration": "pnpm --filter @filecab/api db:generate && vitest run --project integration",
     "test:e2e": "nx build extension && playwright test",
+    "test:page-rules": "playwright test -c playwright.page-rules.config.ts --project live",
+    "test:page-rules:sign-in": "playwright test -c playwright.page-rules.config.ts --project sign-in --reporter list",
     "typecheck:tools": "tsc -p tsconfig.tools.json --noEmit",
     "db:generate": "pnpm --filter @filecab/api db:generate",
     "db:validate": "pnpm --filter @filecab/api db:validate",

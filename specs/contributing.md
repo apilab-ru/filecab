@@ -33,6 +33,7 @@ Use these steps for any agent or person who delivers a step of the [implementati
 | Package boundaries         | `pnpm check:boundaries`                      |
 | Database integration tests | `pnpm test:integration`                      |
 | Browser tests              | `pnpm test:e2e`                              |
+| Live page rule checks      | `pnpm test:page-rules`                       |
 
 Database integration tests need a dedicated PostgreSQL 17 test database. They do not read `apps/api/.env`.
 
@@ -41,6 +42,14 @@ Database integration tests need a dedicated PostgreSQL 17 test database. They do
 3. Set `DATABASE_URL` to that database and set `NODE_ENV=test` in the shell.
 4. Apply the migrations with `pnpm db:deploy`.
 5. Run `pnpm test:integration`.
+
+Live page rule checks load the real sites. They are not part of `pnpm test:e2e`. Run them manually after a change to `page-rules.json` or `apps/extension/src/page/extract-page.ts`, and before the merge of that change.
+
+Some sites need a sign-in or a browser check. These cases use a local browser profile:
+
+1. Set `FILECAB_PAGE_RULES_PROFILE` to a local directory outside the repository.
+2. Run `pnpm test:page-rules:sign-in`, sign in on each tab, then close the browser.
+3. Run `pnpm test:page-rules` with the same variable. Without the variable, the run skips these cases.
 
 Every migration folder in `apps/api/prisma/migrations/` must contain `migration.sql`. An empty folder stops `pnpm db:deploy` with error P3015.
 
@@ -73,6 +82,6 @@ style and test rules. These rules add to it:
 - Use tables for mappings, limits and comparisons.
 - Technologies go in [Stack](stack.md). Engineering rules go in [Conventions](conventions.md). Product behavior goes in [Functionality](functionality.md). Provider differences go in integration specs. Optional ideas go in [Plans](plans.md).
 - `specs/` holds all normative rules, including protocol and design decisions.
-- `implementation/` holds only the delivery plan and the checklist with status and evidence. Do not put rules there.
+- `implementation/` holds only the delivery plan, the checklist with status and evidence, and check reports. Do not put rules there.
 - Do not keep dated investigation logs in specs. Keep only the resulting rule. Record evidence in the checklist.
 - Label assumptions and open decisions. Do not resolve conflicts silently. Fixtures do not prove live provider availability.

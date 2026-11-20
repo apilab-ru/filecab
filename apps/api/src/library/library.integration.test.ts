@@ -312,7 +312,7 @@ test('merge previews have no side effects and bind ownership, choices and both v
   ).toBe(409);
 });
 
-test('an entry keeps at most one link that only a create adds and an update can only remove', async () => {
+test('an entry keeps at most one link that an update can add, replace, move or remove', async () => {
   const link = `https://example.com/${randomUUID()}`;
   expect(
     (
@@ -325,33 +325,46 @@ test('an entry keeps at most one link that only a create adds and an update can 
   ).toBe(400);
   const linked = await create({ sourceUrls: [link] });
   expect(linked.sources.map((source) => source.originalUrl)).toEqual([link]);
-  const replace = await request(`/entries/${linked.entryId}`, 'PATCH', {
-    expectedVersion: linked.serverVersion,
-    sourceUrls: [`${link}/other`],
-  });
-  expect(replace.status).toBe(400);
-  const unchanged = await request(`/entries/${linked.entryId}`, 'PATCH', {
-    expectedVersion: linked.serverVersion,
-    comment: 'same link kept',
-    sourceUrls: [link],
-  });
-  expect(unchanged.status).toBe(200);
-  const kept = (await unchanged.json()) as ServerEntry;
+  const replaced = (await (
+    await request(`/entries/${linked.entryId}`, 'PATCH', {
+      expectedVersion: linked.serverVersion,
+      sourceUrls: [`${link}/other`],
+    })
+  ).json()) as ServerEntry;
+  expect(replaced.sources.map((source) => source.originalUrl)).toEqual([`${link}/other`]);
   const removed = (await (
     await request(`/entries/${linked.entryId}`, 'PATCH', {
-      expectedVersion: kept.serverVersion,
+      expectedVersion: replaced.serverVersion,
       sourceUrls: [],
     })
   ).json()) as ServerEntry;
   expect(removed.sources).toEqual([]);
+  const added = (await (
+    await request(`/entries/${linked.entryId}`, 'PATCH', {
+      expectedVersion: removed.serverVersion,
+      sourceUrls: [link],
+    })
+  ).json()) as ServerEntry;
+  expect(added.sources.map((source) => source.originalUrl)).toEqual([link]);
+
+  // A Page tab save to another entry moves the link in one transaction.
+  const target = await create({ userTitle: 'Link target' });
+  const moved = await request(`/entries/${target.entryId}`, 'PATCH', {
+    expectedVersion: target.serverVersion,
+    sourceUrls: [link],
+  });
+  expect(moved.status).toBe(200);
+  const winner = (await moved.json()) as ServerEntry;
+  const loser = (await (await request(`/entries/${linked.entryId}`)).json()) as ServerEntry;
+  expect(winner.sources.map((source) => source.originalUrl)).toEqual([link]);
+  expect(loser).toMatchObject({ deleted: false, sources: [] });
+  expect(BigInt(loser.serverVersion)).toBeGreaterThan(BigInt(added.serverVersion));
+  expect(BigInt(winner.serverVersion)).toBeGreaterThan(BigInt(loser.serverVersion));
+  const created = await create({ userTitle: 'New owner', sourceUrls: [link] });
+  expect(created.sources.map((source) => source.originalUrl)).toEqual([link]);
   expect(
-    (
-      await request(`/entries/${linked.entryId}`, 'PATCH', {
-        expectedVersion: removed.serverVersion,
-        sourceUrls: [link],
-      })
-    ).status,
-  ).toBe(400);
+    ((await (await request(`/entries/${target.entryId}`)).json()) as ServerEntry).sources,
+  ).toEqual([]);
 });
 
 test('snapshot revision and entries stay consistent while a later mutation commits between queries', async () => {
@@ -575,7 +588,7 @@ test('replication retries, stale intent, tombstones and account collisions prese
   expect(await restoration.json()).toEqual({ schemaVersion: 1, conflicts: [] });
 });
 
-test('replication creates are retry safe and cannot inject metadata or duplicate source claims', async () => {
+test('replication creates are retry safe, cannot inject metadata and move a duplicate link', async () => {
   const template = await create({ sourceUrls: ['https://example.com/replication-source'] });
   const proposed = { ...template, entryId: randomUUID(), serverVersion: null, sources: [] };
   const batch = { schemaVersion: 1, rows: [{ assumedMaster: null, proposed }] };
@@ -592,13 +605,17 @@ test('replication creates are retry safe and cannot inject metadata or duplicate
     current,
   );
   const duplicate = { ...template, entryId: randomUUID(), serverVersion: null };
-  const sourceConflict = await replicate('push', {
+  const moved = await replicate('push', {
     schemaVersion: 1,
     rows: [{ assumedMaster: null, proposed: duplicate }],
   });
-  expect(await sourceConflict.json()).toMatchObject({
-    conflicts: [{ reason: 'SOURCE', serverDocument: null }],
-  });
+  expect(await moved.json()).toEqual({ schemaVersion: 1, conflicts: [] });
+  expect(
+    (await app.get(LibraryMutationService).get(first.ownerId, duplicate.entryId)).sources,
+  ).toEqual(template.sources);
+  expect(
+    (await app.get(LibraryMutationService).get(first.ownerId, template.entryId)).sources,
+  ).toEqual([]);
   expect(await app.get(LibraryMutationService).get(first.ownerId, proposed.entryId)).toEqual(
     current,
   );

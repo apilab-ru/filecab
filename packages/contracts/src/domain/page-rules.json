@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "revision": 3,
+  "engineVersion": 1,
+  "excludedHosts": ["mail.yandex.ru"],
+  "fallback": [
+    { "source": "selector", "selector": "h1" },
+    { "source": "meta", "selector": "og:title" },
+    { "source": "title" }
+  ],
+  "sites": [
+    {
+      "id": "animego",
+      "hosts": ["animego.org", "animego.me"],
+      "category": "anime",
+      "title": [
+        { "source": "selector", "selector": "h1" },
+        { "source": "title", "before": [" (", " смотреть онлайн", " — Аниме"] }
+      ]
+    },
+    {
+      "id": "animesss",
+      "hosts": ["animesss.com"],
+      "category": "anime",
+      "title": [
+        { "source": "title", "before": [" — смотреть"] },
+        { "source": "selector", "selector": "h1", "removeSuffix": [" аниме"] }
+      ]
+    },
+    {
+      "id": "smotret",
+      "hosts": ["smotret-anime.online", "smotret-anime.co", "smotret-anime.org"],
+      "category": "anime",
+      "title": [
+        { "source": "selector", "selector": ".line-1", "before": [" смотреть онлайн"] },
+        {
+          "source": "selector",
+          "selector": "h1",
+          "removePrefix": ["Смотреть аниме "],
+          "removeSuffix": [" онлайн"]
+        }
+      ],
+      "references": [{ "namespace": "smotret", "entity": "series", "path": "/catalog/*-:id" }]
+    },
+    {
+      "id": "shikimori",
+      "hosts": ["shikimori.io", "shikimori.one"],
+      "category": "anime",
+      "title": [{ "source": "selector", "selector": "h1", "split": " / ", "part": 0 }],
+      "references": [{ "namespace": "myanimelist", "entity": "anime", "path": "/animes/:id-*" }]
+    },
+    {
+      "id": "dreamerscast",
+      "hosts": ["dreamerscast.com"],
+      "category": "anime",
+      "title": [{ "source": "title", "split": " / ", "part": 0, "before": [" - Dream Cast"] }]
+    },
+    {
+      "id": "jutsu",
+      "hosts": ["jut.su"],
+      "category": "anime",
+      "title": [
+        {
+          "source": "selector",
+          "selector": "h1",
+          "removePrefix": ["Смотреть "],
+          "before": [" все серии", " / "]
+        },
+        {
+          "source": "title",
+          "removePrefix": ["Смотреть "],
+          "split": " / ",
+          "part": 0,
+          "before": [" все серии"]
+        }
+      ]
+    },
+    {
+      "id": "mail-kino",
+      "hosts": ["kino.mail.ru", "afisha.mail.ru"],
+      "category": "films",
+      "title": [
+        { "source": "selector", "selector": "h1", "before": [" ("] },
+        { "source": "title", "before": [", фильм", ", сериал", " ("] }
+      ],
+      "categories": [
+        { "source": "title", "contains": ", сериал", "category": "tv" },
+        { "source": "title", "contains": ", фильм", "category": "films" }
+      ]
+    },
+    {
+      "id": "ivi",
+      "hosts": ["ivi.ru", "ivi.tv"],
+      "title": [
+        { "source": "meta", "selector": "og:title", "before": [" (", " — на Иви"] },
+        {
+          "source": "selector",
+          "selector": "h1",
+          "removePrefix": ["Сериал ", "Фильм ", "Мультфильм ", "Видео "],
+          "before": [" (", " смотреть онлайн"]
+        }
+      ],
+      "categories": [
+        { "source": "title", "startsWith": "Сериал", "category": "tv" },
+        { "source": "title", "startsWith": "Мультсериал", "category": "tv" },
+        { "source": "title", "startsWith": "Фильм", "category": "films" },
+        { "source": "title", "startsWith": "Мультфильм", "category": "films" }
+      ]
+    },
+    {
+      "id": "kinopoisk",
+      "hosts": ["kinopoisk.ru", "hd.kinopoisk.ru"],
+      "title": [
+        { "source": "selector", "selector": "h1", "before": [" ("] },
+        { "source": "meta", "selector": "og:title", "before": [" (", " —"] },
+        { "source": "title", "before": [" (", " —"] }
+      ],
+      "references": [
+        { "namespace": "kinopoisk", "entity": "title", "path": "/film/:id", "category": "films" },
+        { "namespace": "kinopoisk", "entity": "title", "path": "/series/:id", "category": "tv" }
+      ]
+    },
+    {
+      "id": "netflix",
+      "hosts": ["netflix.com"],
+      "title": [
+        { "source": "selector", "selector": "[data-uia=\"evidence-overlay\"] h2" },
+        { "source": "selector", "selector": "[data-uia=\"video-title\"] h4" },
+        { "source": "selector", "selector": "h1" },
+        {
+          "source": "meta",
+          "selector": "og:title",
+          "removePrefix": ["Watch ", "Смотреть "],
+          "before": [" | "]
+        }
+      ],
+      "categories": [
+        {
+          "source": "selector",
+          "selector": "[data-uia=\"metadata\"] li:last-child",
+          "startsWith": "Anime",
+          "category": "anime"
+        },
+        {
+          "source": "selector",
+          "selector": "[data-uia=\"metadata\"] li:last-child",
+          "startsWith": "Аниме",
+          "category": "anime"
+        },
+        {
+          "source": "selector",
+          "selector": "script[type=\"application/ld+json\"]",
+          "contains": "\"TVSeries\"",
+          "category": "tv"
+        },
+        {
+          "source": "selector",
+          "selector": "script[type=\"application/ld+json\"]",
+          "contains": "\"Movie\"",
+          "category": "films"
+        }
+      ]
+    },
+    {
+      "id": "crunchyroll",
+      "hosts": ["crunchyroll.com"],
+      "category": "anime",
+      "title": [
+        { "source": "selector", "selector": ".show-title-link" },
+        { "source": "selector", "selector": "h1", "before": [" - Watch on Crunchyroll"] },
+        {
+          "source": "meta",
+          "selector": "og:title",
+          "before": [" - Watch on Crunchyroll", " - Смотреть на Crunchyroll", " | Crunchyroll"]
+        }
+      ]
+    },
+    {
+      "id": "mirf",
+      "hosts": ["mirf.ru"],
+      "category": "anime",
+      "searchOnly": true,
+      "title": [{ "source": "selection" }]
+    }
+  ]
+}

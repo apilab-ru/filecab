@@ -8,7 +8,12 @@ import { catalogCapabilities, catalogSearch } from '../domain/catalog-client';
 import { useLocalStore } from './use-local-store';
 
 /** Debounces catalog reads and rejects stale completions even when the transport ignores abort. */
-export function useCatalogSearch(origin: string, request: CatalogSearchRequest, retry: number) {
+export function useCatalogSearch(
+  origin: string,
+  request: CatalogSearchRequest,
+  retry: number,
+  enabled = true,
+) {
   const [state, setters] = useLocalStore(() => ({
     capabilities: null as CatalogCapabilities | null,
     capabilityError: false,
@@ -37,7 +42,9 @@ export function useCatalogSearch(origin: string, request: CatalogSearchRequest, 
       provider.provider === selectedProvider && provider.categories.includes(request.category),
   );
   const canSearch = Boolean(
-    capability?.operations.includes('search') && (request.query.trim() || capability.browse),
+    enabled &&
+    capability?.operations.includes('search') &&
+    (request.query.trim() || capability.browse),
   );
   useEffect(() => {
     const controller = new AbortController();

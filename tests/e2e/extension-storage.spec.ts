@@ -185,15 +185,12 @@ test('repository commits revisions atomically across instances, shares one datab
             rating: 10,
             comment: ' note ',
           });
-          let linkAdded = true;
-          try {
-            await repository.update(entryId, changed.localRevision, {
-              sourceUrls: ['https://example.test/source'],
-            });
-          } catch {
-            linkAdded = false;
-          }
-          const cleared = await repository.update(entryId, changed.localRevision, {
+          // An update can add a link, as a popup Page tab save does.
+          const linked = await repository.update(entryId, changed.localRevision, {
+            sourceUrls: ['https://example.test/source'],
+          });
+          const linkAdded = linked.entry.sources[0]?.originalUrl === 'https://example.test/source';
+          const cleared = await repository.update(entryId, linked.localRevision, {
             status: null,
             progress: 0,
             rating: 0,
@@ -288,7 +285,7 @@ test('repository commits revisions atomically across instances, shares one datab
       { url, entryId: created[0].entryId },
     );
     expect(result.unchanged).toBe(true);
-    expect(result.linkAdded).toBe(false);
+    expect(result.linkAdded).toBe(true);
     expect(result.cleared).toMatchObject({
       status: null,
       progress: 0,

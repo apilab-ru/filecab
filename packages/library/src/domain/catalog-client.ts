@@ -1,5 +1,8 @@
 import type {
   CatalogCapabilities,
+  CatalogRecord,
+  Locale,
+  PageReference,
   CatalogSearchRequest,
   CatalogSearchResponse,
 } from '@filecab/contracts';
@@ -34,4 +37,20 @@ export function catalogSearch(origin: string, request: CatalogSearchRequest, sig
   if (filters && Object.keys(filters).length) query.set('filters', JSON.stringify(filters));
 
   return catalogRead<CatalogSearchResponse>(origin, `search?${query}`, signal);
+}
+
+/** Resolves a provider reference from a page to a catalog record through the owning adapter. */
+export function catalogReference(
+  origin: string,
+  reference: PageReference,
+  locale: Locale,
+  signal: AbortSignal,
+) {
+  const path = [reference.namespace, reference.entity, reference.id].map(encodeURIComponent);
+
+  return catalogRead<CatalogRecord>(
+    origin,
+    `providers/${path.join('/')}?locale=${encodeURIComponent(locale)}`,
+    signal,
+  );
 }

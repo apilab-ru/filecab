@@ -19,6 +19,15 @@ export const EN = {
   catalogAssociate: 'Associate this title',
   catalogUseManual: 'Link manual entry: {{title}}',
   catalogSelect: 'Select and edit',
+  pageReading: 'Reading the page…',
+  pageRestricted: 'This page cannot be read. Search the catalog or add the title manually.',
+  pageReadFailed: 'The page did not answer. Retry, search the catalog or add the title manually.',
+  chooseCategory: 'Choose category',
+  pageConflict:
+    'The page names one saved entry, and its link belongs to another. Choose the entry to edit.',
+  pageEdit: 'Edit saved entry: {{title}}',
+  pageSuggestion: 'Same title in your library: {{title}}',
+  linkMoves: 'Save moves the page link from “{{title}}” to this entry.',
   catalogLoading: 'Searching…',
   catalogPageNumber: 'Page {{page}}',
   popupSearchQuery: 'Title',
@@ -116,7 +125,6 @@ export const EN = {
   fullPage: 'Open full page',
   navigation: 'Main navigation',
   categories: 'Media categories',
-  unavailablePage: 'Page detection is not available yet. Open Library to add a title manually.',
   websiteLibrary:
     'Your online library is not available yet. You can use the extension library offline.',
   unsaved: 'Unsaved changes',

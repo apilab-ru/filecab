@@ -13,6 +13,7 @@
   "include": [
     "vitest.config.ts",
     "playwright.config.ts",
+    "playwright.page-rules.config.ts",
     "tests/**/*.ts",
     "apps/api/prisma.config.ts"
   ]

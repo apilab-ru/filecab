@@ -406,12 +406,20 @@ and fixed fallbacks for the bundled extraction engine.
 - A new capability requires a new engine release.
 - Configuration cannot grant permissions or start background page collection.
 
-### Compatibility and rollback
+### Source and publication
 
-- Include the schema, revision, engine compatibility and HTTP cache validators.
-- The extension keeps the last valid configuration and a bundled default.
-- Only authenticated operators can publish. Publication requires fixture checks and an audit history.
-- Support rollback.
+- The configuration is one JSON file in the repository: `packages/contracts/src/domain/page-rules.json`. Review it like code.
+- The API validates the file at startup. An invalid file stops the startup.
+- `GET /api/v1/page-rules` serves the file without sign-in. Send an `ETag` and `Cache-Control`. Answer a matching `If-None-Match` with HTTP 304.
+- A reviewed commit publishes a change. The live page rule checks (`pnpm test:page-rules`) must pass before the merge.
+- Git history is the audit history.
+- A rollback reverts the file in a new commit and deploys it. Increase the revision in each change, also in a rollback.
+
+### Compatibility
+
+- Include the schema version, the revision and the minimum engine version.
+- The extension uses a served configuration only when it supports the schema and the engine version.
+- The extension keeps the last valid configuration and a bundled default. The bundled default is the same file at build time.
 
 ### Page data minimization
 

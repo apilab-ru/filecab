@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Category,
   Status,
+  normalizeSourceUrl,
   progressExceedsTotal,
   titleFor,
   type EntryPatch,
@@ -43,16 +44,20 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
       : {
           userTitle: draft.catalog
             ? titleFor(draft.catalog.snapshot, locale, t('Untitled')).text
-            : '',
+            : (draft.title ?? ''),
           status: draft.catalog ? Status.Planned : null,
           rating: 0,
           progress: 0,
           comment: '',
         },
     category: entry?.category ?? draft.category,
-    // The link is read-only. An edit can only remove it.
+    // The link is read-only. An edit can only remove it. A Page tab save sets `draft.link`.
     link: entry?.sources[0]?.originalUrl ?? '',
-    dirty: Boolean(draft.catalog),
+    dirty: Boolean(
+      draft.catalog ||
+      draft.title ||
+      (draft.link && entry?.sources[0]?.normalizedUrl !== normalizeSourceUrl(draft.link)),
+    ),
     busy: false,
     error: '',
     conflict: false,
@@ -69,10 +74,15 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
     setters.error('');
     setters.conflict(false);
     try {
+      let sourceUrls: string[] | undefined;
+
+      if (draft.link) sourceUrls = [draft.link];
+      else if (entry) sourceUrls = values.link ? [values.link] : [];
+
       const fields: EntryPatch = {
         ...values.fields,
         category: values.category,
-        ...(entry ? { sourceUrls: values.link ? [values.link] : [] } : {}),
+        ...(sourceUrls ? { sourceUrls } : {}),
       };
 
       if (association && draft.row && draft.catalog) {
@@ -117,6 +127,15 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
   };
   saveRef.current = save;
   const titleRequired = !draft.catalog && !entry?.catalogId;
+  const pageLink = draft.link ? normalizeSourceUrl(draft.link) : null;
+  // A Page tab save moves the link from the entry that holds it now.
+  const linkOwner = pageLink
+    ? state.rows.find(
+        (row) =>
+          row.entry.entryId !== entry?.entryId &&
+          row.entry.sources.some((source) => source.normalizedUrl === pageLink),
+      )
+    : undefined;
   const total = (entry?.snapshot ?? draft.catalog?.snapshot)?.episodeCount || null;
   const progressAbove = progressExceedsTotal(values.fields.progress, total);
   useLayoutEffect(() => {
@@ -278,7 +297,19 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
               onChange={(event) => change({ comment: event.target.value })}
             />
           </label>
-          {entry && (
+          {linkOwner && (
+            <p className="workspace-editor__hint workspace-editor__hint--warning" role="status">
+              {t('linkMoves', {
+                title: titleFor(
+                  linkOwner.entry.snapshot,
+                  locale,
+                  t('Untitled'),
+                  linkOwner.entry.userTitle,
+                ).text,
+              })}
+            </p>
+          )}
+          {entry && !draft.link && (
             <div className="workspace-editor__field">
               {t('ViewingLink')}
               <div className="workspace-editor__link">

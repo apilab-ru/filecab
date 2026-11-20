@@ -67,19 +67,20 @@ Tests: `tests/e2e/catalog.spec.ts`, `tests/e2e/catalog-extension.spec.ts`, `test
 
 Specs: [PAGE-01–04 and MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching), [EDIT-03–04](../specs/functionality.md#5-catalog-search-editing-and-saving), [Popup routes](../specs/functionality.md#23-popup-routes), [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability), [Parser configuration](../specs/backend.md#server-managed-parser-configuration), [Viewing sources](../specs/backend.md#viewing-sources), [Source normalization](../specs/domain-contract.md#viewing-source-normalization), [Entries and revisions](../specs/extension-storage.md#entries-and-revisions).
 
-Code: `apps/extension/entrypoints/content.ts`, `apps/extension/entrypoints/background.ts`, `apps/extension/src/popup/`, `apps/extension/src/library/repository.ts`, `apps/api/src/library/proposals.ts`, `apps/api/src/library/mutation.service.ts`. No parser code exists yet.
+Code: `packages/contracts/src/domain/page-rules.json`, `packages/contracts/src/models/page-rules.ts`, `apps/extension/src/page/`, `apps/api/src/page-rules/`, `packages/library/src/pages/page-capture-page/`, `packages/library/src/domain/page-match.ts`, `apps/extension/src/popup/`, `apps/extension/src/library/repository.ts`, `apps/api/src/library/mutation.service.ts`.
 
-Tests: `tests/e2e/extension-storage.spec.ts`, `apps/api/src/library/library.integration.test.ts`.
+Tests: `tests/page-rules/page-rules.spec.ts` (live, `pnpm test:page-rules`), `tests/e2e/page-capture.spec.ts`, `apps/api/src/page-rules/served-page-rules.unit.test.ts`, `apps/api/src/library/library.integration.test.ts`, `tests/e2e/extension-storage.spec.ts`.
 
-- [ ] Extract titles and IDs from supported sites.
-- [ ] Safe parser rules without remote code.
-- [ ] Parser configuration, validation and rollback.
-- [ ] Manual search when extraction fails.
-- [ ] Complete entry editors and manual creation.
-- [ ] Confirm source URLs before saving.
-- [ ] Replace and move the page link on a Page tab save (server and extension).
-- [ ] Limit extension permissions.
-- [ ] Test all required sites.
+- [x] Extract titles and IDs from supported sites.
+- [x] Safe parser rules without remote code.
+- [x] Parser configuration, validation and rollback.
+- [x] Manual search when extraction fails.
+- [x] Complete entry editors and manual creation.
+- [x] Save the page URL with every Page tab save, without a confirmation (owner decision).
+- [x] Replace and move the page link on a Page tab save (server and extension).
+- [x] Limit extension permissions.
+- [x] Netflix and Crunchyroll rules (revision 2).
+- [x] Test all required sites. Live checks of `kinopoisk.ru`, `hd.kinopoisk.ru`, `jut.su`, `crunchyroll.com` and a `kino.mail.ru` series page are open. See the [check report](page-rules-check.md).
 
 ## 17. Backup and restore
 

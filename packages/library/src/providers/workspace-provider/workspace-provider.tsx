@@ -9,6 +9,7 @@ import {
   type WorkspaceContextValue,
   type WorkspaceDeletion,
   type WorkspaceDraft,
+  type WorkspaceOpenOptions,
   type WorkspaceRow,
   type WorkspaceState,
 } from '../../models/workspace';
@@ -60,9 +61,16 @@ export function WorkspaceProvider({ origin, children }: WorkspaceProviderProps) 
     [state.rows],
   );
   const open = useCallback(
-    (category: Category, row?: WorkspaceRow, catalog?: CatalogRecord, other?: WorkspaceRow) => {
+    (
+      category: Category,
+      row?: WorkspaceRow,
+      catalog?: CatalogRecord,
+      other?: WorkspaceRow,
+      options: WorkspaceOpenOptions = {},
+    ) => {
       setters.draft(
-        (current) => current ?? { id: crypto.randomUUID(), category, row, catalog, other },
+        (current) =>
+          current ?? { id: crypto.randomUUID(), category, row, catalog, other, ...options },
       );
       setters.reconciling(null);
     },

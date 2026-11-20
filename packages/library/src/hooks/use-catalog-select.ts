@@ -28,18 +28,19 @@ export function catalogResultState(
 /**
  * Opens the editor for a selected result: the saved entry when one exists, otherwise an
  * unsaved draft. A conflict, an open draft or a missing repository blocks the selection.
+ * A popup Page tab passes the page URL as `link`, so that Save adds it.
  */
 export function useCatalogSelect() {
   const { state, draft, open } = useWorkspace();
 
   return useCallback(
-    (record: CatalogRecord): boolean => {
+    (record: CatalogRecord, link?: string): boolean => {
       const { saved, conflict } = catalogResultState(state.rows, record);
 
       if (conflict || draft || !state.repository) return false;
 
-      if (saved) open(record.category, saved);
-      else open(record.category, undefined, record);
+      if (saved) open(record.category, saved, undefined, undefined, { link });
+      else open(record.category, undefined, record, undefined, { link });
 
       return true;
     },

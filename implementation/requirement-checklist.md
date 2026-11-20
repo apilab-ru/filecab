@@ -14,18 +14,18 @@ change logs before 18 November 2026.
 
 ## Product requirements
 
-- [ ] [NAV-01–05](../specs/functionality.md#2-surfaces-and-navigation) (steps 10, 11, 16): Partial. Shell, routes and draft guard done (step 10). Page extraction pending.
+- [x] [NAV-01–05](../specs/functionality.md#2-surfaces-and-navigation) (steps 10, 11, 16): Done. [Step 16](#step-16-page-extraction)
 - [ ] [MODEL-01–08](../specs/functionality.md#3-domain-identity-and-validation) (steps 3, 4, 11): Partial. Contracts, server rules and editor validation done. Category conflict review pending.
-- [ ] [PAGE-01–04](../specs/functionality.md#4-page-extraction-and-matching) (step 16): Pending.
-- [ ] [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching) (steps 4, 15, 16): Partial. Identity matching, title suggestions, association and merge done. URL matching pending (step 16).
+- [ ] [PAGE-01–04](../specs/functionality.md#4-page-extraction-and-matching) (step 16): Partial. Rules, engine and fixtures done. Live checks of Kinopoisk, hd.kinopoisk, jut.su, Crunchyroll and a kino.mail.ru series page are open. [Check report](page-rules-check.md)
+- [x] [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching) (steps 4, 15, 16): Done. [Step 16](#step-16-page-extraction)
 - [x] [SEARCH-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving) (steps 12–15): Done. [Step 15](#step-15-catalog-search-and-editing)
-- [ ] [EDIT-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving) (steps 7, 8, 11): Partial. Editor, validation, conflict choices and the read-only link done. Popup and import add the link (steps 16, 17). Page tab link replacement and link move pending.
+- [ ] [EDIT-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving) (steps 7, 8, 11): Partial. Editor, validation, conflict choices, the read-only link, and the Page tab link save, replacement and move done. Import adds the link in step 17.
 - [ ] [LIB-01–07](../specs/functionality.md#6-library-browsing) (steps 10, 11): Partial. All clauses done except bulk deletion, which is optional. Release check pending.
 - [ ] [DATA-01–06](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) (steps 7–9, 11): Partial. Extension and website editing done. Backup preview checks pending.
 - [ ] [BACKUP-01–05](../specs/functionality.md#8-backup-and-restore) (step 17): Pending.
 - [ ] [API-01–07](../specs/functionality.md#9-backend-and-shared-contracts) (steps 3, 5, 7, 9, 12–15): Partial. Backup and verification errors pending.
 - [ ] [LANG-01–06](../specs/functionality.md#10-english-and-russian) (steps 3, 10–15): Partial. Interface languages done. Metadata localization partly done.
-- [ ] [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability) (steps 5, 6, 16): Pending.
+- [x] [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability) (steps 5, 6, 16): Done. [Step 16](#step-16-page-extraction)
 - [ ] [UX-01](../specs/functionality.md#11-platform-privacy-and-usability) (steps 10, 11, 21): Partial. Keyboard, focus and zoom tests for the shell.
 - [ ] [AC01–AC25](../specs/functionality.md#12-release-acceptance) (step 21): Pending. Run at release.
 
@@ -37,7 +37,7 @@ change logs before 18 November 2026.
 - [x] [Extension replication](../specs/backend.md#extension-replication) (step 9): Done. [Step 9](#step-9-extension-replication). History is kept without a time limit.
 - [ ] [Unlisted read-only sharing](../specs/backend.md#unlisted-read-only-sharing) (step 18): Pending.
 - [ ] [Backup and restore](../specs/backend.md#backup-and-restore) (step 17): Pending.
-- [ ] [Server-managed parser configuration](../specs/backend.md#server-managed-parser-configuration) (step 16): Pending.
+- [x] [Server-managed parser configuration](../specs/backend.md#server-managed-parser-configuration) (step 16): Done. [Step 16](#step-16-page-extraction)
 - [x] [API foundation](../specs/backend.md#api-foundation) (step 5): Done. [Step 5](#step-5-api-foundation)
 
 ## Extension storage
@@ -209,6 +209,16 @@ pagination during loading and skeletons (15–16 November 2026).
 - [Merge link rule](../packages/contracts/src/domain/rules.ts) (`mergedLink`) on the server and in the extension: the link of the entry with the latest modified time.
 - Website manual entry has no URL field. The editor shows the link only for saved entries.
 - Browser tests (19 November 2026): popup search with automatic selection, Cancel, Save and the saved state; full-page Select and edit; merge preview with the kept link; local merge recovery. All 38 browser tests pass. Unit 197, contracts 12, integration 50 pass.
+
+### Step 16: page extraction
+
+- [Page rules](../packages/contracts/src/domain/page-rules.json): one reviewed JSON file with 12 site rules and a fallback. Revision 2 adds Netflix and Crunchyroll (20 November 2026). Rules contain host names, selectors, fixed cleanup strings and URL path patterns, never code.
+- [API](../apps/api/src/page-rules/): validates the file at startup and serves `GET /api/v1/page-rules` with `ETag`, `Cache-Control` and HTTP 304.
+- [Extension engine](../apps/extension/src/page/extract-page.ts) runs through `chrome.scripting.executeScript` with the `activeTab` grant. The [rule store](../apps/extension/src/page/page-rules-store.ts) uses the served rules, the last valid rules or the bundled default. Permissions: `identity`, `storage`, `activeTab`, `scripting`. The persistent example content script is removed.
+- [Page tab](../packages/library/src/pages/page-capture-page/page-capture-page.tsx): editable title and category, [matching](../packages/library/src/domain/page-match.ts) by reference, then link, then exact title suggestions, reference resolution, title search, manual entry, and Retry and Search for restricted pages.
+- Link move: the server (`releaseSources`) and the device repository remove the link from the other entry before the save. Restore, merge and association do not move links.
+- [Check report](page-rules-check.md) (20 November 2026): 9 hosts checked live, 4 cases synthetic. The live check found a broken `kino.mail.ru` rule and redirects to `animego.me`, `ivi.tv` and `kino.mail.ru`.
+- Tests (20 November 2026): page rules 17, Page tab 2 and all browser tests 57 pass. Unit 203, contracts 12, integration 50 pass. The replication catalog test passes. The replication extension test fails: Undo shows "Undo failed" after the sync acknowledges the delete. This step did not change the delete, Undo or sync code.
 
 ### Tooling
 

@@ -34,6 +34,8 @@ export { useInterfacePreferences } from './hooks/use-interface-preferences';
 
 export { LibraryPage } from './pages/library-page/library-page';
 export { PopupSearchPage } from './pages/popup-search-page/popup-search-page';
+export { PageCapturePage } from './pages/page-capture-page/page-capture-page';
+export { PageReadStatus, type PageReadResult } from './models/page-read';
 export { SettingsPage } from './pages/settings-page/settings-page';
 
 export { useTranslation } from 'react-i18next';

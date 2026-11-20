@@ -8,7 +8,7 @@ import type { CompactResultProps } from './model-compact-result';
 import './compact-result.scss';
 
 /** Shows one catalog result in a row that fits the popup and opens the editor on selection. */
-export function CompactResult({ record }: CompactResultProps) {
+export function CompactResult({ record, link }: CompactResultProps) {
   const { t } = useTranslation();
   const { locale } = useInterfacePreferences();
   const { state, draft } = useWorkspace();
@@ -25,7 +25,7 @@ export function CompactResult({ record }: CompactResultProps) {
         type="button"
         className="compact-result__button"
         disabled={conflict || Boolean(draft) || !state.repository}
-        onClick={() => select(record)}
+        onClick={() => select(record, link)}
       >
         {snapshot.posterUrl ? (
           <img

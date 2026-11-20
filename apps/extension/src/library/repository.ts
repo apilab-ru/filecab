@@ -2,7 +2,6 @@ import {
   emptySnapshot,
   associateCatalog,
   type CatalogRecord,
-  addsSource,
   hasSemanticChange,
   MAX_ENTRY_SOURCES,
   previewEntryPatch,
@@ -147,6 +146,39 @@ export class LocalLibraryRepository {
     };
   }
 
+  /**
+   * Moves a link for a create or an update: writes each other active entry that holds one of
+   * the entry's normalized links without that link. Each write gets the next local revision,
+   * so replication sends the entry that loses the link before the entry that takes it.
+   */
+  private async releaseSources(entry: Entry, rows: LocalEntry[]): Promise<LocalEntry[]> {
+    if (entry.deleted || !entry.sources.length) return rows;
+
+    const normalized = new Set(entry.sources.map((source) => source.normalizedUrl));
+    let current = rows;
+
+    for (const row of rows) {
+      if (
+        row.entry.deleted ||
+        row.entryId === entry.entryId ||
+        !row.entry.sources.some((source) => normalized.has(source.normalizedUrl))
+      )
+        continue;
+
+      const released = await this.save(
+        {
+          ...row.entry,
+          sources: row.entry.sources.filter((source) => !normalized.has(source.normalizedUrl)),
+          updatedAt: new Date(Math.max(Date.now(), Date.parse(row.entry.updatedAt))).toISOString(),
+        },
+        current,
+      );
+      current = current.map((item) => (item.entryId === released.entryId ? released : item));
+    }
+
+    return current;
+  }
+
   private async save(
     entry: Entry,
     rows: LocalEntry[],
@@ -206,7 +238,7 @@ export class LocalLibraryRepository {
 
       if (rows.some((row) => row.entryId === entryId)) throw new LocalLibraryError('CONFLICT');
 
-      return this.save(entry, rows);
+      return this.save(entry, await this.releaseSources(entry, rows));
     });
   }
 
@@ -285,23 +317,26 @@ export class LocalLibraryRepository {
   }
 
   async update(entryId: string, expectedRevision: number, fields: EntryPatch): Promise<LocalEntry> {
-    return this.mutate(entryId, expectedRevision, (before) => {
-      if (before.entry.deleted) throw new LocalLibraryError('NOT_FOUND');
+    return this.mutate(
+      entryId,
+      expectedRevision,
+      (before) => {
+        if (before.entry.deleted) throw new LocalLibraryError('NOT_FOUND');
 
-      const entry = previewEntryPatch(before.entry, fields);
+        const entry = previewEntryPatch(before.entry, fields);
 
-      // Only a create adds the link. An edit can keep or remove it.
-      if (addsSource(before.entry, entry)) throw new LocalLibraryError('INVALID_ENTRY');
-
-      return hasSemanticChange(before.entry, entry)
-        ? {
-            ...entry,
-            updatedAt: new Date(
-              Math.max(Date.now(), Date.parse(before.entry.updatedAt)),
-            ).toISOString(),
-          }
-        : before.entry;
-    });
+        return hasSemanticChange(before.entry, entry)
+          ? {
+              ...entry,
+              updatedAt: new Date(
+                Math.max(Date.now(), Date.parse(before.entry.updatedAt)),
+              ).toISOString(),
+            }
+          : before.entry;
+      },
+      false,
+      true,
+    );
   }
 
   private async mutate(
@@ -309,6 +344,7 @@ export class LocalLibraryRepository {
     expectedRevision: number,
     change: (row: LocalEntry) => Entry,
     deleting = false,
+    moveLink = false,
   ): Promise<LocalEntry> {
     return this.locked(async () => {
       const rows = await this.rows();
@@ -322,7 +358,9 @@ export class LocalLibraryRepository {
 
       if (entry === before.entry) return before;
 
-      return this.save(entry, rows, deleting ? before.entry : null);
+      const current = moveLink ? await this.releaseSources(entry, rows) : rows;
+
+      return this.save(entry, current, deleting ? before.entry : null);
     });
   }
 

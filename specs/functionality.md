@@ -124,15 +124,7 @@ can have format `movie`, `tv`, `special`, `ova`, `ona` or `music` and stay in th
 
 **PAGE-02.** Select site rules by the normalized host name without a leading `www.`. Return a typed title and optional category, references and episode data. A generic `{ id, idField }` does not establish internal identity.
 
-**PAGE-03.** Support these hosts only after representative fixture checks:
-
-| Hosts                                                                                               | Expected seed                                                                               |
-| --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `animego.org`, `animesss.com`, `smotret-anime.online`, `shikimori.io`, `dreamerscast.com`, `jut.su` | Anime title from a heading, a selector or the cleaned document title, with a safe fallback. |
-| `kino.mail.ru`, `afisha.mail.ru`                                                                    | Film title. The user can correct the category.                                              |
-| `ivi.ru`                                                                                            | Film or TV title from available page evidence.                                              |
-| `kinopoisk.ru`, `hd.kinopoisk.ru`                                                                   | Title, film or TV evidence and a namespaced Kinopoisk reference when available.             |
-| `mirf.ru`                                                                                           | Nonblank selected text as an anime search seed. Search mode must not attach the page URL.   |
+**PAGE-03.** The supported hosts and their rules are in [page-rules.json](../packages/contracts/src/domain/page-rules.json). Add a host only after live checks of representative pages. A search-only rule gives a search seed. A save from that page has no link.
 
 **PAGE-04.** An unknown or broken rule falls back to a heading or the document title. The user can correct the title and category, search the catalog or save manually. Without category evidence, require a category selection. Do not assume films. A catalog outage never blocks manual creation.
 
@@ -156,7 +148,7 @@ can have format `movie`, `tv`, `special`, `ova`, `ona` or `music` and stay in th
 
 **EDIT-02.** Enable Save only for a valid new or changed entry. Keep popup Save at the bottom without covering content. Block duplicate submissions. Clear the dirty state only after confirmed persistence. An error keeps the input and offers Retry.
 
-**EDIT-03.** Only two operations add the viewing link: a save from the popup Page tab after the user accepts the page URL, and an import. A Page tab save adds the link to a new entry or to an existing entry. It replaces a different link of that entry. A search save and a manual entry have no link. The editor shows the link as read-only and offers only Remove. Accept only HTTP and HTTPS links. Never run a URL as code.
+**EDIT-03.** Only two operations add the viewing link: a save from the popup Page tab and an import. A Page tab save always adds the page URL to a new entry or to an existing entry. It replaces a different link of that entry. The Page tab editor does not show the page URL. A search save and a manual entry have no link. The editor shows the link as read-only and offers only Remove. Accept only HTTP and HTTPS links. Never run a URL as code.
 
 **EDIT-04.** If the page URL already belongs to an entry, the popup opens that entry. See [MATCH-01](#4-page-extraction-and-matching). If the user saves the page URL to a different entry from the Page tab, the link moves to that entry. Before Save, the editor shows the title of the entry that loses the link. The save removes the link from that entry and adds it to the saved entry in one operation.
 

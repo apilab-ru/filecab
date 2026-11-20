@@ -1,6 +1,7 @@
-import { Panel } from '@filecab/ui';
+import { PageCapturePage } from '@filecab/library';
+import { readActivePage } from '../../../page/page-reader';
 
-/** Renders the popup Page route's current availability message. */
-export function PopupPage({ message }: { message: string }) {
-  return <Panel>{message}</Panel>;
+/** Renders the popup Page tab with the extension's active-tab reader. */
+export function PopupPage() {
+  return <PageCapturePage read={readActivePage} />;
 }

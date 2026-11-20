@@ -371,3 +371,20 @@ test('development accepts any origin and opens catalog administration without si
     await development.close();
   }
 });
+
+test('page rules are public, cacheable and answer a matching ETag with 304', async () => {
+  const response = await fetch(`${base}/api/v1/page-rules`, {
+    headers: { Origin: extensionOrigin },
+  });
+  const etag = response.headers.get('etag');
+  expect(response.status).toBe(200);
+  expect(response.headers.get('access-control-allow-origin')).toBe(extensionOrigin);
+  expect(response.headers.get('cache-control')).toBe('public, max-age=300');
+  expect(etag).toMatch(/^"\d+-[0-9a-f]{16}"$/);
+  expect(await response.json()).toMatchObject({ schemaVersion: 1, engineVersion: 1 });
+  const cached = await fetch(`${base}/api/v1/page-rules`, {
+    headers: { Origin: extensionOrigin, 'If-None-Match': etag! },
+  });
+  expect(cached.status).toBe(304);
+  expect(await cached.text()).toBe('');
+});

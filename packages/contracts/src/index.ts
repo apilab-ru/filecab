@@ -10,5 +10,7 @@ export * from './models/conflict-reason';
 export * from './models/sync-error-code';
 export * from './models/sync-operation';
 export * from './models/sync-diagnostic';
+export * from './models/page-rules';
+export { PAGE_RULES } from './domain/page-rules';
 export type { CatalogAssociationRequest } from './models/catalog-association';
 export { associateCatalog, CatalogAssociationConflictError } from './domain/catalog-association';

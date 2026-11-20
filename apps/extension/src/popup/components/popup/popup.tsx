@@ -79,7 +79,7 @@ export function Popup({ fullPageUrl, iconUrl = FILECAB_ICON_URL, children }: Pop
       <main className="popup__main">
         <LibraryPage hidden>{children}</LibraryPage>
         <Routes>
-          <Route path="/page/:category" element={<PopupPage message={t('unavailablePage')} />} />
+          <Route path="/page/:category" element={<PopupPage />} />
           <Route path="/search/:category" element={<PopupSearchPage />} />
           <Route path="/settings" element={<SettingsPage popup />} />
           <Route path="*" element={<Navigate replace to="/page/anime" />} />

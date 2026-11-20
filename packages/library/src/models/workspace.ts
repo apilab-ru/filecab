@@ -60,6 +60,16 @@ export interface WorkspaceDraft {
   row?: WorkspaceRow;
   catalog?: CatalogRecord;
   other?: WorkspaceRow;
+  /** The page URL that a popup Page tab save adds. The editor does not show it. */
+  link?: string;
+  /** The title that a new manual entry starts with. */
+  title?: string;
+}
+
+/** Carries popup Page tab data into a new editor. */
+export interface WorkspaceOpenOptions {
+  link?: string;
+  title?: string;
 }
 
 /** Keeps one deletion that the owner can undo until `until`. */
@@ -79,7 +89,13 @@ export interface WorkspaceContextValue {
   draft: WorkspaceDraft | null;
   reconciling: WorkspaceRow | null;
   reconcile(row: WorkspaceRow | null): void;
-  open(category: Category, row?: WorkspaceRow, catalog?: CatalogRecord, other?: WorkspaceRow): void;
+  open(
+    category: Category,
+    row?: WorkspaceRow,
+    catalog?: CatalogRecord,
+    other?: WorkspaceRow,
+    options?: WorkspaceOpenOptions,
+  ): void;
   close(id?: string): void;
   rebase(): void;
   deletions: WorkspaceDeletion[];

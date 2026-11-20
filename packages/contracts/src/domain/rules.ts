@@ -307,13 +307,6 @@ export function hasSemanticChange(before: Entry, after: Entry): boolean {
 /** An entry has at most one viewing link. */
 export const MAX_ENTRY_SOURCES = 1;
 
-/** Reports whether `after` has a link that `before` does not have. Only a create can add a link. */
-export function addsSource(before: Pick<Entry, 'sources'>, after: Pick<Entry, 'sources'>): boolean {
-  return after.sources.some(
-    (source) => !before.sources.some((known) => known.normalizedUrl === source.normalizedUrl),
-  );
-}
-
 /** Builds a draft from a typed patch; the caller decides where to persist it. */
 export function previewEntryPatch(entry: Entry, input: EntryPatch): Entry {
   const { sourceUrls, ...patch } = input;

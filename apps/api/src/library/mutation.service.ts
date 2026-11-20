@@ -1,6 +1,5 @@
 import {
   ApiErrorCode,
-  addsSource,
   associateCatalog,
   CatalogAssociationConflictError,
   mergeCatalogSnapshots,
@@ -32,13 +31,6 @@ import { LibraryPreviewSigner } from './preview';
 export { MutationError } from './proposals';
 
 /** Rejects a link that an update adds. Only a create can set the link; an update can remove it. */
-function linkAddedAfterCreate(path: FieldPath = []): MutationError {
-  return new MutationError(ApiErrorCode.ValidationError, {
-    path: [...path, 'sources'],
-    message: 'A link can only be added when the entry is created. An update can only remove it.',
-  });
-}
-
 /** Carries a new entry without accepting client ownership or server timestamps. */
 export interface CreateEntry {
   entryId: string;
@@ -97,6 +89,41 @@ export class LibraryMutationService {
     if (entry.serverVersion !== expectedVersion) throw new MutationError(ApiErrorCode.Conflict);
 
     return entry;
+  }
+
+  /**
+   * Moves a link for a create, an update or a replicated write: removes the entry's normalized
+   * links from other active entries of the owner. Restore, merge and association never move links.
+   * Each changed entry gets its own version and change record before the entry that takes the link.
+   */
+  private async releaseSources(
+    tx: Prisma.TransactionClient,
+    ownerId: string,
+    entry: ServerEntry,
+  ): Promise<void> {
+    if (entry.deleted || !entry.sources.length) return;
+
+    const hashes = entry.sources.map((source) =>
+      createHash('sha256').update(source.normalizedUrl).digest('hex'),
+    );
+    const claims = await tx.sourceAssociation.findMany({
+      where: { ownerId, normalizedHash: { in: hashes }, entryId: { not: entry.entryId } },
+    });
+    const normalized = new Set(entry.sources.map((source) => source.normalizedUrl));
+
+    for (const entryId of new Set(claims.map((claim) => claim.entryId))) {
+      const row = await tx.libraryEntry.findFirst({ where: { id: entryId, ownerId } });
+
+      if (!row) continue;
+
+      const other = row.document as unknown as ServerEntry;
+
+      await this.publish(tx, ownerId, {
+        ...other,
+        sources: other.sources.filter((source) => !normalized.has(source.normalizedUrl)),
+        updatedAt: new Date(Math.max(Date.now(), Date.parse(other.updatedAt))).toISOString(),
+      });
+    }
   }
 
   private async publish(
@@ -315,9 +342,8 @@ export class LibraryMutationService {
           updatedAt: now,
         };
 
-        if (current && addsSource(current, document)) throw linkAddedAfterCreate(['proposed']);
-
         validateEntry(document, ['proposed']);
+        await this.releaseSources(tx, ownerId, document);
         await this.publish(tx, ownerId, document, !current);
 
         return null;
@@ -366,6 +392,7 @@ export class LibraryMutationService {
       );
       await this.checkCatalog(tx, entry.catalogId, entry.category);
       validateEntry(entry);
+      await this.releaseSources(tx, ownerId, entry);
 
       return this.publish(tx, ownerId, entry, true);
     });
@@ -401,8 +428,6 @@ export class LibraryMutationService {
 
       const after = patchDocument(before, patch);
 
-      if (addsSource(before, after)) throw linkAddedAfterCreate();
-
       await this.checkCatalog(tx, after.catalogId, after.category);
       validateEntry(after);
 
@@ -429,6 +454,8 @@ export class LibraryMutationService {
           )
       )
         return before;
+
+      await this.releaseSources(tx, ownerId, after);
 
       return this.publish(tx, ownerId, {
         ...after,

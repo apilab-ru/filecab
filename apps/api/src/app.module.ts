@@ -1,3 +1,4 @@
+import { PAGE_RULES } from '@filecab/contracts';
 import { ReplicationController } from './library/replication.controller';
 import { LibraryController, LibraryInputGuard } from './library/library.controller';
 import { LibraryMutationService } from './library/mutation.service';
@@ -22,6 +23,8 @@ import { KinopoiskDevAdapter } from './catalog/kinopoisk-dev.adapter';
 import { CatalogGenreResolver } from './catalog/catalog-genre-resolver';
 import { CatalogCacheAdminController } from './catalog/catalog-cache-admin.controller';
 import { CatalogOperatorGuard } from './catalog/catalog-operator';
+import { PageRulesController } from './page-rules/page-rules.controller';
+import { SERVED_PAGE_RULES, servePageRules } from './page-rules/served-page-rules';
 
 @Module({})
 export class AppModule {
@@ -40,9 +43,11 @@ export class AppModule {
         CatalogController,
         CatalogGenreAdminController,
         CatalogCacheAdminController,
+        PageRulesController,
       ],
       providers: [
         { provide: AUTH_ENVIRONMENT, useValue: environment },
+        { provide: SERVED_PAGE_RULES, useFactory: () => servePageRules(PAGE_RULES) },
         {
           provide: GOOGLE_IDENTITY,
           useFactory: () => google ?? new GoogleOAuthProvider(environment),
