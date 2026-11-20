@@ -2,7 +2,7 @@ import { useTranslation } from '@filecab/library';
 import { PopupPage } from '../../pages/popup-page/popup-page';
 import './popup.scss';
 
-import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { Button, Icon, IconName, FILECAB_ICON_URL } from '@filecab/ui';
 import { LibraryMode, LibraryPage, PopupSearchPage, SettingsPage } from '@filecab/library';
 import type { PopupProps } from './model-popup';
@@ -14,7 +14,11 @@ export function Popup({ fullPageUrl, iconUrl = FILECAB_ICON_URL, children }: Pop
   const routerNavigate = useNavigate();
   const { t } = useTranslation();
 
+  const location = useLocation();
+  const params = useMatch('/:mode/:category/*')?.params;
   const mode = (useMatch('/:mode/*')?.params.mode as LibraryMode | undefined) ?? LibraryMode.Page;
+  // Page and Search keep the category and the title text (`q`) when the user switches.
+  const category = params?.category ?? 'anime';
 
   const settings = mode === LibraryMode.Settings;
 
@@ -39,6 +43,22 @@ export function Popup({ fullPageUrl, iconUrl = FILECAB_ICON_URL, children }: Pop
             Filecab
           </div>
           {!settings && (
+            <nav className="popup__navigation" aria-label={t('navigation')}>
+              {MODES.map((route) => (
+                <Button
+                  key={route}
+                  aria-current={mode === route ? 'page' : undefined}
+                  title={t(`${route}Hint`)}
+                  onClick={() =>
+                    routerNavigate({ pathname: `/${route}/${category}`, search: location.search })
+                  }
+                >
+                  {t(route)}
+                </Button>
+              ))}
+            </nav>
+          )}
+          {!settings && (
             <div className="popup__header-actions">
               {fullPageUrl && (
                 <a
@@ -62,19 +82,6 @@ export function Popup({ fullPageUrl, iconUrl = FILECAB_ICON_URL, children }: Pop
             </div>
           )}
         </div>
-        {!settings && (
-          <nav className="popup__navigation" aria-label={t('navigation')}>
-            {MODES.map((route) => (
-              <Button
-                key={route}
-                aria-current={mode === route ? 'page' : undefined}
-                onClick={() => routerNavigate(`/${route}/anime`)}
-              >
-                {t(route)}
-              </Button>
-            ))}
-          </nav>
-        )}
       </aside>
       <main className="popup__main">
         <LibraryPage hidden>{children}</LibraryPage>

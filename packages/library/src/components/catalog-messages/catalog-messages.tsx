@@ -5,7 +5,12 @@ import type { CatalogMessage, CatalogMessagesProps } from './model-catalog-messa
 import './catalog-messages.scss';
 
 /** Shows the catalog matching, connectivity, provider and result status messages. */
-export function CatalogMessages({ search, online, onRetry }: CatalogMessagesProps) {
+export function CatalogMessages({
+  search,
+  online,
+  onRetry,
+  hideEmpty = false,
+}: CatalogMessagesProps) {
   const { t } = useTranslation();
   const { reconciling, reconcile } = useWorkspace();
   const { result } = search;
@@ -48,7 +53,7 @@ export function CatalogMessages({ search, online, onRetry }: CatalogMessagesProp
     },
     {
       key: 'empty',
-      visible: Boolean(result && !result.results.length),
+      visible: Boolean(result && !result.results.length && !hideEmpty),
       text: t('catalogEmpty'),
       role: 'status',
     },

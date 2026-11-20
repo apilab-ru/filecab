@@ -66,7 +66,7 @@ async function launch(profile: string): Promise<{ context: BrowserContext; origi
   return { context, origin: `chrome-extension://${new URL(worker.url()).host}` };
 }
 
-test('popup search selects a single result once, saves after Save and shows the saved state', async () => {
+test('popup search selects a single result once, saves after Save and edits the saved card directly', async () => {
   test.setTimeout(60000);
   const profile = await mkdtemp(join(tmpdir(), 'filecab-popup-search-'));
   const { context, origin } = await launch(profile);
@@ -74,7 +74,10 @@ test('popup search selects a single result once, saves after Save and shows the 
     const popup = await context.newPage();
     await popup.setViewportSize({ width: 380, height: 600 });
     await popup.goto(`${origin}/popup.html#/search/films`);
-    await expect(popup.getByRole('combobox', { name: 'Category' })).toHaveValue('films');
+    await expect(popup.getByRole('button', { name: 'Films', exact: true })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
     await expect(popup.getByRole('list', { name: 'Search results' })).toBeVisible();
     await expect(popup.getByRole('dialog')).toHaveCount(0);
     await popup.getByRole('searchbox', { name: 'Title' }).fill('Catalog');
@@ -83,23 +86,39 @@ test('popup search selects a single result once, saves after Save and shows the 
     await expect(editor.getByLabel('Status', { exact: true })).toHaveValue('planned');
     await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(popup.getByRole('dialog')).toHaveCount(0);
-    const result = popup.getByRole('list', { name: 'Search results' }).getByRole('button');
-    await expect(result).toContainText('Catalog title');
+    const card = popup.getByRole('list', { name: 'Search results' }).getByRole('listitem');
+    const result = card.getByRole('button', { name: 'Catalog title' });
+    await expect(result).toBeVisible();
     await popup.waitForTimeout(500);
     await expect(popup.getByRole('dialog')).toHaveCount(0);
     expect(
       await popup.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
-    await result.click();
+    await card.getByRole('button', { name: 'Add title', exact: true }).click();
     await editor.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(popup.getByRole('dialog')).toHaveCount(0);
-    await expect(result).toContainText('Planned');
-    await expect(result).toContainText('0 / ?');
+    // A saved card changes status and progress directly, without the editor.
+    const status = card.getByRole('combobox', { name: 'Status' });
+    const progress = card.getByRole('textbox', { name: 'Progress' });
+    await expect(status).toContainText('Planned');
+    await expect(progress).toHaveValue('0');
+    await expect(card).toContainText('/ ?');
+    await card.getByRole('button', { name: 'Add one episode' }).click();
+    await expect(progress).toHaveValue('1');
+    await progress.fill('5');
+    await progress.press('Enter');
+    await expect(progress).toHaveValue('5');
+    await status.click();
+    await popup.getByRole('option', { name: 'Watching' }).click();
+    await expect(status).toContainText('Watching');
+    await expect(popup.getByRole('dialog')).toHaveCount(0);
     await result.click();
-    await expect(popup.getByRole('dialog', { name: 'Edit' })).toBeVisible();
+    const saved = popup.getByRole('dialog', { name: 'Edit' });
+    await expect(saved.getByLabel('Status', { exact: true })).toHaveValue('process');
+    await expect(saved.getByLabel('Progress', { exact: true })).toHaveValue('5');
     await popup.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await popup.getByRole('combobox', { name: 'Category' }).selectOption('anime');
-    await expect(popup).toHaveURL(/#\/search\/anime$/);
+    await popup.getByRole('button', { name: 'Anime', exact: true }).click();
+    await expect(popup).toHaveURL(/#\/search\/anime\?q=Catalog$/);
     await expect(popup.getByRole('status').filter({ hasText: 'unavailable' })).toBeVisible();
   } finally {
     await context.close();

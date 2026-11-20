@@ -5,6 +5,8 @@ export interface CatalogMessagesProps {
   search: ReturnType<typeof useCatalogSearch>;
   online: boolean;
   onRetry: () => void;
+  /** Hides the empty result message when other titles are already shown. */
+  hideEmpty?: boolean;
 }
 
 /** Describes one catalog status message and its optional action. */

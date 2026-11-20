@@ -22,15 +22,30 @@ extension full page. [Functionality](functionality.md) owns the product requirem
 - Show manual entry creation only in library mode.
 - The rules of this section apply to full-page and website catalog search. [Popup search](#popup-search) has its own interface.
 
+## Popup layout
+
+Use the [popup mockup](mockup-popup.png).
+
+- The header shows the brand, a Page and Search switch, the full-page link and Settings.
+- Page and Search show category tabs with Anime, Films and TV series, then one title field, then popup cards.
+- A popup card shows the poster, the title, the year and, for a saved entry, a status menu, the personal rating, episode progress with − and + buttons and a progress bar.
+- A status choice, a rating, − and + save at once with the current entry version. A typed progress value saves on Enter or when the field loses focus. A negative or noninteger value is rejected and the saved value returns. A failed save shows an error on the card.
+- A card for an unsaved catalog result has no personal controls. Its Add title button opens the editor.
+- The title and the poster open the editor. On the Page tab, they link the page to a saved entry that does not hold the page URL. The save removes the link from the entry that held it. See [EDIT-04](functionality.md#5-catalog-search-editing-and-saving). A search-only page has no link, so its cards open the editor.
+- On the Page tab, a link mark shows the entry that holds the page URL. The mark has no action.
+- Page and Search share the title text and the category. The route keeps them in the path and in the `q` parameter. The Page tab fills the title from the page only when the text is empty.
+- The Page tab always searches the catalog by the title text. The entry that holds the page URL comes first, then matching library entries, then catalog results. Each title appears once. The empty result message is hidden when a card is shown.
+- Add manual entry is at the bottom of the Page tab.
+
 ## Popup search
 
 The popup Search tab uses the same catalog search contract, debounce and cancellation as the full page.
 
-- Show a category select with Anime, Films and TV, and a title field. Do not show other filters, provider controls or ordering.
-- Show compact results that fit the popup width. Do not use the full-page grid or list layout.
+- Do not show other filters, provider controls or ordering.
+- Show popup cards. Do not use the full-page grid or list layout.
 - Show Previous and Next. Enable Next only when `hasMore` is true.
 - Show loading, empty, offline and error states separately.
-- Selecting a result opens the popup editor. See [SEARCH-03](functionality.md#5-catalog-search-editing-and-saving).
+- Add title on a result opens the popup editor. See [SEARCH-03](functionality.md#5-catalog-search-editing-and-saving).
 - A search save has no viewing link.
 
 ## Matching results to the library

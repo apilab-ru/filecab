@@ -204,7 +204,7 @@ pagination during loading and skeletons (15–16 November 2026).
 
 ### Step 15: catalog search and editing
 
-- [Popup search](../packages/library/src/pages/popup-search-page/popup-search-page.tsx) with a category select, a title field, [compact results](../packages/library/src/components/compact-result/compact-result.tsx), Previous and Next, and the shared search hook, messages and editor.
+- [Popup search](../packages/library/src/pages/popup-search-page/popup-search-page.tsx) with [category tabs](../packages/library/src/components/category-tabs/category-tabs.tsx), a title field, [popup cards](../packages/library/src/components/popup-card/popup-card.tsx) that save status, rating and progress directly, Previous and Next, and the shared search hook, messages and editor.
 - [Selection](../packages/library/src/hooks/use-catalog-select.ts) opens the saved entry, or an unsaved editor with status `planned` and the catalog title. Full-page cards offer Select and edit. The popup selects a single result for a typed title one time for each query.
 - [Merge link rule](../packages/contracts/src/domain/rules.ts) (`mergedLink`) on the server and in the extension: the link of the entry with the latest modified time.
 - Website manual entry has no URL field. The editor shows the link only for saved entries.

@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Category, type CatalogSearchRequest, type Locale } from '@filecab/contracts';
 import { Button } from '@filecab/ui';
 import { CatalogMessages } from '../../components/catalog-messages/catalog-messages';
-import { CompactResult } from '../../components/compact-result/compact-result';
+import { CategoryTabs } from '../../components/category-tabs/category-tabs';
+import { PopupCard } from '../../components/popup-card/popup-card';
 import { useCatalogSearch } from '../../hooks/use-catalog-search';
 import { useCatalogSelect } from '../../hooks/use-catalog-select';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useOnline } from '../../hooks/use-online';
+import { usePopupQuery } from '../../hooks/use-popup-query';
 import { useWorkspace } from '../../hooks/use-workspace';
 import { POPUP_PAGE_SIZE } from './model-popup-search-page';
 import './popup-search-page.scss';
@@ -17,12 +19,13 @@ import './popup-search-page.scss';
 export function PopupSearchPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { category } = useParams();
   const { origin } = useWorkspace();
   const { locale } = useInterfacePreferences();
   const online = useOnline();
   const select = useCatalogSelect();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = usePopupQuery();
   const [page, setPage] = useState(1);
   const [retry, setRetry] = useState(0);
   const autoSelected = useRef('');
@@ -54,32 +57,19 @@ export function PopupSearchPage() {
 
   return (
     <section className="popup-search" aria-label={t('search')}>
-      <div className="popup-search__controls">
-        <label className="popup-search__field">
-          {t('Category')}
-          <select
-            className="popup-search__input"
-            value={request.category}
-            onChange={(event) => navigate(`/search/${event.target.value}`)}
-          >
-            {Object.values(Category).map((value) => (
-              <option key={value} value={value}>
-                {t(value)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="popup-search__field">
-          {t('popupSearchQuery')}
-          <input
-            className="popup-search__input"
-            type="search"
-            value={query}
-            maxLength={200}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-      </div>
+      <CategoryTabs
+        value={request.category}
+        onChange={(value) => navigate({ pathname: `/search/${value}`, search: location.search })}
+      />
+      <input
+        className="popup-search__input"
+        type="search"
+        aria-label={t('popupSearchQuery')}
+        placeholder={t('popupSearchQuery')}
+        value={query}
+        maxLength={200}
+        onChange={(event) => setQuery(event.target.value)}
+      />
       <CatalogMessages
         search={search}
         online={online}
@@ -93,7 +83,7 @@ export function PopupSearchPage() {
       {results.length > 0 && (
         <ul className="popup-search__results" aria-label={t('popupSearchResults')}>
           {results.map((record) => (
-            <CompactResult key={record.catalogId} record={record} />
+            <PopupCard key={record.catalogId} record={record} />
           ))}
         </ul>
       )}

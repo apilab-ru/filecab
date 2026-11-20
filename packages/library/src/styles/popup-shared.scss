@@ -1,0 +1,13 @@
+// The popup title field on the Page and Search tabs.
+@mixin title-field {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 6px 14px;
+  border: 1px solid var(--fc-border);
+  border-radius: 10px;
+  background: var(--fc-input);
+  color: var(--fc-text);
+  font: inherit;
+  font-size: 16px;
+}

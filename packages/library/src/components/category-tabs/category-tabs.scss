@@ -1,0 +1,26 @@
+.category-tabs {
+  display: flex;
+  gap: 24px;
+
+  &__tab {
+    padding: 6px 2px 8px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    background: transparent;
+    color: var(--fc-muted);
+    font: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+
+    &[aria-pressed='true'] {
+      border-bottom-color: var(--fc-accent);
+      color: var(--fc-accent);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--fc-accent);
+      outline-offset: 2px;
+    }
+  }
+}

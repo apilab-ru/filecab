@@ -148,7 +148,7 @@ async function entries(page: Page) {
   });
 }
 
-test('the Page tab opens the referenced record, saves the page link and then finds the saved entry', async () => {
+test('the Page tab opens the referenced record, saves the page link, moves it on a card click and shares the title with Search', async () => {
   test.setTimeout(60000);
   const profile = await mkdtemp(join(tmpdir(), 'filecab-page-'));
   const { context, origin } = await launch(profile);
@@ -164,7 +164,17 @@ test('the Page tab opens the referenced record, saves the page link and then fin
     expect(await entries(first)).toEqual([{ title: 'The Matrix', link: pageUrl }]);
     await first.close();
 
+    // A saved entry does not open by itself. A click on its linked card opens the editor.
     const second = await popup(context, origin, pageUrl, extraction);
+    const linkedCard = second
+      .getByRole('list', { name: 'Search results' })
+      .getByRole('listitem')
+      .filter({ hasText: 'The Matrix' });
+    await expect(
+      linkedCard.getByRole('img', { name: 'This page is linked to this entry' }),
+    ).toBeVisible();
+    await expect(second.getByRole('dialog')).toHaveCount(0);
+    await linkedCard.getByRole('button', { name: 'The Matrix' }).click();
     await expect(second.getByRole('dialog', { name: 'Edit' })).toBeVisible();
     await second.getByRole('button', { name: 'Cancel', exact: true }).click();
 
@@ -183,6 +193,40 @@ test('the Page tab opens the referenced record, saves the page link and then fin
         { title: 'Матрица', link: pageUrl },
       ]),
     );
+    await second.close();
+
+    // The reference names "The Matrix", but "Матрица" holds the link. A click on the
+    // "The Matrix" card moves the link to it and ends the conflict.
+    const third = await popup(context, origin, pageUrl, extraction);
+    await expect(third.getByRole('alert')).toContainText('Choose the entry to edit.');
+    const cards = third.getByRole('list', { name: 'Search results' }).getByRole('listitem');
+    const matrix = cards.filter({ hasText: 'The Matrix' });
+    await expect(
+      matrix.getByRole('img', { name: 'This page is linked to this entry' }),
+    ).toHaveCount(0);
+    await matrix.getByRole('button', { name: 'The Matrix' }).click();
+    await expect(
+      matrix.getByRole('img', { name: 'This page is linked to this entry' }),
+    ).toBeVisible();
+    await expect(third.getByRole('dialog')).toHaveCount(0);
+    await expect(third.getByText('Choose the entry to edit.', { exact: false })).toHaveCount(0);
+    await expect(third.getByText('No catalog titles found.')).toHaveCount(0);
+    expect(await entries(third)).toEqual(
+      expect.arrayContaining([
+        { title: 'The Matrix', link: pageUrl },
+        { title: 'Матрица', link: null },
+      ]),
+    );
+
+    // Page and Search share the title text and the category.
+    await third.getByRole('textbox', { name: 'Title' }).fill('Matrix Reloaded');
+    await third.getByRole('button', { name: 'Search', exact: true }).click();
+    await expect(third).toHaveURL(/#\/search\/films\?q=Matrix\+Reloaded$/);
+    await expect(third.getByRole('searchbox', { name: 'Title' })).toHaveValue('Matrix Reloaded');
+    await third.getByRole('searchbox', { name: 'Title' }).fill('Matrix Revolutions');
+    await third.getByRole('button', { name: 'Page', exact: true }).click();
+    await expect(third.getByRole('dialog')).toHaveCount(0);
+    await expect(third.getByRole('textbox', { name: 'Title' })).toHaveValue('Matrix Revolutions');
   } finally {
     await context.close();
     await rm(profile, { recursive: true, force: true });
@@ -201,7 +245,7 @@ test('a restricted tab offers retry and manual entry after a category choice', a
     await expect(add).toBeDisabled();
     await page.getByRole('textbox', { name: 'Title' }).fill('Мой фильм');
     await expect(add).toBeDisabled();
-    await page.getByRole('combobox', { name: 'Category' }).selectOption('tv');
+    await page.getByRole('button', { name: 'TV series', exact: true }).click();
     await add.click();
     const editor = page.getByRole('dialog', { name: 'Add title' });
     await expect(editor.getByLabel('Title', { exact: true })).toHaveValue('Мой фильм');
