@@ -8,6 +8,7 @@ import {
   Category,
   Granularity,
   emptySnapshot,
+  mergedLink,
   type CatalogRecord,
 } from '../../packages/contracts/src/index';
 import { createApiApplication } from '../../apps/api/src/http/application';
@@ -22,7 +23,7 @@ import {
 import { LibraryMutationService } from '../../apps/api/src/library/mutation.service';
 
 /** Verifies confirmed local catalog merge convergence through native RxDB, worker credentials and real owner APIs. */
-test('catalog association and source transfer converge without replacing the manual UUID', async () => {
+test('catalog association and the latest link converge without replacing the manual UUID', async () => {
   const extensionPath = resolve('apps/extension/.output/chrome-mv3');
   execFileSync(
     'pnpm',
@@ -204,7 +205,7 @@ test('catalog association and source transfer converge without replacing the man
       catalogId,
       comment: 'Private note',
       progress: 12,
-      sources: [...manual.sources, ...donor.sources],
+      sources: mergedLink(manual, donor),
     });
     expect(
       result.rows.filter((row: { entry: { deleted: boolean } }) => !row.entry.deleted),

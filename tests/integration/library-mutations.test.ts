@@ -37,16 +37,21 @@ function create(owner: string = owners[0], urls: string[] = []) {
   });
 }
 
-test('concurrent normalized source duplicates have one winner and isolated owners', async () => {
+test('concurrent saves of one link leave one holder and keep owners isolated', async () => {
   const url = `https://example.com/${randomUUID()}`;
-  const results = await Promise.allSettled([create(owners[0], [url]), create(owners[0], [url])]);
-  expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
-  expect(results.find((result) => result.status === 'rejected')).toMatchObject({
-    reason: { code: 'CONFLICT' },
+  const entries = await Promise.all([create(owners[0], [url]), create(owners[0], [url])]);
+  const claims = await database.sourceAssociation.findMany({
+    where: { ownerId: owners[0], normalizedUrl: url },
   });
+  expect(claims).toHaveLength(1);
+  const holders = await Promise.all(entries.map((entry) => service.get(owners[0], entry.entryId)));
+  expect(holders.filter((entry) => entry.sources.length)).toHaveLength(1);
   await expect(create(owners[1], [url])).resolves.toMatchObject({
     sources: [{ normalizedUrl: url }],
   });
+  expect(
+    await database.sourceAssociation.count({ where: { ownerId: owners[0], normalizedUrl: url } }),
+  ).toBe(1);
 });
 
 test('owner lock prevents a later change from committing ahead of an earlier allocated revision', async () => {
@@ -190,7 +195,9 @@ test('long valid source URLs fit database uniqueness keys', async () => {
   const url = `https://example.com/${Array.from({ length: 100 }, () => randomUUID()).join('')}`;
   const entry = await create(owners[0], [url]);
   expect(entry.sources[0].originalUrl).toBe(url);
-  await expect(create(owners[0], [url])).rejects.toMatchObject({ code: 'CONFLICT' });
+  const next = await create(owners[0], [url]);
+  expect(next.sources[0].originalUrl).toBe(url);
+  expect((await service.get(owners[0], entry.entryId)).sources).toEqual([]);
 });
 
 test('library edits proceed while the account row is locked', async () => {
