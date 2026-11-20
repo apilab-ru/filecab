@@ -85,7 +85,6 @@ test('extension worker reports preflight failures and completes a mocked login t
     await expect(settings.getByRole('button', { name: 'Sign in with Google' })).toBeVisible();
     await expect(page.getByLabel('Comment')).toHaveValue('Unsaved while signing out');
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'Discard', exact: true }).click();
     await expect(page.locator('.local-library__entry-title')).toHaveText('Guest remains local');
   } finally {
     await context.close();

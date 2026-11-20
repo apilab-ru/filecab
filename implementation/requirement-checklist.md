@@ -159,7 +159,7 @@ enrichment. Old-format backup compatibility was removed from scope.
 ### Step 10: shared UI
 
 Shared shell for website, popup and full page. Light and dark themes, English and Russian,
-draft guard, settings and supplied SVG icons. Chromium tests cover locale and theme
+settings and supplied SVG icons. The draft guard was removed later: closing an editor discards its changes without a prompt. Chromium tests cover locale and theme
 propagation, browser-locale start, draft retention, Escape and focus, responsive width and
 200% zoom.
 

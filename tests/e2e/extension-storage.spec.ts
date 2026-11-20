@@ -956,7 +956,7 @@ test('collapsed pull pages reach the latest master and missing-master conflicts 
   }
 });
 
-test('shared editor preserves drafts across locale changes and supports save/discard/continue', async () => {
+test('shared editor preserves drafts across locale changes and route changes and closes without a prompt', async () => {
   const profile = await mkdtemp(join(tmpdir(), 'filecab-interface-'));
   const { context, origin } = await launch(profile);
   try {
@@ -968,14 +968,6 @@ test('shared editor preserves drafts across locale changes and supports save/dis
     await full.getByRole('button', { name: 'Add manual entry' }).click();
     await full.getByLabel('Title', { exact: true }).fill('Keep this draft');
     await choose(popup, 'Language', 'Русский');
-    await expect(full.getByLabel('Название', { exact: true })).toHaveValue('Keep this draft');
-    const continueEditing = full.getByRole('button', {
-      name: 'Продолжить редактирование',
-      exact: true,
-    });
-    await full.keyboard.press('Escape');
-    await continueEditing.click();
-    await expect(continueEditing).toHaveCount(0);
     await expect(full.getByLabel('Название', { exact: true })).toHaveValue('Keep this draft');
     await full.getByRole('button', { name: 'Сохранить', exact: true }).click();
     await expect(full.getByRole('dialog')).toHaveCount(0);
@@ -990,8 +982,8 @@ test('shared editor preserves drafts across locale changes and supports save/dis
     });
     await expect(full).toHaveURL(/#\/library\/films$/);
     await expect(full.getByLabel('Название', { exact: true })).toHaveValue('Discard this change');
+    // Close discards the change at once. There is no unsaved-changes prompt.
     await full.keyboard.press('Escape');
-    await full.getByRole('button', { name: 'Не сохранять', exact: true }).click();
     await expect(full.getByRole('dialog')).toHaveCount(0);
     await full.getByRole('button', { name: 'Аниме', exact: true }).click();
     await expect(full.locator('.local-library__entry-title')).toHaveText('Keep this draft');

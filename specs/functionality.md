@@ -43,7 +43,7 @@ defines colors only.
 
 **NAV-04.** Explain unavailable tabs, restricted URLs and parser failures. Offer Retry or manual entry. The Search tab stays available. Never show these failures as an empty search result.
 
-**NAV-05.** Block navigation from an editor with unsaved changes. Offer Save, Discard and Continue editing. Save continues only after persistence. Discard clears the draft. Continue cancels navigation. Keep `beforeunload` protection for reload and close. Do not promise popup draft recovery.
+**NAV-05.** Navigation does not close an open editor and does not ask about unsaved changes. Cancel and Escape close the editor and discard its changes without a prompt. Reload and close do not warn. Do not promise popup draft recovery.
 
 ### 2.1 Library layout
 

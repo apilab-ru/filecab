@@ -127,11 +127,7 @@ export const EN = {
   categories: 'Media categories',
   websiteLibrary:
     'Your online library is not available yet. You can use the extension library offline.',
-  unsaved: 'Unsaved changes',
-  unsavedDescription: 'Save your changes before leaving, or discard them.',
   save: 'Save',
-  discard: 'Discard',
-  continueEditing: 'Continue editing',
   preferencesFailed: 'Preferences could not be saved. Please retry.',
   'Server versions win conflicts; rejected local edits remain available for review. Confirming authorizes uploading device entries and downloading account entries.':
     'Server versions win conflicts; rejected local edits remain available for review. Confirming authorizes uploading device entries and downloading account entries.',

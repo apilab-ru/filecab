@@ -7,8 +7,6 @@ import { InterfacePreferencesProvider } from '../../providers/interface-preferen
 import { ApplicationShellContentContext } from '../../models/application-shell-content-context';
 import { SyncSettingsProvider } from '../../providers/sync-settings-provider/sync-settings-provider';
 
-export { useDraftGuard } from '../../hooks/use-draft-guard';
-export { Context } from '../../models/interface-context';
 export { LibraryMode, Theme, websitePreferences } from '../../models/preferences';
 export type { InterfacePreferences, PreferenceStorage } from '../../models/preferences';
 export { browserLocale } from '../../i18n/browser-locale';

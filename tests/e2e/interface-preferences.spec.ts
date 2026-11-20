@@ -32,7 +32,7 @@ test('preference hooks update the same document when persistence is unavailable'
   );
 });
 
-test('composed extension layouts share preferences across surfaces and retain draft protection', async () => {
+test('composed extension layouts share preferences across surfaces and keep open drafts', async () => {
   const extensionPath = resolve('apps/extension/.output/chrome-mv3');
   const context = await chromium.launchPersistentContext('', {
     channel: 'chromium',
@@ -60,13 +60,7 @@ test('composed extension layouts share preferences across surfaces and retain dr
       'Keep this unsaved draft',
     );
     await fullPage.keyboard.press('Escape');
-    await fullPage.getByRole('button', { name: 'Продолжить редактирование', exact: true }).click();
-    await expect(
-      fullPage.getByRole('button', { name: 'Продолжить редактирование', exact: true }),
-    ).toHaveCount(0);
-    await expect(fullPage.getByLabel('Название', { exact: true })).toHaveValue(
-      'Keep this unsaved draft',
-    );
+    await expect(fullPage.getByRole('dialog')).toHaveCount(0);
     await popup.reload();
     await expect(popup.getByRole('combobox', { name: 'Язык', exact: true })).toContainText(
       'Русский',

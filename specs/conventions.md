@@ -57,11 +57,6 @@ Do not select the layout with a `popup` boolean. Do not forward layout-specific 
 - `FullPage` passes the category through `renderLibrary`. `Popup` navigates directly.
 - Keep adapters and editors mounted during navigation.
 
-## Unsaved draft guard
-
-`useDraftGuard` owns registration, route blocking, the save or discard decision and
-`beforeunload`. Editors call `Context.setDirty`. The shell shows the confirmation.
-
 ## Interface preferences
 
 - Each shell has one `useInterfacePreferences` provider for locale, theme and setters. Do not pass them as route props.

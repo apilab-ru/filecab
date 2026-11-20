@@ -133,11 +133,7 @@ export const RU = {
   categories: 'Категории',
   websiteLibrary:
     'Онлайн-библиотека пока недоступна. Библиотекой расширения можно пользоваться без интернета.',
-  unsaved: 'Несохранённые изменения',
-  unsavedDescription: 'Сохраните изменения перед переходом или отмените их.',
   save: 'Сохранить',
-  discard: 'Не сохранять',
-  continueEditing: 'Продолжить редактирование',
   preferencesFailed: 'Не удалось сохранить настройки. Повторите попытку.',
   'Server versions win conflicts; rejected local edits remain available for review. Confirming authorizes uploading device entries and downloading account entries.':
     'При конфликте сохраняется версия сервера; отклонённые изменения остаются для проверки. Подтверждение разрешает загрузку записей устройства и скачивание записей аккаунта.',

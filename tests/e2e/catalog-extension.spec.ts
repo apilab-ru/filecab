@@ -82,7 +82,6 @@ test('popup search selects a single result once, saves after Save and shows the 
     await expect(editor.getByLabel('Title', { exact: true })).toHaveValue('Catalog title');
     await expect(editor.getByLabel('Status', { exact: true })).toHaveValue('planned');
     await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await popup.getByRole('button', { name: 'Discard', exact: true }).click();
     await expect(popup.getByRole('dialog')).toHaveCount(0);
     const result = popup.getByRole('list', { name: 'Search results' }).getByRole('button');
     await expect(result).toContainText('Catalog title');
