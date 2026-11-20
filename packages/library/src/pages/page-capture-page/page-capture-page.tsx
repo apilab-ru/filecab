@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   Category,
@@ -29,7 +28,6 @@ import './page-capture-page.scss';
  */
 export function PageCapturePage({ read }: PageCapturePageProps) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { origin, state, open } = useWorkspace();
   const { locale } = useInterfacePreferences();
   const online = useOnline();
@@ -144,10 +142,7 @@ export function PageCapturePage({ read }: PageCapturePageProps) {
       {result.status !== PageReadStatus.Page && (
         <p className="page-capture__message" role="alert">
           {t(result.status === PageReadStatus.Restricted ? 'pageRestricted' : 'pageReadFailed')}{' '}
-          <Button onClick={() => setAttempt((value) => value + 1)}>{t('retry')}</Button>{' '}
-          <Button onClick={() => navigate(`/search/${category || Category.Anime}`)}>
-            {t('search')}
-          </Button>
+          <Button onClick={() => setAttempt((value) => value + 1)}>{t('retry')}</Button>
         </p>
       )}
       <div className="page-capture__controls">
@@ -186,11 +181,6 @@ export function PageCapturePage({ read }: PageCapturePageProps) {
           ))}
         </div>
       ) : null}
-      {match?.saved && (
-        <Button className="page-capture__saved" onClick={() => edit(match.saved!)}>
-          {t('pageEdit', { title: label(match.saved) })}
-        </Button>
-      )}
       {match?.candidates.map((row) => (
         <Button key={row.entry.entryId} onClick={() => edit(row)}>
           {t('pageSuggestion', { title: label(row) })}

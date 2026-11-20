@@ -41,7 +41,7 @@ defines colors only.
 
 **NAV-03.** The website supports the core library operations without extension APIs. Only the extension reads the active tab. The website offers manual entry without a URL field.
 
-**NAV-04.** Explain unavailable tabs, restricted URLs and parser failures. Offer Retry, Search or manual entry. Never show these failures as an empty search result.
+**NAV-04.** Explain unavailable tabs, restricted URLs and parser failures. Offer Retry or manual entry. The Search tab stays available. Never show these failures as an empty search result.
 
 **NAV-05.** Block navigation from an editor with unsaved changes. Offer Save, Discard and Continue editing. Save continues only after persistence. Discard clears the draft. Continue cancels navigation. Keep `beforeunload` protection for reload and close. Do not promise popup draft recovery.
 

@@ -167,9 +167,6 @@ test('the Page tab opens the referenced record, saves the page link and then fin
     const second = await popup(context, origin, pageUrl, extraction);
     await expect(second.getByRole('dialog', { name: 'Edit' })).toBeVisible();
     await second.getByRole('button', { name: 'Cancel', exact: true }).click();
-    await expect(
-      second.getByRole('button', { name: 'Edit saved entry: The Matrix' }),
-    ).toBeVisible();
 
     // Saving the page to another entry moves the link and names the entry that loses it.
     await second.getByRole('button', { name: 'Add manual entry', exact: true }).click();
@@ -192,7 +189,7 @@ test('the Page tab opens the referenced record, saves the page link and then fin
   }
 });
 
-test('a restricted tab offers retry, search and manual entry after a category choice', async () => {
+test('a restricted tab offers retry and manual entry after a category choice', async () => {
   test.setTimeout(60000);
   const profile = await mkdtemp(join(tmpdir(), 'filecab-page-restricted-'));
   const { context, origin } = await launch(profile);
@@ -211,8 +208,6 @@ test('a restricted tab offers retry, search and manual entry after a category ch
     await editor.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
     expect(await entries(page)).toEqual([{ title: 'Мой фильм', link: null }]);
-    await page.getByRole('button', { name: 'Search', exact: true }).last().click();
-    await expect(page).toHaveURL(/#\/search\/tv$/);
   } finally {
     await context.close();
     await rm(profile, { recursive: true, force: true });
