@@ -318,7 +318,6 @@ export const EN = {
   entryConflict:
     'This entry changed in another window or on another device. Your input is still here.',
   blankTitle: 'Enter a title.',
-  progressAboveTotal: 'Progress is above the episode total ({{total, number}}).',
   episodeTotal: 'of {{total, number}}',
   episodeTotalUnknown: 'Episode total unknown',
   details: 'Details',

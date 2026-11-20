@@ -12,7 +12,6 @@ import {
   previewEntryPatch,
   applyEntryPatch,
   hasSemanticChange,
-  progressExceedsTotal,
   normalizeEpisodeTotal,
   titleFor,
   descriptionFor,
@@ -197,10 +196,10 @@ describe('user edit semantics', () => {
     });
   });
 
-  test('progress warns above totals, preserves historical excess and never automatically changes status', () => {
+  test('progress above the total is accepted without truncation and never automatically changes status', () => {
     const before = entry({ snapshot: { ...emptySnapshot(), episodeCount: 2 } });
     const after = previewEntryPatch(before, { progress: 3 });
-    expect(progressExceedsTotal(after.progress, after.snapshot.episodeCount)).toBe(true);
+    expect(after.progress).toBe(3);
     expect(after.status).toBeNull();
     expect(previewEntryPatch(after, { status: Status.Complete }).progress).toBe(3);
     expect(previewEntryPatch(before, { progress: 2 }).status).toBeNull();
@@ -210,7 +209,6 @@ describe('user edit semantics', () => {
     for (const total of [0, -1, null, undefined, 1.1, Number.MAX_SAFE_INTEGER + 1, '2'])
       expect(normalizeEpisodeTotal(total)).toBeNull();
     expect(normalizeEpisodeTotal(2)).toBe(2);
-    expect(progressExceedsTotal(3, null)).toBe(false);
   });
 
   test('semantic comparison ignores metadata and key order, but retains original link text changes', () => {

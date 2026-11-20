@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { normalizeSourceUrl, Status, titleFor } from '@filecab/contracts';
 import { Button, Icon, IconName, RatingPicker, Select } from '@filecab/ui';
 import { catalogResultState, useCatalogSelect } from '../../hooks/use-catalog-select';
 import { useEntryUpdate } from '../../hooks/use-entry-update';
+import { ProgressControl } from '../progress-control/progress-control';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useWorkspace } from '../../hooks/use-workspace';
 import type { PopupCardProps } from './model-popup-card';
@@ -25,10 +26,7 @@ export function PopupCard({ record, row: givenRow, link, onPick }: PopupCardProp
   const row = givenRow ?? saved;
   const entry = row?.entry;
   const changes = useEntryUpdate(entry);
-  const [progressText, setProgressText] = useState(String(entry?.progress ?? 0));
   const [failedPoster, setFailedPoster] = useState<string | null>(null);
-
-  useEffect(() => setProgressText(String(entry?.progress ?? 0)), [entry?.progress]);
 
   const snapshot = entry?.snapshot ?? record?.snapshot;
 
@@ -37,8 +35,6 @@ export function PopupCard({ record, row: givenRow, link, onPick }: PopupCardProp
   const title = titleFor(snapshot, locale, t('Untitled'), entry?.userTitle).text;
   const total = snapshot.episodeCount;
   const number = new Intl.NumberFormat(locale);
-  const progress = entry?.progress ?? 0;
-  const filled = total && total > 0 ? Math.min(100, (progress / total) * 100) : 0;
   const pageLink = link ? normalizeSourceUrl(link) : null;
   const linked = Boolean(
     pageLink && entry?.sources.some((source) => source.normalizedUrl === pageLink),
@@ -55,15 +51,6 @@ export function PopupCard({ record, row: givenRow, link, onPick }: PopupCardProp
     else if (row) open(row.entry.category, row, undefined, undefined, link ? { link } : undefined);
   };
   const pickTitle = linksPage ? t('linkToPage') : undefined;
-  const setProgress = (value: number) => {
-    if (!Number.isInteger(value) || value < 0) {
-      setProgressText(String(progress));
-
-      return;
-    }
-
-    if (value !== progress) void changes.update({ progress: value });
-  };
 
   return (
     <li className="popup-card">
@@ -138,42 +125,12 @@ export function PopupCard({ record, row: givenRow, link, onPick }: PopupCardProp
                 />
               </span>
             </div>
-            <div className="popup-card__progress">
-              <Button
-                className="popup-card__step"
-                aria-label={t('progressDecrease')}
-                disabled={changes.disabled || changes.busy || progress <= 0}
-                onClick={() => setProgress(progress - 1)}
-              >
-                <Icon name={IconName.Minus} />
-              </Button>
-              <input
-                className="popup-card__count"
-                aria-label={t('Progress')}
-                inputMode="numeric"
-                value={progressText}
-                disabled={changes.disabled || changes.busy}
-                onChange={(event) => setProgressText(event.target.value.replace(/\D/g, ''))}
-                onBlur={() => setProgress(progressText === '' ? NaN : Number(progressText))}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') event.currentTarget.blur();
-                }}
-              />
-              <span className="popup-card__total">
-                / {total === null ? '?' : number.format(total)}
-              </span>
-              <Button
-                className="popup-card__step"
-                aria-label={t('progressIncrease')}
-                disabled={changes.disabled || changes.busy}
-                onClick={() => setProgress(progress + 1)}
-              >
-                <Icon name={IconName.Plus} />
-              </Button>
-            </div>
-            <div className="popup-card__track" aria-hidden="true">
-              <div className="popup-card__fill" style={{ width: `${filled}%` }} />
-            </div>
+            <ProgressControl
+              value={entry.progress}
+              total={total}
+              disabled={changes.disabled || changes.busy}
+              onChange={(progress) => void changes.update({ progress })}
+            />
             {changes.error && (
               <span className="popup-card__alert" role="alert">
                 {changes.error}

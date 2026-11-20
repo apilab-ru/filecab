@@ -113,10 +113,6 @@ export function normalizeEpisodeTotal(value: unknown): number | null {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
-/** Reports whether progress exceeds a known positive total. */
-export function progressExceedsTotal(progress: number, total: number | null): boolean {
-  return total !== null && total > 0 && progress > total;
-}
 /** Describes selected display text with its language, provenance and origin. */
 export interface DisplayText {
   text: string;

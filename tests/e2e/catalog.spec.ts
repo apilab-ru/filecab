@@ -509,7 +509,14 @@ test('library and catalog share card geometry and category view controls', async
   expect(catalogCard!.width).toBeCloseTo(libraryCard!.width, 0);
   expect(catalogCard!.height).toBeGreaterThanOrEqual(libraryCard!.height);
   expect(catalogPoster!.height).toBe(libraryPoster!.height);
-  await expect(page.locator('.library-card__stats:visible').first()).toContainText('12 / 28');
+  await expect(page.locator('.library-card__stats:visible').first()).toContainText('/ 28');
+  await expect(page.locator('.progress-control__count:visible').first()).toHaveValue('12');
+  // A click on the progress bar sets the episode at the click position and saves it.
+  const track = page.locator('.progress-control__track:visible').first();
+  const trackBox = await track.boundingBox();
+  await track.click({ position: { x: trackBox!.width * 0.75, y: trackBox!.height / 2 } });
+  await expect(page.locator('.progress-control__count:visible').first()).toHaveValue('21');
+  await expect.poll(() => state.entries.find((entry) => entry.progress === 21)).toBeTruthy();
   await page.screenshot({ path: testInfo.outputPath('catalog-cards.png') });
   await page.getByRole('button', { name: 'List view', exact: true }).click();
   await expect(page.locator('.title-results:visible')).toHaveClass(/title-results--list/);
@@ -542,7 +549,7 @@ test('catalog shows a bottom Add button, hides unknown years and averages provid
   await expect(card.getByTitle('Approximate provider rating')).toHaveText('≈ 7 / 10');
   await expect(card.locator('.library-card__year')).toHaveCount(0);
   await expect(card.locator('.library-card__primary-action')).toHaveText('Add title');
-  await expect(card.locator('.library-card__track')).toHaveCount(0);
+  await expect(card.locator('.progress-control')).toHaveCount(0);
   await card.getByRole('button', { name: 'Add title', exact: true }).click();
   await expect(card.getByLabel('Rating', { exact: true })).toHaveText('Unrated');
   await expect(page.getByRole('dialog')).toHaveCount(0);

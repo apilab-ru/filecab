@@ -4,11 +4,11 @@ import {
   Category,
   Status,
   normalizeSourceUrl,
-  progressExceedsTotal,
   titleFor,
   type EntryPatch,
 } from '@filecab/contracts';
 import { Button, ConfirmDialog } from '@filecab/ui';
+import { ProgressControl } from '../progress-control/progress-control';
 import { useTranslation } from 'react-i18next';
 import { useWorkspace } from '../../hooks/use-workspace';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
@@ -132,7 +132,6 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
       )
     : undefined;
   const total = (entry?.snapshot ?? draft.catalog?.snapshot)?.episodeCount || null;
-  const progressAbove = progressExceedsTotal(values.fields.progress, total);
   useLayoutEffect(() => {
     titleInput.current?.setCustomValidity(
       titleRequired && !values.fields.userTitle.trim() ? t('blankTitle') : '',
@@ -251,27 +250,19 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
             ))}
           </select>
         </label>
-        <label className="workspace-editor__field">
-          {t('Progress')}
-          <input
-            className="workspace-editor__input"
-            type="number"
-            min={0}
-            max={Number.MAX_SAFE_INTEGER}
-            step={1}
-            aria-describedby={progressHint}
+        <div className="workspace-editor__field">
+          <span aria-hidden="true">{t('Progress')}</span>
+          <ProgressControl
+            live
             value={values.fields.progress}
-            onChange={(event) => change({ progress: Number(event.target.value) })}
+            total={total}
+            describedBy={progressHint}
+            onChange={(progress) => change({ progress })}
           />
-        </label>
-        <p
-          id={progressHint}
-          className={`workspace-editor__hint${progressAbove ? ' workspace-editor__hint--warning' : ''}`}
-          role={progressAbove ? 'status' : undefined}
-        >
+        </div>
+        <p id={progressHint} className="workspace-editor__hint">
           {total === null && t('episodeTotalUnknown')}
-          {total !== null && !progressAbove && t('episodeTotal', { total })}
-          {total !== null && progressAbove && t('progressAboveTotal', { total })}
+          {total !== null && t('episodeTotal', { total })}
         </p>
         <label className="workspace-editor__field">
           {t('Comment')}

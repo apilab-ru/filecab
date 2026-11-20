@@ -1,5 +1,6 @@
 import { useId, useRef } from 'react';
-import { useEntryRating } from '../../hooks/use-entry-rating';
+import { useEntryUpdate } from '../../hooks/use-entry-update';
+import { ProgressControl } from '../progress-control/progress-control';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useTranslation } from 'react-i18next';
 import './library-card.scss';
@@ -25,7 +26,7 @@ export function LibraryCard({
   onGenre,
 }: LibraryCardProps) {
   const { t } = useTranslation();
-  const personalRating = useEntryRating(entry);
+  const changes = useEntryUpdate(entry);
   const titleElement = useRef<HTMLSpanElement>(null);
   const { locale } = useInterfacePreferences();
   const detailsId = useId();
@@ -40,8 +41,6 @@ export function LibraryCard({
 
   const title = titleFor(snapshot, locale, t('Untitled'), entry?.userTitle).text;
   const total = snapshot.episodeCount;
-  const progress = total && total > 0 ? Math.min(100, ((entry?.progress ?? 0) / total) * 100) : 0;
-  const number = new Intl.NumberFormat(locale);
   const scores = (catalogSnapshot ?? snapshot).providerRatings
     .filter(
       ({ value, scale }) =>
@@ -147,9 +146,13 @@ export function LibraryCard({
           <>
             <div className="library-card__stats">
               {entry && (
-                <span className="library-card__episodes">
-                  {number.format(entry.progress)} / {total === null ? '?' : number.format(total)}
-                </span>
+                <ProgressControl
+                  className="library-card__episodes"
+                  value={entry.progress}
+                  total={total}
+                  disabled={changes.disabled || changes.busy}
+                  onChange={(progress) => void changes.update({ progress })}
+                />
               )}
               <span
                 className={`library-card__rating${rating > 0 ? ' library-card__rating--rated' : ''}`}
@@ -167,10 +170,10 @@ export function LibraryCard({
                     title={t('yourRating')}
                     clearLabel={t('clearRating')}
                     unratedLabel={t('unrated')}
-                    disabled={personalRating.disabled}
-                    busy={personalRating.busy}
-                    error={personalRating.error}
-                    onChange={personalRating.setRating}
+                    disabled={changes.disabled}
+                    busy={changes.busy}
+                    error={changes.error}
+                    onChange={(rating) => changes.update({ rating })}
                   />
                 ) : (
                   <>
@@ -182,11 +185,6 @@ export function LibraryCard({
                 )}
               </span>
             </div>
-            {entry && (
-              <div className="library-card__track" aria-hidden="true">
-                <div className="library-card__fill" style={{ width: `${progress}%` }} />
-              </div>
-            )}
           </>
         )}
         {primaryAction && (

@@ -29,13 +29,23 @@ Use the [popup mockup](mockup-popup.png).
 - The header shows the brand, a Page and Search switch, the full-page link and Settings.
 - Page and Search show category tabs with Anime, Films and TV series, then one title field, then popup cards.
 - A popup card shows the poster, the title, the year and, for a saved entry, a status menu, the personal rating, episode progress with − and + buttons and a progress bar.
-- A status choice, a rating, − and + save at once with the current entry version. A typed progress value saves on Enter or when the field loses focus. A negative or noninteger value is rejected and the saved value returns. A failed save shows an error on the card.
+- A status choice, a rating, −, + and a click on the progress bar save at once with the current entry version. A typed progress value saves on Enter or when the field loses focus. A negative or noninteger value is rejected and the saved value returns. A failed save shows an error on the card.
 - A card for an unsaved catalog result has no personal controls. Its Add title button opens the editor.
 - The title and the poster open the editor. On the Page tab, they link the page to a saved entry that does not hold the page URL. The save removes the link from the entry that held it. See [EDIT-04](functionality.md#5-catalog-search-editing-and-saving). A search-only page has no link, so its cards open the editor.
 - On the Page tab, a link mark shows the entry that holds the page URL. The mark has no action.
 - Page and Search share the title text and the category. The route keeps them in the path and in the `q` parameter. The Page tab fills the title from the page only when the text is empty.
 - The Page tab always searches the catalog by the title text. The entry that holds the page URL comes first, then matching library entries, then catalog results. Each title appears once. The empty result message is hidden when a card is shown.
 - Add manual entry is at the bottom of the Page tab.
+
+## Progress control
+
+The popup cards, the library and catalog cards and the editor use one progress control.
+
+- It shows −, a number field, the episode total and +, then a progress bar.
+- A click on the bar sets the progress to the episode at the click position, rounded to a whole episode. Without a known total, the bar has no action.
+- The number field accepts digits only. A blank or invalid value returns the current value.
+- On a card, each change saves at once with the current entry version. In the editor, each change updates the draft, and Save persists it.
+- A list row shows only the number field and the total.
 
 ## Popup search
 

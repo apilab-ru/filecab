@@ -1,0 +1,65 @@
+.progress-control {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+
+  &__row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+
+    .progress-control--compact & {
+      justify-content: center;
+    }
+  }
+
+  &__step.fc-button {
+    width: 32px;
+    min-height: 28px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  &__step--add.fc-button {
+    margin-left: auto;
+  }
+
+  &__count {
+    width: 52px;
+    min-height: 28px;
+    box-sizing: border-box;
+    border: 2px solid var(--fc-accent);
+    border-radius: 8px;
+    background: var(--fc-surface);
+    color: var(--fc-text);
+    font: inherit;
+    font-size: 15px;
+    text-align: center;
+
+    &:disabled {
+      border-color: var(--fc-border);
+    }
+  }
+
+  &__total {
+    color: var(--fc-muted);
+    white-space: nowrap;
+  }
+
+  &__track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--fc-border);
+
+    &[data-clickable] {
+      cursor: pointer;
+    }
+  }
+
+  &__fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--fc-accent);
+  }
+}

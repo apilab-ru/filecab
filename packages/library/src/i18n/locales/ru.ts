@@ -323,7 +323,6 @@ export const RU = {
   entryConflict:
     'Запись изменилась в другом окне или на другом устройстве. Введённые данные сохранены.',
   blankTitle: 'Введите название.',
-  progressAboveTotal: 'Прогресс больше числа эпизодов ({{total, number}}).',
   episodeTotal: 'из {{total, number}}',
   episodeTotalUnknown: 'Число эпизодов неизвестно',
   details: 'Подробнее',

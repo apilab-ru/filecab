@@ -177,20 +177,22 @@ test('full-page catalog Add/Edit share durable entries and preserve offline edit
     await expect(full.getByRole('dialog')).toHaveCount(0);
     await context.setOffline(true);
     await popup.getByLabel('Comment', { exact: true }).fill('Offline note');
-    await popup.getByLabel('Progress', { exact: true }).fill('24');
+    await popup.getByRole('dialog').getByLabel('Progress', { exact: true }).fill('24');
     await popup.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(popup.getByRole('alert')).toContainText('changed in another window');
     await expect(popup.getByLabel('Comment', { exact: true })).toHaveValue('Offline note');
     await popup.getByRole('button', { name: 'Use current versions and keep my draft' }).click();
     await popup.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(popup.getByRole('dialog')).toHaveCount(0);
-    await expect(full.locator('.library-card__stats:visible')).toContainText('24');
+    await expect(full.locator('.library-card:visible .progress-control__count')).toHaveValue('24');
     expect(errors).toEqual([]);
     await context.close();
     ({ context, origin } = await launch(profile));
     const reopened = await context.newPage();
     await reopened.goto(`${origin}/full-page.html#/catalog/films`);
-    await expect(reopened.locator('.library-card__stats:visible')).toContainText('24');
+    await expect(reopened.locator('.library-card:visible .progress-control__count')).toHaveValue(
+      '24',
+    );
     await expect(reopened.locator('.catalog-page .fc-rating-picker__trigger')).toHaveText('8 / 10');
     await reopened.locator('.library-card__menu-trigger:visible').click();
     await reopened
@@ -266,7 +268,9 @@ test('a confirmed interrupted local merge recovers after browser restart and kee
     ({ context, origin } = await launch(profile));
     const reopened = await context.newPage();
     await reopened.goto(`${origin}/full-page.html#/catalog/films`);
-    await expect(reopened.locator('.library-card__stats:visible')).toContainText('12');
+    await expect(reopened.locator('.library-card:visible .progress-control__count')).toHaveValue(
+      '12',
+    );
     const result = await reopened.evaluate(async () => {
       const module = await import(/* @vite-ignore */ `${location.origin}/storage-test.js`);
       const repository = await module.LocalLibraryRepository.open();

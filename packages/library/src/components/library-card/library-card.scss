@@ -297,11 +297,12 @@
     }
   }
 
+  // Progress and rating share the first line. The progress bar spans the second line.
   &__stats {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 8px;
     font-size: 16px;
     line-height: 20px;
 
@@ -311,15 +312,49 @@
   }
 
   &__episodes {
+    display: contents;
+
+    .progress-control__row {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    .progress-control__step.fc-button,
+    .progress-control__count {
+      min-height: 24px;
+    }
+
+    .progress-control__step--add.fc-button {
+      margin-left: 0;
+    }
+
+    .progress-control__track {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      height: 6px;
+    }
+
     .title-results--list & {
+      display: grid;
       grid-column: 5;
       grid-row: 1;
-      text-align: center;
+    }
+
+    // A list row has room only for the number field and the total.
+    .title-results--list & .progress-control__step,
+    .title-results--list & .progress-control__track {
+      display: none;
+    }
+
+    .title-results--list & .progress-control__row {
+      justify-content: center;
     }
   }
 
   &__rating {
     display: inline-flex;
+    grid-column: 2;
+    grid-row: 1;
     align-items: center;
     gap: 6px;
     margin-left: auto;
@@ -339,23 +374,6 @@
     &--rated .library-card__star {
       color: #ffc526;
     }
-  }
-
-  &__track {
-    height: 10px;
-    overflow: hidden;
-    border-radius: 8px;
-    background: var(--fc-border);
-
-    .title-results--list & {
-      display: none;
-    }
-  }
-
-  &__fill {
-    height: 100%;
-    border-radius: inherit;
-    background: #83a7ff;
   }
 
   &__primary-action {
