@@ -28,7 +28,7 @@ The popup Search tab uses the same catalog search contract, debounce and cancell
 
 - Show a category select with Anime, Films and TV, and a title field. Do not show other filters, provider controls or ordering.
 - Show compact results that fit the popup width. Do not use the full-page grid or list layout.
-- Load the next page only when `hasMore` is true.
+- Show Previous and Next. Enable Next only when `hasMore` is true.
 - Show loading, empty, offline and error states separately.
 - Selecting a result opens the popup editor. See [SEARCH-03](functionality.md#5-catalog-search-editing-and-saving).
 - A search save has no viewing link.

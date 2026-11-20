@@ -269,7 +269,8 @@ test('merge previews have no side effects and bind ownership, choices and both v
     entryId: survivor.entryId,
     comment: 'chosen comment',
     serverVersion: null,
-    sources: survivor.sources,
+    // The removed entry is newer, so the merge keeps its link.
+    sources: removed.sources,
   });
   expect(preview.changes[1].proposed.deleted).toBe(true);
   expect(await (await request('')).json()).toEqual(before);
@@ -436,7 +437,7 @@ test('OpenAPI describes complete snapshots, nullable metadata, versions and prot
   });
 });
 
-test('catalog association uses server metadata and merge keeps the manual identity and link', async () => {
+test('catalog association uses server metadata and merge keeps the manual identity and the latest link', async () => {
   const manual = await create({
     userTitle: 'manual identity',
     sourceUrls: [`https://example.com/${randomUUID()}`],
@@ -486,7 +487,7 @@ test('catalog association uses server metadata and merge keeps the manual identi
     userTitle: manual.userTitle,
     catalogId,
     snapshot,
-    sources: manual.sources,
+    sources: linked.sources,
   });
   expect(
     (

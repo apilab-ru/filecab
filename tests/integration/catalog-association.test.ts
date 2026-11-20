@@ -92,7 +92,7 @@ function request(
   };
 }
 
-test('merge commits donor deletion and keeps the survivor viewing link in one transaction', async () => {
+test('merge commits donor deletion and keeps the latest viewing link in one transaction', async () => {
   const catalogId = await catalog();
   const manual = await create();
   const donor = await create(catalogId);
@@ -113,7 +113,7 @@ test('merge commits donor deletion and keeps the survivor viewing link in one tr
     comment: 'Chosen donor note',
     progress: manual.progress,
     rating: 0,
-    sources: manual.sources,
+    sources: donor.sources,
     catalogId,
   });
   expect(tombstone?.deleted).toBe(true);

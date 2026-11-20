@@ -21,6 +21,11 @@ export const RU = {
     'Конфликт идентификаторов или категорий. Проверьте записи перед продолжением.',
   catalogAssociate: 'Связать с этим названием',
   catalogUseManual: 'Связать ручную запись: {{title}}',
+  catalogSelect: 'Выбрать и изменить',
+  catalogLoading: 'Поиск…',
+  catalogPageNumber: 'Страница {{page}}',
+  popupSearchQuery: 'Название',
+  popupSearchResults: 'Результаты поиска',
   catalogMatching: 'Выберите название в каталоге для {{title}}.',
   catalogDraftDescription: 'Изменения сохраняются только после нажатия «Сохранить».',
   catalogAssociationDescription:
@@ -115,8 +120,6 @@ export const RU = {
   fullPage: 'Открыть полную страницу',
   navigation: 'Основная навигация',
   categories: 'Категории',
-  unavailableCatalog:
-    'Поиск в каталоге пока недоступен. Можно добавлять записи вручную в библиотеке.',
   unavailablePage:
     'Распознавание страницы пока недоступно. Откройте библиотеку, чтобы добавить запись вручную.',
   websiteLibrary:

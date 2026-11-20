@@ -3,8 +3,8 @@ import { PopupPage } from '../../pages/popup-page/popup-page';
 import './popup.scss';
 
 import { Navigate, Route, Routes, useMatch, useNavigate } from 'react-router-dom';
-import { Button, Icon, IconName, FILECAB_ICON_URL, Panel } from '@filecab/ui';
-import { LibraryMode, LibraryPage, SettingsPage } from '@filecab/library';
+import { Button, Icon, IconName, FILECAB_ICON_URL } from '@filecab/ui';
+import { LibraryMode, LibraryPage, PopupSearchPage, SettingsPage } from '@filecab/library';
 import type { PopupProps } from './model-popup';
 
 const MODES = [LibraryMode.Page, LibraryMode.Search];
@@ -80,7 +80,7 @@ export function Popup({ fullPageUrl, iconUrl = FILECAB_ICON_URL, children }: Pop
         <LibraryPage hidden>{children}</LibraryPage>
         <Routes>
           <Route path="/page/:category" element={<PopupPage message={t('unavailablePage')} />} />
-          <Route path="/search/:category" element={<Panel>{t('unavailableCatalog')}</Panel>} />
+          <Route path="/search/:category" element={<PopupSearchPage />} />
           <Route path="/settings" element={<SettingsPage popup />} />
           <Route path="*" element={<Navigate replace to="/page/anime" />} />
         </Routes>

@@ -17,8 +17,8 @@ change logs before 18 November 2026.
 - [ ] [NAV-01–05](../specs/functionality.md#2-surfaces-and-navigation) (steps 10, 11, 16): Partial. Shell, routes and draft guard done (step 10). Page extraction pending.
 - [ ] [MODEL-01–08](../specs/functionality.md#3-domain-identity-and-validation) (steps 3, 4, 11): Partial. Contracts, server rules and editor validation done. Category conflict review pending.
 - [ ] [PAGE-01–04](../specs/functionality.md#4-page-extraction-and-matching) (step 16): Pending.
-- [ ] [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching) (steps 4, 15, 16): Partial. Server association and merge done. Client matching pending.
-- [ ] [SEARCH-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving) (steps 12–15): Partial. Catalog search, direct Add and rating done. Editor flow pending.
+- [ ] [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching) (steps 4, 15, 16): Partial. Identity matching, title suggestions, association and merge done. URL matching pending (step 16).
+- [x] [SEARCH-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving) (steps 12–15): Done. [Step 15](#step-15-catalog-search-and-editing)
 - [ ] [EDIT-01–04](../specs/functionality.md#5-catalog-search-editing-and-saving) (steps 7, 8, 11): Partial. Editor, validation, conflict choices and the read-only link done. Popup and import add the link (steps 16, 17). Page tab link replacement and link move pending.
 - [ ] [LIB-01–07](../specs/functionality.md#6-library-browsing) (steps 10, 11): Partial. All clauses done except bulk deletion, which is optional. Release check pending.
 - [ ] [DATA-01–06](../specs/functionality.md#7-persistence-offline-behavior-and-concurrency) (steps 7–9, 11): Partial. Extension and website editing done. Backup preview checks pending.
@@ -53,9 +53,10 @@ change logs before 18 November 2026.
 ## Library UI
 
 - [x] [Catalog search](../specs/library-ui.md#catalog-search) (step 15): Done. [Catalog UI](#catalog-ui)
-- [ ] [Matching results to the library](../specs/library-ui.md#matching-results-to-the-library) (step 15): Partial. Identity match done. Title suggestions pending.
+- [x] [Popup search](../specs/library-ui.md#popup-search) (step 15): Done. [Step 15](#step-15-catalog-search-and-editing)
+- [x] [Matching results to the library](../specs/library-ui.md#matching-results-to-the-library) (step 15): Done. [Step 15](#step-15-catalog-search-and-editing)
 - [x] [Add and rating](../specs/library-ui.md#add-and-rating) (step 15): Done. [Catalog UI](#catalog-ui)
-- [ ] [Association and merge](../specs/library-ui.md#association-and-merge) (step 15): Partial. Preview flow and local journal exist. Complete client tests pending.
+- [x] [Association and merge](../specs/library-ui.md#association-and-merge) (step 15): Done. [Step 15](#step-15-catalog-search-and-editing)
 - [x] [Toolbar and views](../specs/library-ui.md#toolbar-and-views) (step 11): Done. [Catalog UI](#catalog-ui)
 - [x] [Cards](../specs/library-ui.md#cards) (step 11): Done. [Catalog UI](#catalog-ui)
 - [x] [Ordering](../specs/library-ui.md#ordering) (step 11): Done. [Catalog UI](#catalog-ui)
@@ -200,6 +201,14 @@ Shared `LibraryCard` and `TitleResults` for library and catalog. Website and ext
 browser tests cover card dimensions, list rows, column ordering, the rating picker,
 direct Add with retry, duplicate submission, separate Sort by and Order controls,
 pagination during loading and skeletons (15–16 November 2026).
+
+### Step 15: catalog search and editing
+
+- [Popup search](../packages/library/src/pages/popup-search-page/popup-search-page.tsx) with a category select, a title field, [compact results](../packages/library/src/components/compact-result/compact-result.tsx), Previous and Next, and the shared search hook, messages and editor.
+- [Selection](../packages/library/src/hooks/use-catalog-select.ts) opens the saved entry, or an unsaved editor with status `planned` and the catalog title. Full-page cards offer Select and edit. The popup selects a single result for a typed title one time for each query.
+- [Merge link rule](../packages/contracts/src/domain/rules.ts) (`mergedLink`) on the server and in the extension: the link of the entry with the latest modified time.
+- Website manual entry has no URL field. The editor shows the link only for saved entries.
+- Browser tests (19 November 2026): popup search with automatic selection, Cancel, Save and the saved state; full-page Select and edit; merge preview with the kept link; local merge recovery. All 38 browser tests pass. Unit 197, contracts 12, integration 50 pass.
 
 ### Tooling
 

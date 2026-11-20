@@ -148,7 +148,7 @@ can have format `movie`, `tv`, `special`, `ova`, `ona` or `music` and stay in th
 
 **SEARCH-02.** Show loading, results, empty, offline and service error states separately. Retry keeps the query and the editor. An old response cannot replace newer results.
 
-**SEARCH-03.** Selecting a new result prepares an unsaved editor. It sets a missing status to `planned` and fills an empty user title. Persist only after Save or an explicit Add. In the popup, select the result automatically when a search returns exactly one result. Do this one time for each query. The user can go back to the results. Automatic selection does not save the entry and does not prove identity.
+**SEARCH-03.** Selecting a new result prepares an unsaved editor. It sets a missing status to `planned` and fills an empty user title. Persist only after Save or an explicit Add. In the popup, select the result automatically when a search for a typed title returns exactly one result. Do this one time for each query. The user can go back to the results. Automatic selection does not save the entry and does not prove identity.
 
 **SEARCH-04.** Full-page and website Add persist the entry. A saved result shows status, progress, rating and Edit instead of Add.
 

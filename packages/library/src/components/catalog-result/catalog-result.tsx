@@ -5,7 +5,8 @@ import { LibraryCard } from '../library-card/library-card';
 import { useTranslation } from 'react-i18next';
 import { useWorkspace } from '../../hooks/use-workspace';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
-import { manualCandidates, savedCatalogMatch } from '../../domain/catalog-selection';
+import { manualCandidates } from '../../domain/catalog-selection';
+import { catalogResultState, useCatalogSelect } from '../../hooks/use-catalog-select';
 import type { CatalogResultProps } from './model-catalog-result';
 
 /** Shows catalog metadata and separate private saved state without treating titles as identity. */
@@ -16,12 +17,8 @@ export function CatalogResult({ record }: CatalogResultProps) {
   const [{ busy, error }, setters] = useLocalStore(() => ({ busy: false, error: '' }));
   const locked = useRef(false);
   const creationId = useRef(crypto.randomUUID());
-  const match = savedCatalogMatch(state.rows, record);
-  const saved =
-    match.kind === 'match'
-      ? state.rows.find(({ entry }) => entry.entryId === match.entryId)
-      : undefined;
-  const conflict = match.kind === 'conflict' || (match.kind === 'match' && match.categoryConflict);
+  const { saved, conflict } = catalogResultState(state.rows, record);
+  const select = useCatalogSelect();
   const candidates = manualCandidates(state.rows, record, locale);
   const blocked = conflict || Boolean(draft) || !state.repository || busy;
   let action: 'Edit' | 'addTitle' | 'catalogAssociate' = saved ? 'Edit' : 'addTitle';
@@ -85,6 +82,9 @@ export function CatalogResult({ record }: CatalogResultProps) {
       alert={conflict ? t('catalogIdentityConflict') : error || undefined}
       actions={[
         ...(saved || reconciling ? [primaryAction] : []),
+        ...(!saved && !reconciling
+          ? [{ label: t('catalogSelect'), disabled: blocked, onClick: () => select(record) }]
+          : []),
         ...(!reconciling
           ? candidates.map((candidate) => ({
               label: t('catalogUseManual', { title: candidate.entry.userTitle }),

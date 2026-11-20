@@ -66,6 +66,48 @@ async function launch(profile: string): Promise<{ context: BrowserContext; origi
   return { context, origin: `chrome-extension://${new URL(worker.url()).host}` };
 }
 
+test('popup search selects a single result once, saves after Save and shows the saved state', async () => {
+  test.setTimeout(60000);
+  const profile = await mkdtemp(join(tmpdir(), 'filecab-popup-search-'));
+  const { context, origin } = await launch(profile);
+  try {
+    const popup = await context.newPage();
+    await popup.setViewportSize({ width: 380, height: 600 });
+    await popup.goto(`${origin}/popup.html#/search/films`);
+    await expect(popup.getByRole('combobox', { name: 'Category' })).toHaveValue('films');
+    await expect(popup.getByRole('list', { name: 'Search results' })).toBeVisible();
+    await expect(popup.getByRole('dialog')).toHaveCount(0);
+    await popup.getByRole('searchbox', { name: 'Title' }).fill('Catalog');
+    const editor = popup.getByRole('dialog', { name: 'Add title' });
+    await expect(editor.getByLabel('Title', { exact: true })).toHaveValue('Catalog title');
+    await expect(editor.getByLabel('Status', { exact: true })).toHaveValue('planned');
+    await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await popup.getByRole('button', { name: 'Discard', exact: true }).click();
+    await expect(popup.getByRole('dialog')).toHaveCount(0);
+    const result = popup.getByRole('list', { name: 'Search results' }).getByRole('button');
+    await expect(result).toContainText('Catalog title');
+    await popup.waitForTimeout(500);
+    await expect(popup.getByRole('dialog')).toHaveCount(0);
+    expect(
+      await popup.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+    ).toBe(true);
+    await result.click();
+    await editor.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(popup.getByRole('dialog')).toHaveCount(0);
+    await expect(result).toContainText('Planned');
+    await expect(result).toContainText('0 / ?');
+    await result.click();
+    await expect(popup.getByRole('dialog', { name: 'Edit' })).toBeVisible();
+    await popup.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await popup.getByRole('combobox', { name: 'Category' }).selectOption('anime');
+    await expect(popup).toHaveURL(/#\/search\/anime$/);
+    await expect(popup.getByRole('status').filter({ hasText: 'unavailable' })).toBeVisible();
+  } finally {
+    await context.close();
+    await rm(profile, { recursive: true, force: true });
+  }
+});
+
 test('full-page catalog Add/Edit share durable entries and preserve offline edits after restart', async () => {
   test.setTimeout(60000);
   const profile = await mkdtemp(join(tmpdir(), 'filecab-catalog-'));
@@ -77,13 +119,6 @@ test('full-page catalog Add/Edit share durable entries and preserve offline edit
     full.on('pageerror', (error) => errors.push(error.message));
     popup.on('pageerror', (error) => errors.push(error.message));
     await full.goto(`${origin}/full-page.html#/catalog/films`);
-    await popup.goto(`${origin}/popup.html#/search/films`);
-    await expect(
-      popup.getByText(
-        'Catalog search is not available yet. You can add titles manually in your library.',
-      ),
-    ).toBeVisible();
-    await expect(popup.getByRole('searchbox')).toHaveCount(0);
     await popup.goto(`${origin}/full-page.html#/catalog/films`);
     await expect(full.locator('.library-card__title:visible')).toHaveText('Catalog title');
     await full.getByRole('button', { name: 'Add title', exact: true }).click();
@@ -160,7 +195,7 @@ test('full-page catalog Add/Edit share durable entries and preserve offline edit
   }
 });
 
-test('a confirmed interrupted local merge recovers after browser restart without losing either source', async () => {
+test('a confirmed interrupted local merge recovers after browser restart and keeps the latest link', async () => {
   test.setTimeout(60000);
   const profile = await mkdtemp(join(tmpdir(), 'filecab-merge-'));
   let { context, origin } = await launch(profile);
@@ -233,7 +268,8 @@ test('a confirmed interrupted local merge recovers after browser restart without
       createdAt: before.createdAt,
       catalogId: catalog.catalogId,
       comment: 'Private manual note',
-      sources: [expect.objectContaining({ originalUrl: 'https://watch.test/manual' })],
+      // The donor was modified last, so the merge keeps its link.
+      sources: [expect.objectContaining({ originalUrl: 'https://watch.test/donor' })],
     });
   } finally {
     await context.close();

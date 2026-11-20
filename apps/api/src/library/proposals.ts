@@ -1,6 +1,7 @@
 import {
   ApiErrorCode,
   MAX_ENTRY_SOURCES,
+  mergedLink,
   type EntryPatch,
   type FieldPath,
   type ServerEntry,
@@ -72,8 +73,7 @@ export function proposeMerge(
 
   if (!survivor.catalogId && removed.catalogId) merged.snapshot = removed.snapshot;
 
-  // The survivor keeps its link. A survivor without a link takes the removed entry's link.
-  merged.sources = (survivor.sources.length ? survivor.sources : removed.sources).slice(0, 1);
+  merged.sources = mergedLink(survivor, removed);
 
   validateEntry(merged);
 

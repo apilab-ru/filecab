@@ -129,4 +129,14 @@ describe('catalog association intent', () => {
 
     expect(result.sources).toEqual(donor.sources);
   });
+
+  it('keeps the link of the more recently modified donor', () => {
+    const manual = entry('manual');
+    const donor = { ...entry('donor', catalog.catalogId), updatedAt: '2025-01-03T00:00:00.000Z' };
+
+    expect(associateCatalog(manual, catalog, donor)[0]!.sources).toEqual(donor.sources);
+    expect(associateCatalog(manual, catalog, { ...donor, sources: [] })[0]!.sources).toEqual(
+      manual.sources,
+    );
+  });
 });

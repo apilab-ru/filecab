@@ -18,6 +18,11 @@ export const EN = {
     'Saved identities or categories conflict. Review the entries before continuing.',
   catalogAssociate: 'Associate this title',
   catalogUseManual: 'Link manual entry: {{title}}',
+  catalogSelect: 'Select and edit',
+  catalogLoading: 'Searching…',
+  catalogPageNumber: 'Page {{page}}',
+  popupSearchQuery: 'Title',
+  popupSearchResults: 'Search results',
   catalogMatching: 'Choose the catalog title for {{title}}.',
   catalogDraftDescription: 'Changes are saved only after Save.',
   catalogAssociationDescription: 'Review the association and retained fields before confirmation.',
@@ -111,8 +116,6 @@ export const EN = {
   fullPage: 'Open full page',
   navigation: 'Main navigation',
   categories: 'Media categories',
-  unavailableCatalog:
-    'Catalog search is not available yet. You can add titles manually in your library.',
   unavailablePage: 'Page detection is not available yet. Open Library to add a title manually.',
   websiteLibrary:
     'Your online library is not available yet. You can use the extension library offline.',

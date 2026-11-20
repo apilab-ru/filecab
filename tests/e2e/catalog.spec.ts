@@ -1,6 +1,7 @@
 import { expect, test, type BrowserContext } from '@playwright/test';
 import {
   emptySnapshot,
+  mergedLink,
   Category,
   Granularity,
   Status,
@@ -150,7 +151,7 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
         ...current,
         ...input.fields,
         catalogId,
-        sources: [...current.sources, ...(other?.sources ?? [])],
+        sources: other ? mergedLink(current, other) : current.sources,
       };
       const preview: LibraryMutationPreview = {
         schemaVersion: 1,
@@ -178,7 +179,7 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
                 ...entry,
                 ...input.fields,
                 catalogId,
-                sources: [...entry.sources, ...(other?.sources ?? [])],
+                sources: other ? mergedLink(entry, other) : entry.sources,
                 serverVersion: '2',
               }
             : entry,
@@ -344,6 +345,25 @@ test('catalog debounce, late responses, errors and hasMore retain the latest sea
   await expect(page.locator('.library-card__title:visible')).toHaveText('failure');
 });
 
+test('selecting a result prepares an unsaved editor and saves only after Save', async ({
+  page,
+  context,
+}) => {
+  const state = await backend(context);
+  await page.goto('/#/catalog/films');
+  await cardAction(page, 'Select and edit');
+  const editor = page.getByRole('dialog', { name: 'Add title' });
+  await expect(editor.getByLabel('Title', { exact: true })).toHaveValue('Catalog title');
+  await expect(editor.getByLabel('Status', { exact: true })).toHaveValue(Status.Planned);
+  await expect(editor.getByText('Viewing link')).toHaveCount(0);
+  expect(state.saves).toBe(0);
+  await editor.getByLabel('Progress', { exact: true }).fill('3');
+  await editor.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(state.entries).toHaveLength(1);
+  expect(state.entries[0]).toMatchObject({ status: Status.Planned, progress: 3, sources: [] });
+});
+
 test('direct Add retries failures and switches the retained result to personal rating controls', async ({
   page,
   context,
@@ -376,7 +396,7 @@ test('direct Add retries failures and switches the retained result to personal r
   expect(state.entries).toHaveLength(1);
 });
 
-test('manual-to-saved catalog merge requires preview and keeps the manual UUID and chosen fields', async ({
+test('manual-to-saved catalog merge requires preview, keeps the manual UUID and the latest link', async ({
   page,
   context,
 }) => {
@@ -385,13 +405,16 @@ test('manual-to-saved catalog merge requires preview and keeps the manual UUID a
     ...saved('ab13b77a-a016-4fe7-a0d8-25c1119af303', catalogId),
     userTitle: 'Other title',
     comment: 'Other note',
+    updatedAt: '2026-11-15T00:00:00.000Z',
   };
   const state = await backend(context, [manual, donor]);
   await page.goto('/#/catalog/films');
   await page.locator('.library-card__menu-trigger:visible').click();
   await page.getByRole('button', { name: 'Link manual entry: Catalog title' }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
-  await expect(page.getByRole('region', { name: 'Association preview' })).toBeVisible();
+  const preview = page.getByRole('region', { name: 'Association preview' });
+  await expect(preview).toBeVisible();
+  await expect(preview.getByText(donor.sources[0]!.originalUrl).first()).toBeVisible();
   expect(state.applies).toBe(0);
   await page.getByRole('button', { name: 'Confirm association' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -403,7 +426,7 @@ test('manual-to-saved catalog merge requires preview and keeps the manual UUID a
     progress: 12,
     rating: 9,
     catalogId,
-    sources: [...manual.sources, ...donor.sources],
+    sources: donor.sources,
   });
 });
 

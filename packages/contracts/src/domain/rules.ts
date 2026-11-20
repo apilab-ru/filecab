@@ -12,6 +12,22 @@ import type {
   RemoteListIdentity,
 } from '../models/index';
 
+/**
+ * Selects the link that a merge keeps: the link of the entry with the latest modified time.
+ * If that entry has no link, the merge keeps the link of the other entry. Equal times favor the survivor.
+ */
+export function mergedLink(
+  survivor: Pick<Entry, 'sources' | 'updatedAt'>,
+  removed: Pick<Entry, 'sources' | 'updatedAt'>,
+): Entry['sources'] {
+  const [latest, earlier] =
+    Date.parse(removed.updatedAt) > Date.parse(survivor.updatedAt)
+      ? [removed, survivor]
+      : [survivor, removed];
+
+  return (latest.sources.length ? latest.sources : earlier.sources).slice(0, 1);
+}
+
 /** Creates a snapshot with no known catalog metadata. */
 export function emptySnapshot(): Snapshot {
   return {

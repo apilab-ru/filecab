@@ -1,5 +1,5 @@
-import type { CatalogRecord, ProviderReference, Entry, EntryPatch, Source } from '../models/index';
-import { mergeCatalogSnapshots, previewEntryPatch } from './rules';
+import type { CatalogRecord, ProviderReference, Entry, EntryPatch } from '../models/index';
+import { mergeCatalogSnapshots, mergedLink, previewEntryPatch } from './rules';
 
 /** Rejects an association that would change an entry's identity, category or sources. */
 export class CatalogAssociationConflictError extends Error {
@@ -52,12 +52,7 @@ function keepsProtectedFields(fields: EntryPatch): boolean {
   return fields.category === undefined && fields.sourceUrls === undefined;
 }
 
-/** Keeps the survivor's link. A survivor without a link takes the donor's link. */
-function keepOneSource(primary: Source[], secondary: Source[]): Source[] {
-  return primary.length ? primary.slice(0, 1) : secondary.slice(0, 1);
-}
-
-/** Prepares a reviewed association while preserving the survivor identity and its link. */
+/** Prepares a reviewed association while preserving the survivor identity and the latest link. */
 export function associateCatalog(
   entry: Entry,
   catalog: CatalogRecord,
@@ -77,7 +72,7 @@ export function associateCatalog(
     ...previewEntryPatch(entry, fields),
     catalogId: catalog.catalogId,
     snapshot: snapshots.reduce(mergeCatalogSnapshots),
-    sources: keepOneSource(entry.sources, other?.sources ?? []),
+    sources: other ? mergedLink(entry, other) : entry.sources.slice(0, 1),
   };
 
   return other ? [survivor, { ...other, deleted: true }] : [survivor];

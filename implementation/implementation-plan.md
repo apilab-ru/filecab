@@ -48,20 +48,20 @@ Read these first. Search the code only when the list is not sufficient.
 
 Specs: [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching), [SEARCH and EDIT](../specs/functionality.md#5-catalog-search-editing-and-saving), [Catalog search](../specs/library-ui.md#catalog-search), [Popup search](../specs/library-ui.md#popup-search), [Matching](../specs/library-ui.md#matching-results-to-the-library), [Add and rating](../specs/library-ui.md#add-and-rating), [Association and merge](../specs/library-ui.md#association-and-merge), [Merge](../specs/backend.md#merge), [Catalog association](../specs/backend.md#catalog-association), [Search contract](../specs/catalog-spec.md#search-contract).
 
-Code: `packages/library/src/components/catalog-result/`, `packages/library/src/components/catalog-results/`, `packages/library/src/components/workspace-editor/`, `packages/library/src/pages/catalog-page/`, `packages/library/src/hooks/use-catalog-search.ts`, `packages/library/src/domain/catalog-selection.ts`, `apps/extension/src/popup/`, `apps/web/src/online-library/`, `apps/api/src/library/proposals.ts`, `apps/api/src/library/mutation.service.ts`, `apps/extension/src/library/repository.ts`, `apps/extension/src/library/merge-recovery.ts`.
+Code: `packages/library/src/components/catalog-result/`, `packages/library/src/components/compact-result/`, `packages/library/src/pages/popup-search-page/`, `packages/library/src/hooks/use-catalog-select.ts`, `packages/library/src/components/catalog-results/`, `packages/library/src/components/workspace-editor/`, `packages/library/src/pages/catalog-page/`, `packages/library/src/hooks/use-catalog-search.ts`, `packages/library/src/domain/catalog-selection.ts`, `apps/extension/src/popup/`, `apps/web/src/online-library/`, `apps/api/src/library/proposals.ts`, `apps/api/src/library/mutation.service.ts`, `apps/extension/src/library/repository.ts`, `apps/extension/src/library/merge-recovery.ts`.
 
 Tests: `tests/e2e/catalog.spec.ts`, `tests/e2e/catalog-extension.spec.ts`, `tests/integration/catalog-association.test.ts`.
 
-- [ ] Connect catalog search to all clients.
-- [ ] Debounce, cancellation, pagination and error states.
-- [ ] Open the editor when a user selects a title.
-- [ ] Select a single popup result automatically, one time for each query.
-- [ ] Popup search: category select, title field and compact results.
-- [ ] Merge keeps the link of the entry with the latest modified time.
-- [ ] Remove the URL field from website manual entry.
-- [ ] Show saved entries and personal progress in results.
-- [ ] Match catalog results with manual entries.
-- [ ] Merge confirmation that keeps user data.
+- [x] Connect catalog search to all clients.
+- [x] Debounce, cancellation, pagination and error states.
+- [x] Open the editor when a user selects a title.
+- [x] Select a single popup result automatically, one time for each query.
+- [x] Popup search: category select, title field and compact results.
+- [x] Merge keeps the link of the entry with the latest modified time.
+- [x] Remove the URL field from website manual entry.
+- [x] Show saved entries and personal progress in results.
+- [x] Match catalog results with manual entries.
+- [x] Merge confirmation that keeps user data.
 
 ## 16. Page extraction
 

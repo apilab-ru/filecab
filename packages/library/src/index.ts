@@ -33,6 +33,7 @@ export { FullPage } from './pages/full-page/full-page';
 export { useInterfacePreferences } from './hooks/use-interface-preferences';
 
 export { LibraryPage } from './pages/library-page/library-page';
+export { PopupSearchPage } from './pages/popup-search-page/popup-search-page';
 export { SettingsPage } from './pages/settings-page/settings-page';
 
 export { useTranslation } from 'react-i18next';

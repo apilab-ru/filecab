@@ -153,7 +153,7 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
     setters.dirty(true);
     setters.preview(null);
   };
-  // The popup keeps catalog search as a placeholder, so matching is only offered on full-page routes.
+  // Find match opens the full-page catalog, so the popup does not offer it.
   const canFindMatch =
     Boolean(entry && !entry.catalogId && !draft.catalog && !values.dirty) &&
     /^\/(library|catalog)\//.test(route.pathname);
