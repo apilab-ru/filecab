@@ -6,6 +6,13 @@
   &__field {
     display: grid;
     gap: 4px;
+
+    // A short control shares the line with its label.
+    &--inline {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
   }
 
   &__input {

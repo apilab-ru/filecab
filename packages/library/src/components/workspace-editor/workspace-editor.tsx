@@ -9,6 +9,7 @@ import {
 } from '@filecab/contracts';
 import { Button, ConfirmDialog } from '@filecab/ui';
 import { ProgressControl } from '../progress-control/progress-control';
+import { StatusSelect } from '../status-select/status-select';
 import { useTranslation } from 'react-i18next';
 import { useWorkspace } from '../../hooks/use-workspace';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
@@ -218,22 +219,14 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
             ))}
           </select>
         </label>
-        <label className="workspace-editor__field">
-          {t('Status')}
-          <select
-            className="workspace-editor__input"
-            aria-label={t('Status')}
-            value={values.fields.status ?? ''}
-            onChange={(event) => change({ status: (event.target.value || null) as Status | null })}
-          >
-            <option value="">{t('No status')}</option>
-            {Object.values(Status).map((status) => (
-              <option key={status} value={status}>
-                {t(status)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="workspace-editor__field workspace-editor__field--inline">
+          <span aria-hidden="true">{t('Status')}</span>
+          <StatusSelect
+            allowNone
+            value={values.fields.status}
+            onChange={(status) => change({ status })}
+          />
+        </div>
         <label className="workspace-editor__field">
           {t('Rating')}
           <select

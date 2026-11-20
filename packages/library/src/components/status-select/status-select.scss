@@ -1,0 +1,24 @@
+.status-select.fc-select {
+  // The width comes from the longest status label, see `stableWidth`. It never follows the value.
+  flex: none;
+  justify-self: start;
+  min-height: 28px;
+  box-sizing: border-box;
+  padding: 2px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #eef1f8;
+  color: #202838;
+  font-size: 14px;
+  font-weight: 600;
+
+  &.status-select--process {
+    background: #dbe7ff;
+    color: #123da6;
+  }
+
+  &.status-select--complete {
+    background: #d5f5cc;
+    color: #215b19;
+  }
+}

@@ -156,7 +156,9 @@ test('the Page tab opens the referenced record, saves the page link, moves it on
     const first = await popup(context, origin, pageUrl, extraction);
     const editor = first.getByRole('dialog', { name: 'Add title' });
     await expect(editor.getByLabel('Title', { exact: true })).toHaveValue('The Matrix');
-    await expect(editor.getByLabel('Status', { exact: true })).toHaveValue('planned');
+    await expect(
+      editor.getByRole('combobox', { name: 'Status' }).locator('.fc-select__label'),
+    ).toHaveText('Planned');
     await expect(editor.getByText('Viewing link')).toHaveCount(0);
     await expect(editor.getByText(pageUrl)).toHaveCount(0);
     await editor.getByRole('button', { name: 'Save', exact: true }).click();
@@ -174,6 +176,29 @@ test('the Page tab opens the referenced record, saves the page link, moves it on
       linkedCard.getByRole('img', { name: 'This page is linked to this entry' }),
     ).toBeVisible();
     await expect(second.getByRole('dialog')).toHaveCount(0);
+
+    // A Chrome popup is only as tall as its content. The status menu must stay inside it.
+    await second.setViewportSize({ width: 380, height: 330 });
+    const status = linkedCard.getByRole('combobox', { name: 'Status' });
+    // The status keeps one width when it opens and when its value changes.
+    const width = (await status.boundingBox())!.width;
+    await status.click();
+    expect((await status.boundingBox())!.width).toBe(width);
+    // An open status list does not lock the page scroll, so the scrollbar cannot shift the layout.
+    expect(await second.evaluate(() => getComputedStyle(document.body).overflow)).not.toBe(
+      'hidden',
+    );
+    const options = second.getByRole('option');
+    await expect(options).toHaveCount(5);
+    for (const option of await options.all()) {
+      const box = await option.boundingBox();
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(330);
+    }
+    await second.getByRole('option', { name: 'Watching' }).click();
+    await expect(status.locator('.fc-select__label')).toHaveText('Watching');
+    expect((await status.boundingBox())!.width).toBe(width);
+    await second.setViewportSize({ width: 380, height: 600 });
     await linkedCard.getByRole('button', { name: 'The Matrix' }).click();
     await expect(second.getByRole('dialog', { name: 'Edit' })).toBeVisible();
     await second.getByRole('button', { name: 'Cancel', exact: true }).click();

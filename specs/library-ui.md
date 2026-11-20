@@ -37,6 +37,18 @@ Use the [popup mockup](mockup-popup.png).
 - The Page tab always searches the catalog by the title text. The entry that holds the page URL comes first, then matching library entries, then catalog results. Each title appears once. The empty result message is hidden when a card is shown.
 - Add manual entry is at the bottom of the Page tab.
 
+## Status control
+
+Every control that edits a status uses one status dropdown: the popup cards, the library and catalog cards on the full page and the website, and the editor.
+
+- It shows the status as a colored label. The list opens below or above the control and stays inside the window.
+- Its width fits the longest status label of the current language. A status change or an open list does not change the width.
+- An open list does not lock the page scroll.
+- On a card, a status choice saves at once with the current entry version. In the editor, it changes the draft.
+- A full-page card shows the dropdown on the poster. A list row shows it in the status column.
+- The editor shows the Status label and the dropdown on one line.
+- The editor and the full-page cards offer No status, which clears the status. Library filters are not status edits and keep their own select.
+
 ## Progress control
 
 The popup cards, the library and catalog cards and the editor use one progress control.

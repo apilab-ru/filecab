@@ -13,4 +13,12 @@ export interface SelectProps<T extends string | number | null = string> {
   options: SelectOption<T>[];
   placeholder?: string;
   value: T | null;
+  /**
+   * Opens the list below or above the trigger, keeps it inside the window and does not lock the
+   * page scroll. By default the selected item covers the trigger, which can push other items out
+   * of a small window.
+   */
+  dropdown?: boolean;
+  /** Reserves the width of the longest option label, so a value change never resizes the trigger. */
+  stableWidth?: boolean;
 }

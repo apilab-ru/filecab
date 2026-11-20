@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { normalizeSourceUrl, Status, titleFor } from '@filecab/contracts';
-import { Button, Icon, IconName, RatingPicker, Select } from '@filecab/ui';
+import { normalizeSourceUrl, titleFor } from '@filecab/contracts';
+import { Button, Icon, IconName, RatingPicker } from '@filecab/ui';
 import { catalogResultState, useCatalogSelect } from '../../hooks/use-catalog-select';
 import { useEntryUpdate } from '../../hooks/use-entry-update';
 import { ProgressControl } from '../progress-control/progress-control';
+import { StatusSelect } from '../status-select/status-select';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useWorkspace } from '../../hooks/use-workspace';
 import type { PopupCardProps } from './model-popup-card';
@@ -100,16 +101,10 @@ export function PopupCard({ record, row: givenRow, link, onPick }: PopupCardProp
         {entry ? (
           <>
             <div className="popup-card__row">
-              <Select<Status | null>
-                aria-label={t('Status')}
-                className={`popup-card__status popup-card__status--${entry.status ?? 'none'}`}
-                disabled={changes.disabled || changes.busy}
+              <StatusSelect
                 value={entry.status}
-                placeholder={t('Status')}
-                options={Object.values(Status).map((value) => ({ value, label: t(value) }))}
-                onValueChange={(status) => {
-                  if (status !== entry.status) void changes.update({ status });
-                }}
+                disabled={changes.disabled || changes.busy}
+                onChange={(status) => void changes.update({ status })}
               />
               <span className="popup-card__rating">
                 <RatingPicker

@@ -162,9 +162,10 @@ test('mockup library renders actual snapshot cards, filters, pagination and post
   await page.getByRole('button', { name: 'List view', exact: true }).click();
   await expect(page.locator('.title-results')).toHaveClass(/title-results--list/);
   await page.getByRole('searchbox', { name: 'Search your library' }).fill('');
-  await choose(page, 'Status', 'Hidden');
+  const toolbar = page.locator('.library-browser__toolbar');
+  await choose(page, 'Status', 'Hidden', toolbar);
   await expect(page.locator('.library-card__title')).toHaveText('Saved title 15');
-  await choose(page, 'Status', 'Status');
+  await choose(page, 'Status', 'Status', toolbar);
   await page.getByRole('button', { name: 'Grid view', exact: true }).click();
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();

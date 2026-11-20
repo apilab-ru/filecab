@@ -10,6 +10,7 @@ import {
   type LibraryMutationPreview,
 } from '../../packages/contracts/src/index';
 import { cardAction } from './fixtures/library';
+import { choose } from './fixtures/select';
 
 const timestamp = '2026-11-14T00:00:00.000Z';
 const catalogId = 'ab13b77a-a016-4fe7-a0d8-25c1119af301';
@@ -345,7 +346,7 @@ test('catalog debounce, late responses, errors and hasMore retain the latest sea
   await expect(page.locator('.library-card__title:visible')).toHaveText('failure');
 });
 
-test('selecting a result prepares an unsaved editor and saves only after Save', async ({
+test('selecting a result prepares an unsaved editor, changes the status and saves only after Save', async ({
   page,
   context,
 }) => {
@@ -354,14 +355,30 @@ test('selecting a result prepares an unsaved editor and saves only after Save', 
   await cardAction(page, 'Select and edit');
   const editor = page.getByRole('dialog', { name: 'Add title' });
   await expect(editor.getByLabel('Title', { exact: true })).toHaveValue('Catalog title');
-  await expect(editor.getByLabel('Status', { exact: true })).toHaveValue(Status.Planned);
+  await expect(
+    editor.getByRole('combobox', { name: 'Status' }).locator('.fc-select__label'),
+  ).toHaveText('Planned');
   await expect(editor.getByText('Viewing link')).toHaveCount(0);
   expect(state.saves).toBe(0);
   await editor.getByLabel('Progress', { exact: true }).fill('3');
+  // The editor uses the shared status dropdown, with No status to clear the status.
+  const status = editor.getByRole('combobox', { name: 'Status' });
+  await status.click();
+  await expect(page.getByRole('listbox').getByRole('option')).toHaveText([
+    'No status',
+    'Planned✓',
+    'Watching',
+    'Watched',
+    'Dropped',
+    'Hidden',
+  ]);
+  await page.getByRole('listbox').getByRole('option', { name: 'Watching' }).click();
+  await expect(status.locator('.fc-select__label')).toHaveText('Watching');
+  await expect(editor).toBeVisible();
   await editor.getByRole('button', { name: 'Save', exact: true }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(state.entries).toHaveLength(1);
-  expect(state.entries[0]).toMatchObject({ status: Status.Planned, progress: 3, sources: [] });
+  expect(state.entries[0]).toMatchObject({ status: Status.Process, progress: 3, sources: [] });
 });
 
 test('direct Add retries failures and switches the retained result to personal rating controls', async ({
@@ -517,6 +534,13 @@ test('library and catalog share card geometry and category view controls', async
   await track.click({ position: { x: trackBox!.width * 0.75, y: trackBox!.height / 2 } });
   await expect(page.locator('.progress-control__count:visible').first()).toHaveValue('21');
   await expect.poll(() => state.entries.find((entry) => entry.progress === 21)).toBeTruthy();
+  // The card status uses the shared status dropdown and saves at once.
+  const firstCard = page.locator('.library-card:visible').first();
+  await choose(page, 'Status', 'Dropped', firstCard);
+  await expect(
+    firstCard.getByRole('combobox', { name: 'Status' }).locator('.fc-select__label'),
+  ).toHaveText('Dropped');
+  await expect.poll(() => state.entries.some((entry) => entry.status === Status.Drop)).toBe(true);
   await page.screenshot({ path: testInfo.outputPath('catalog-cards.png') });
   await page.getByRole('button', { name: 'List view', exact: true }).click();
   await expect(page.locator('.title-results:visible')).toHaveClass(/title-results--list/);

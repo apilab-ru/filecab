@@ -83,7 +83,9 @@ test('popup search selects a single result once, saves after Save and edits the 
     await popup.getByRole('searchbox', { name: 'Title' }).fill('Catalog');
     const editor = popup.getByRole('dialog', { name: 'Add title' });
     await expect(editor.getByLabel('Title', { exact: true })).toHaveValue('Catalog title');
-    await expect(editor.getByLabel('Status', { exact: true })).toHaveValue('planned');
+    await expect(
+      editor.getByRole('combobox', { name: 'Status' }).locator('.fc-select__label'),
+    ).toHaveText('Planned');
     await editor.getByRole('button', { name: 'Cancel', exact: true }).click();
     await expect(popup.getByRole('dialog')).toHaveCount(0);
     const card = popup.getByRole('list', { name: 'Search results' }).getByRole('listitem');
@@ -100,7 +102,7 @@ test('popup search selects a single result once, saves after Save and edits the 
     // A saved card changes status and progress directly, without the editor.
     const status = card.getByRole('combobox', { name: 'Status' });
     const progress = card.getByRole('textbox', { name: 'Progress' });
-    await expect(status).toContainText('Planned');
+    await expect(status.locator('.fc-select__label')).toHaveText('Planned');
     await expect(progress).toHaveValue('0');
     await expect(card).toContainText('/ ?');
     await card.getByRole('button', { name: 'Add one episode' }).click();
@@ -110,11 +112,13 @@ test('popup search selects a single result once, saves after Save and edits the 
     await expect(progress).toHaveValue('5');
     await status.click();
     await popup.getByRole('option', { name: 'Watching' }).click();
-    await expect(status).toContainText('Watching');
+    await expect(status.locator('.fc-select__label')).toHaveText('Watching');
     await expect(popup.getByRole('dialog')).toHaveCount(0);
     await result.click();
     const saved = popup.getByRole('dialog', { name: 'Edit' });
-    await expect(saved.getByLabel('Status', { exact: true })).toHaveValue('process');
+    await expect(
+      saved.getByRole('combobox', { name: 'Status' }).locator('.fc-select__label'),
+    ).toHaveText('Watching');
     await expect(saved.getByLabel('Progress', { exact: true })).toHaveValue('5');
     await popup.getByRole('button', { name: 'Cancel', exact: true }).click();
     await popup.getByRole('button', { name: 'Anime', exact: true }).click();

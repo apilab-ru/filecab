@@ -214,41 +214,18 @@
     }
   }
 
-  &__status {
+  // The shared status dropdown supplies the look. The card only places it on the poster.
+  &__status.status-select {
     position: absolute;
     top: 10px;
     left: 12px;
-    max-width: calc(100% - 76px);
-    box-sizing: border-box;
-    padding: 6px 16px;
-    overflow: hidden;
-    border-radius: 20px;
-    background: #eef1f8;
-    color: #202838;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 18px;
-
-    &--process {
-      background: #b9d4ff;
-      color: #123da6;
-    }
-
-    &--complete {
-      background: #c5f1b9;
-      color: #215b19;
-    }
+    z-index: 2;
 
     .title-results--list & {
       position: static;
       grid-column: 4;
       grid-row: 1;
       justify-self: center;
-      max-width: 100%;
-      padding: 4px 16px;
-      font-size: 14px;
     }
   }
 

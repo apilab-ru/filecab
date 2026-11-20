@@ -1,6 +1,7 @@
 import { useId, useRef } from 'react';
 import { useEntryUpdate } from '../../hooks/use-entry-update';
 import { ProgressControl } from '../progress-control/progress-control';
+import { StatusSelect } from '../status-select/status-select';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useTranslation } from 'react-i18next';
 import './library-card.scss';
@@ -83,10 +84,14 @@ export function LibraryCard({
             <span className="library-card__placeholder-label">{t('noPoster')}</span>
           </div>
         )}
-        {entry?.status && (
-          <span className={`library-card__status library-card__status--${entry.status}`}>
-            {t(entry.status)}
-          </span>
+        {entry && (
+          <StatusSelect
+            allowNone
+            className="library-card__status"
+            value={entry.status}
+            disabled={changes.disabled || changes.busy}
+            onChange={(status) => void changes.update({ status })}
+          />
         )}
         {details && (
           <TitleDetails
