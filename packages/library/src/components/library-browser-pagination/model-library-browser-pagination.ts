@@ -15,6 +15,7 @@ export interface LibraryBrowserPaginationProps {
 }
 
 export const SORT_FIELDS = [
+  { value: LibrarySort.Added, label: 'dateAdded' },
   { value: LibrarySort.Updated, label: 'recentlyUpdated' },
   { value: LibrarySort.Title, label: 'Title' },
   { value: LibrarySort.Rating, label: 'Rating' },

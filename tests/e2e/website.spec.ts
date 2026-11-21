@@ -123,8 +123,9 @@ test('mockup library renders actual snapshot cards, filters, pagination and post
       episodeCount: 24,
       posterUrl: index === 0 ? 'https://posters.test/missing.png' : null,
     },
-    createdAt: '2026-11-07T00:00:00.000Z',
-    updatedAt: '2026-11-07T00:00:00.000Z',
+    // Later entries were added later. Earlier entries were changed later.
+    createdAt: `2026-10-${String(index + 1).padStart(2, '0')}T00:00:00.000Z`,
+    updatedAt: `2026-11-${String(20 - index).padStart(2, '0')}T00:00:00.000Z`,
     serverVersion: '1',
     deleted: false,
   }));
@@ -147,6 +148,15 @@ test('mockup library renders actual snapshot cards, filters, pagination and post
   await expect(page.locator('.library-browser__pagination')).toContainText('1–8 of 14');
   await expect(page.locator('.library-card')).toHaveCount(8);
   await expect(page.locator('.library-card__placeholder')).toHaveCount(8);
+  // LIB-05: the default order is the added date, newest first. Entry 15 is hidden.
+  await expect(page.getByRole('combobox', { name: 'Sort by', exact: true })).toContainText(
+    'Date added',
+  );
+  await expect(page.locator('.library-card__title').first()).toHaveText('Saved title 14');
+  await choose(page, 'Sort by', 'Recently updated');
+  await expect(page.locator('.library-card__title').first()).toHaveText('Saved title 1');
+  await choose(page, 'Sort by', 'Date added');
+  await expect(page.locator('.library-card__title').first()).toHaveText('Saved title 14');
   await expect(page.locator('.full-page__mark')).toHaveJSProperty('naturalWidth', 567);
   expect(
     await page

@@ -17,6 +17,7 @@ export const PAGE_SIZE = 8;
 export const RATING_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 export const SORT_ORDER_LABELS = {
+  [LibrarySort.Added]: { ascending: 'oldestFirst', descending: 'newestFirst' },
   [LibrarySort.Updated]: { ascending: 'oldestFirst', descending: 'newestFirst' },
   [LibrarySort.Title]: { ascending: 'ascending', descending: 'descending' },
   [LibrarySort.Rating]: { ascending: 'lowestFirst', descending: 'highestFirst' },

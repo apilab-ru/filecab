@@ -96,6 +96,7 @@ export const EN = {
   newestFirst: 'Newest first',
   oldestFirst: 'Oldest first',
   entryActions: 'Entry actions',
+  dateAdded: 'Date added',
   recentlyUpdated: 'Recently updated',
   year: 'Year',
   listView: 'List view',

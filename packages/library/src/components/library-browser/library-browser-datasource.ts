@@ -29,7 +29,7 @@ export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowse
     status: null as string | null,
     rating: '',
     genre: '',
-    sort: LibrarySort.Updated,
+    sort: LibrarySort.Added,
     order: SortDirection.Desc,
     page: 1,
   }));
@@ -83,6 +83,7 @@ export function useLibraryBrowserDatasource({ entries, category }: LibraryBrowse
       result = collator.compare(a.status ? t(a.status) : '', b.status ? t(b.status) : '');
     else if (sort === LibrarySort.Episodes)
       result = (a.snapshot.episodeCount ?? -1) - (b.snapshot.episodeCount ?? -1);
+    else if (sort === LibrarySort.Added) result = a.createdAt.localeCompare(b.createdAt);
     else result = a.updatedAt.localeCompare(b.updatedAt);
 
     return result * (order === SortDirection.Asc ? 1 : -1) || a.entryId.localeCompare(b.entryId);

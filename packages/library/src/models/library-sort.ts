@@ -1,4 +1,5 @@
 export enum LibrarySort {
+  Added = 'added',
   Updated = 'updated',
   Title = 'title',
   Rating = 'rating',

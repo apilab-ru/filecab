@@ -102,6 +102,7 @@ export const RU = {
   newestFirst: 'Сначала новые',
   oldestFirst: 'Сначала старые',
   entryActions: 'Действия с записью',
+  dateAdded: 'Дата добавления',
   recentlyUpdated: 'Недавно изменённые',
   year: 'Год',
   listView: 'Список',
