@@ -14,11 +14,13 @@ import { TitleGenres } from '../title-genres/title-genres';
 import { TitleDetails } from '../title-details/title-details';
 import type { LibraryCardProps } from './model-library-card';
 
+const CARD_CONTROL_SELECTOR =
+  'button, input, select, textarea, label, summary, a, [role="button"], [role="combobox"], .progress-control__track, .title-details';
+
 /** Renders the shared title card with catalog metadata and optional personal state. */
 export function LibraryCard({
   entry,
   snapshot: catalogSnapshot,
-  actions = [],
   primaryAction,
   showProviderRating = false,
   alert,
@@ -31,6 +33,7 @@ export function LibraryCard({
   const titleElement = useRef<HTMLSpanElement>(null);
   const { locale } = useInterfacePreferences();
   const detailsId = useId();
+  const detailsToggle = useRef<HTMLButtonElement>(null);
   const [{ failedPoster, details }, { failedPoster: setFailedPoster, details: setDetails }] =
     useLocalStore(() => ({
       failedPoster: null as string | null,
@@ -60,14 +63,29 @@ export function LibraryCard({
   const ratingPrefix = showProviderRating ? '≈ ' : '';
   const ratingText =
     rating > 0 ? `${ratingPrefix}${ratingNumber.format(rating)} / 10` : t('unrated');
-  const menuActions = [
-    ...(edit ? [{ label: t('Edit'), onClick: edit }] : []),
-    ...(remove ? [{ label: t('Delete'), onClick: remove }] : []),
-    ...actions,
-  ];
 
   return (
-    <li className="library-card local-library__entry">
+    <li
+      className="library-card local-library__entry"
+      onClick={(event) => {
+        const { target, currentTarget } = event;
+
+        if (
+          edit &&
+          target instanceof Element &&
+          currentTarget.contains(target) &&
+          !target.closest(CARD_CONTROL_SELECTOR)
+        ) {
+          edit();
+        }
+      }}
+      onKeyDown={(event) => {
+        if (details && event.key === 'Escape') {
+          setDetails(false);
+          detailsToggle.current?.focus();
+        }
+      }}
+    >
       <div className="library-card__artwork">
         {snapshot.posterUrl && failedPoster !== snapshot.posterUrl ? (
           <img
@@ -93,49 +111,15 @@ export function LibraryCard({
             onChange={(status) => void changes.update({ status })}
           />
         )}
-        {details && (
-          <TitleDetails
-            id={detailsId}
-            snapshot={snapshot}
-            comment={entry?.comment ?? ''}
-            sources={entry?.sources ?? []}
-            onGenre={onGenre}
-            onClose={() => setDetails(false)}
-          />
-        )}
-        <div className="library-card__overlay-bar">
-          <TitleGenres genres={snapshot.genres} onSelect={onGenre} />
-          <button
-            type="button"
-            className="library-card__details-toggle"
-            aria-label={t('details')}
-            aria-expanded={details}
-            aria-controls={details ? detailsId : undefined}
-            onClick={() => setDetails(!details)}
+        {remove && (
+          <Button
+            className="library-card__delete"
+            aria-label={t('Delete')}
+            title={t('Delete')}
+            onClick={remove}
           >
-            <span aria-hidden="true">i</span>
-          </button>
-        </div>
-        {menuActions.length > 0 && (
-          <details className="library-card__menu">
-            <summary className="library-card__menu-trigger" aria-label={t('entryActions')}>
-              <Icon name={IconName.More} />
-            </summary>
-            <div className="library-card__menu-actions">
-              {menuActions.map((action, index) => (
-                <Button
-                  key={index}
-                  disabled={action.disabled}
-                  onClick={(event) => {
-                    event.currentTarget.closest('details')?.removeAttribute('open');
-                    action.onClick();
-                  }}
-                >
-                  {action.label}
-                </Button>
-              ))}
-            </div>
-          </details>
+            <Icon name={IconName.Trash} />
+          </Button>
         )}
       </div>
       <div className="library-card__body">
@@ -144,53 +128,61 @@ export function LibraryCard({
           className="library-card__title local-library__entry-title"
           title={title}
         >
-          {title}
+          {edit ? (
+            <button
+              type="button"
+              className="library-card__edit"
+              aria-label={t('Edit')}
+              aria-description={title}
+              onClick={edit}
+            >
+              {title}
+            </button>
+          ) : (
+            title
+          )}
         </span>
         {snapshot.year !== null && <span className="library-card__year">{snapshot.year}</span>}
+        {entry && (
+          <ProgressControl
+            className="library-card__episodes"
+            value={entry.progress}
+            total={total}
+            disabled={changes.disabled || changes.busy}
+            onChange={(progress) => void changes.update({ progress })}
+          />
+        )}
         {(entry || showProviderRating) && (
-          <>
-            <div className="library-card__stats">
-              {entry && (
-                <ProgressControl
-                  className="library-card__episodes"
-                  value={entry.progress}
-                  total={total}
-                  disabled={changes.disabled || changes.busy}
-                  onChange={(progress) => void changes.update({ progress })}
-                />
-              )}
-              <span
-                className={`library-card__rating${rating > 0 ? ' library-card__rating--rated' : ''}`}
-                title={showProviderRating ? t('approximateProviderRating') : t('Rating')}
-              >
-                {entry ? (
-                  <RatingPicker
-                    anchor={() =>
-                      titleElement.current?.closest('.title-results--list')
-                        ? null
-                        : titleElement.current
-                    }
-                    value={entry.rating}
-                    label={t('Rating')}
-                    title={t('yourRating')}
-                    clearLabel={t('clearRating')}
-                    unratedLabel={t('unrated')}
-                    disabled={changes.disabled}
-                    busy={changes.busy}
-                    error={changes.error}
-                    onChange={(rating) => changes.update({ rating })}
-                  />
-                ) : (
-                  <>
-                    <span className="library-card__star">
-                      <Icon name={rating > 0 ? IconName.Star : IconName.StarOutline} />
-                    </span>
-                    {ratingText}
-                  </>
-                )}
-              </span>
-            </div>
-          </>
+          <span
+            className={`library-card__rating${rating > 0 ? ' library-card__rating--rated' : ''}`}
+            title={showProviderRating ? t('approximateProviderRating') : t('Rating')}
+          >
+            {entry ? (
+              <RatingPicker
+                anchor={() =>
+                  titleElement.current?.closest('.title-results--list')
+                    ? null
+                    : titleElement.current
+                }
+                value={entry.rating}
+                label={t('Rating')}
+                title={t('yourRating')}
+                clearLabel={t('clearRating')}
+                unratedLabel={t('unrated')}
+                disabled={changes.disabled}
+                busy={changes.busy}
+                error={changes.error}
+                onChange={(rating) => changes.update({ rating })}
+              />
+            ) : (
+              <>
+                <span className="library-card__star">
+                  <Icon name={rating > 0 ? IconName.Star : IconName.StarOutline} />
+                </span>
+                {ratingText}
+              </>
+            )}
+          </span>
         )}
         {primaryAction && (
           <Button
@@ -207,6 +199,30 @@ export function LibraryCard({
           </p>
         )}
       </div>
+      <div className="library-card__overlay-bar">
+        {!details && <TitleGenres genres={snapshot.genres} onSelect={onGenre} />}
+        <button
+          ref={detailsToggle}
+          type="button"
+          className="library-card__details-toggle"
+          aria-label={t('details')}
+          aria-expanded={details}
+          aria-controls={details ? detailsId : undefined}
+          onClick={() => setDetails(!details)}
+        >
+          <span aria-hidden="true">i</span>
+        </button>
+      </div>
+      {details && (
+        <TitleDetails
+          id={detailsId}
+          title={title}
+          snapshot={snapshot}
+          comment={entry?.comment ?? ''}
+          sources={entry?.sources ?? []}
+          onGenre={onGenre}
+        />
+      )}
     </li>
   );
 }

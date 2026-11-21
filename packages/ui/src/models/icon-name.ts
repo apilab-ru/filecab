@@ -19,6 +19,7 @@ export enum IconName {
   Link = 'link',
   Minus = 'minus',
   More = 'ellipsis',
+  Trash = 'trash',
   Swap = 'arrow-left-right',
   Down = 'chevron-down',
   Status = 'status-dot',

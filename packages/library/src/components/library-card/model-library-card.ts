@@ -4,7 +4,6 @@ import type { Entry } from '@filecab/contracts';
 export interface LibraryCardProps {
   entry?: Entry;
   snapshot?: Entry['snapshot'];
-  actions?: CardAction[];
   primaryAction?: CardAction;
   showProviderRating?: boolean;
   alert?: string;
@@ -13,7 +12,7 @@ export interface LibraryCardProps {
   onGenre?: (genreId: string) => void;
 }
 
-/** Defines a card menu action for saved entries or catalog results. */
+/** Defines the main action on a catalog result. */
 export interface CardAction {
   label: string;
   disabled?: boolean;

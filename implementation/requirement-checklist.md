@@ -202,6 +202,12 @@ browser tests cover card dimensions, list rows, column ordering, the rating pick
 direct Add with retry, duplicate submission, separate Sort by and Order controls,
 pagination during loading and skeletons (15–16 November 2026).
 
+- Light mockup update (21 November 2026). The shared toolbar, card rating and progress rows, and full-card details overlay passed browser checks. All 41 browser tests and 203 unit tests passed. Formatting, workspace boundaries, and the library package type check passed. Workspace type checking reported a translation key type error in the extension popup.
+- Card controls follow-up (21 November 2026). Browser tests verified the trash button and Undo, editing from card surfaces and the keyboard, and independent status, rating, progress, and details controls. All 41 browser tests and 203 unit tests passed. Formatting, workspace boundaries, and the library package type check passed.
+- Search card follow-up (21 November 2026). Browser tests verified that search cards have no submenu, the card surface opens the editor, Add saves directly, and Find catalog title opens the association flow. All 41 browser tests and 203 unit tests passed. Formatting, workspace boundaries, and the library package type check passed.
+- Expanded details poster (21 November 2026). Browser tests verified bright and dark posters, the fallback for missing or failed posters, unchanged grid geometry, and a fixed info button during scrolling. All 42 browser tests passed. Formatting, workspace boundaries, and tool type checking passed.
+- Saved catalog deletion (21 November 2026). Three focused browser tests passed. They covered Delete, Undo, adding again, and retries after a failed or lost Add response. Formatting, workspace boundaries, and type checking for the library and tools passed.
+
 ### Step 15: catalog search and editing
 
 - [Popup search](../packages/library/src/pages/popup-search-page/popup-search-page.tsx) with [category tabs](../packages/library/src/components/category-tabs/category-tabs.tsx), a title field, [popup cards](../packages/library/src/components/popup-card/popup-card.tsx) that save status, rating and progress directly, Previous and Next, and the shared search hook, messages and editor.

@@ -272,7 +272,23 @@ test('website editor keeps a conflicted draft, removes the link, deletes with Un
   const state = await backend(context, [saved()]);
   await page.goto('/#/library/films');
   await expect(page.locator('.library-card__title:visible')).toHaveText('Catalog title');
-  await cardAction(page, 'Edit');
+  const card = page.locator('.library-card:visible').first();
+  await expect(card.locator('summary')).toHaveCount(0);
+  const trash = card.getByRole('button', { name: 'Delete', exact: true });
+  await expect(trash.locator('[data-icon="trash"]')).toBeVisible();
+  await expect(trash).toHaveCSS('width', '28px');
+  const cardStatus = card.getByRole('combobox', { name: 'Status', exact: true });
+  const cardStatusSize = await cardStatus.evaluate((element) => {
+    const { width, height } = getComputedStyle(element);
+
+    return { width, height };
+  });
+  await card.locator('.library-card__artwork').click();
+  const editorStatus = page
+    .getByRole('dialog')
+    .getByRole('combobox', { name: 'Status', exact: true });
+  await expect(editorStatus).toHaveCSS('width', cardStatusSize.width);
+  await expect(editorStatus).toHaveCSS('height', cardStatusSize.height);
   const save = page.getByRole('button', { name: 'Save', exact: true });
   await expect(save).toBeDisabled();
   await expect(page.getByText('Episode total unknown')).toBeVisible();
@@ -293,7 +309,7 @@ test('website editor keeps a conflicted draft, removes the link, deletes with Un
     rating: 0,
     serverVersion: '3',
   });
-  await cardAction(page, 'Edit');
+  await card.getByRole('button', { name: 'Edit', exact: true }).press('Enter');
   await expect(page.getByRole('link', { name: `https://watch.test/${manualId}` })).toBeVisible();
   await page.getByRole('button', { name: 'Remove link', exact: true }).click();
   await expect(page.getByText('No link', { exact: true })).toBeVisible();
@@ -352,7 +368,10 @@ test('selecting a result prepares an unsaved editor, changes the status and save
 }) => {
   const state = await backend(context);
   await page.goto('/#/catalog/films');
-  await cardAction(page, 'Select and edit');
+  const card = page.locator('.catalog-page .library-card');
+  await expect(card).toBeVisible();
+  await expect(card.locator('summary')).toHaveCount(0);
+  await card.locator('.library-card__artwork').click();
   const editor = page.getByRole('dialog', { name: 'Add title' });
   await expect(editor.getByLabel('Title', { exact: true })).toHaveValue('Catalog title');
   await expect(
@@ -413,6 +432,33 @@ test('direct Add retries failures and switches the retained result to personal r
   expect(state.entries).toHaveLength(1);
 });
 
+test('a saved catalog result can be deleted and restored in place', async ({ page, context }) => {
+  const state = await backend(context);
+  await page.goto('/#/catalog/films');
+  const card = page.locator('.catalog-page .library-card');
+  const trash = card.getByRole('button', { name: 'Delete', exact: true });
+  const add = card.getByRole('button', { name: 'Add title', exact: true });
+  await expect(trash).toHaveCount(0);
+  await add.click();
+  await expect(trash.locator('[data-icon="trash"]')).toBeVisible();
+  const entryId = state.entries[0].entryId;
+  await trash.click();
+  await expect(add).toBeVisible();
+  await expect(trash).toHaveCount(0);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  expect(state.entries[0].deleted).toBe(true);
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(trash).toBeVisible();
+  await expect(add).toHaveCount(0);
+  expect(state.entries[0]).toMatchObject({ entryId, deleted: false });
+  await trash.click();
+  await add.click();
+  await expect(trash).toBeVisible();
+  const active = state.entries.filter((entry) => !entry.deleted);
+  expect(active).toHaveLength(1);
+  expect(active[0].entryId).not.toBe(entryId);
+});
+
 test('manual-to-saved catalog merge requires preview, keeps the manual UUID and the latest link', async ({
   page,
   context,
@@ -425,9 +471,11 @@ test('manual-to-saved catalog merge requires preview, keeps the manual UUID and 
     updatedAt: '2026-11-15T00:00:00.000Z',
   };
   const state = await backend(context, [manual, donor]);
-  await page.goto('/#/catalog/films');
-  await page.locator('.library-card__menu-trigger:visible').click();
-  await page.getByRole('button', { name: 'Link manual entry: Catalog title' }).click();
+  await page.goto('/#/library/films');
+  const manualCard = page.locator('.library-card:visible').filter({ hasText: manual.userTitle });
+  await manualCard.getByRole('button', { name: 'Edit', exact: true }).click();
+  await page.getByRole('button', { name: 'Find catalog title' }).click();
+  await page.getByRole('button', { name: 'Associate this title' }).click();
   await page.getByRole('button', { name: 'Save', exact: true }).click();
   const preview = page.getByRole('region', { name: 'Association preview' });
   await expect(preview).toBeVisible();
@@ -464,7 +512,7 @@ test('a lost create response and duplicate submit do not create duplicate entrie
   await expect(page.getByRole('dialog')).toHaveCount(0);
   expect(state.saves).toBe(1);
   expect(state.entries).toHaveLength(1);
-  await expect(page.locator('.library-card__stats:visible')).toBeVisible();
+  await expect(page.locator('.catalog-page .progress-control__row')).toBeVisible();
 });
 
 test('search omits removed controls and ignores their saved URL parameters', async ({
@@ -526,7 +574,15 @@ test('library and catalog share card geometry and category view controls', async
   expect(catalogCard!.width).toBeCloseTo(libraryCard!.width, 0);
   expect(catalogCard!.height).toBeGreaterThanOrEqual(libraryCard!.height);
   expect(catalogPoster!.height).toBe(libraryPoster!.height);
-  await expect(page.locator('.library-card__stats:visible').first()).toContainText('/ 28');
+  const firstCard = page.locator('.library-card:visible').first();
+  const year = await firstCard.locator('.library-card__year').boundingBox();
+  const rating = await firstCard.locator('.library-card__rating').boundingBox();
+  const progress = firstCard.locator('.progress-control__row');
+  const progressBox = await progress.boundingBox();
+  await expect(progress).toContainText('/ 28');
+  expect(Math.abs(year!.y - rating!.y)).toBeLessThan(4);
+  expect(rating!.x).toBeGreaterThan(year!.x);
+  expect(progressBox!.y).toBeGreaterThan(year!.y + year!.height);
   await expect(page.locator('.progress-control__count:visible').first()).toHaveValue('12');
   // A click on the progress bar sets the episode at the click position and saves it.
   const track = page.locator('.progress-control__track:visible').first();
@@ -535,7 +591,6 @@ test('library and catalog share card geometry and category view controls', async
   await expect(page.locator('.progress-control__count:visible').first()).toHaveValue('21');
   await expect.poll(() => state.entries.find((entry) => entry.progress === 21)).toBeTruthy();
   // The card status uses the shared status dropdown and saves at once.
-  const firstCard = page.locator('.library-card:visible').first();
   await choose(page, 'Status', 'Dropped', firstCard);
   await expect(
     firstCard.getByRole('combobox', { name: 'Status' }).locator('.fc-select__label'),
@@ -546,12 +601,7 @@ test('library and catalog share card geometry and category view controls', async
   await expect(page.locator('.title-results:visible')).toHaveClass(/title-results--list/);
   const listCard = await page.locator('.library-card:visible').first().boundingBox();
   expect(listCard!.width).toBeGreaterThan(catalogCard!.width * 2);
-  await page.locator('.library-card__menu-trigger:visible').first().click();
-  await page
-    .locator('.library-card:visible')
-    .first()
-    .getByRole('button', { name: 'Edit', exact: true })
-    .click();
+  await firstCard.locator('.library-card__year').click();
   await expect(page.getByRole('dialog')).toBeVisible();
 });
 
@@ -696,6 +746,175 @@ test('library rating popup selects, highlights, clears and restores focus in gri
   expect(state.entries[0].rating).toBe(7);
 });
 
+test('card details cover the grid card and keep list controls available', async ({
+  page,
+  context,
+}) => {
+  const entry = saved(manualId, catalogId);
+  entry.snapshot.year = 2024;
+  entry.snapshot.episodeCount = 24;
+  await backend(context, [entry]);
+  await page.goto('/#/library/films');
+  const card = page.locator('.library-card:visible');
+  const toggle = card.getByRole('button', { name: 'Details' });
+  const details = card.locator('.title-details');
+  const rating = card.getByRole('button', { name: 'Rating', exact: true });
+  await expect(card).toBeVisible();
+  await expect(toggle).toHaveCSS('width', '28px');
+  const cardBox = await card.boundingBox();
+
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  await expect(details).toContainText('Catalog title');
+  await expect(details).toContainText('2024');
+  await expect(details).toContainText('24');
+  await expect(details).toContainText('Keep private notes');
+  await expect(details.getByRole('link')).toHaveAttribute('href', entry.sources[0].originalUrl);
+  await expect(rating).toBeHidden();
+  expect(await card.boundingBox()).toEqual(cardBox);
+  expect((await details.boundingBox())!.height).toBeCloseTo(cardBox!.height - 2, 0);
+
+  await page.keyboard.press('Escape');
+  await expect(details).toHaveCount(0);
+  await expect(toggle).toBeFocused();
+  await expect(rating).toBeVisible();
+
+  await toggle.click();
+  await page.getByRole('button', { name: 'List view', exact: true }).click();
+  await expect(details).toBeHidden();
+  await expect(rating).toBeVisible();
+});
+
+test('short details fit on a compact card with wrapped genres', async ({ page, context }) => {
+  const entry = saved();
+  entry.userTitle = 'Dragon Ball Z: Wrath of the Dragon';
+  entry.comment = '';
+  entry.sources = [];
+  entry.snapshot.year = 1995;
+  entry.snapshot.episodeCount = 1;
+  entry.snapshot.genres = [
+    'Приключения',
+    'Комедия',
+    'Фантастика',
+    'Сёнен',
+    'Фэнтези',
+    'Боевики и Приключения',
+  ].map((text, index) => ({
+    genreId: `genre-${index}`,
+    key: `genre-${index}`,
+    labels: [{ ...entry.snapshot.titles[0]!, text }],
+  }));
+  await backend(context, [entry]);
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto('/#/library/films');
+  await page.getByRole('button', { name: 'Details', exact: true }).click();
+  const details = page.locator('.title-details');
+  await expect(details).toContainText('No description');
+  const overflow = await details.evaluate((element) => element.scrollHeight - element.clientHeight);
+  expect(overflow).toBe(0);
+});
+
+test('expanded library details cover bright and dark posters and fall back for missing or failed posters', async ({
+  page,
+  context,
+}, testInfo) => {
+  const posterHost = 'https://posters.test';
+  const posters = [
+    { title: 'Bright poster', url: `${posterHost}/bright.svg`, color: '#fff' },
+    { title: 'Dark poster', url: `${posterHost}/dark.svg`, color: '#121923' },
+    { title: 'Missing poster', url: null, color: null },
+    { title: 'Failed poster', url: `${posterHost}/failed.svg`, color: null },
+  ];
+  for (const { url, color } of posters) {
+    if (!url) continue;
+
+    await context.route(url, (route) =>
+      color
+        ? route.fulfill({
+            contentType: 'image/svg+xml',
+            body: `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600"><rect width="100%" height="100%" fill="${color}"/></svg>`,
+          })
+        : route.fulfill({ status: 404 }),
+    );
+  }
+
+  await backend(
+    context,
+    posters.map(({ title, url }, index) => {
+      const entry = saved(`poster-${index}`);
+      entry.userTitle = title;
+      entry.snapshot.posterUrl = url;
+      entry.snapshot.descriptions = [
+        {
+          ...entry.snapshot.titles[0]!,
+          text: 'A synopsis with enough text to scroll. '.repeat(50),
+        },
+      ];
+
+      return entry;
+    }),
+  );
+  await page.setViewportSize({ width: 1660, height: 950 });
+  await page.goto('/#/library/films');
+  const cards = page.locator('.library-card:visible');
+  await expect(cards).toHaveCount(posters.length);
+  const boxes = await Promise.all(posters.map((_, index) => cards.nth(index).boundingBox()));
+  for (const { title, color } of posters) {
+    const card = cards.filter({ hasText: title });
+    const image = card.locator('.library-card__poster');
+    const details = card.locator('.title-details');
+    const toggle = card.getByRole('button', { name: 'Details' });
+
+    if (color) {
+      await expect(image).toHaveJSProperty('naturalWidth', 400);
+    } else {
+      await expect(card.locator('.library-card__placeholder')).toBeVisible();
+    }
+
+    await toggle.click();
+    await expect(details).toHaveCSS('background-color', 'rgba(11, 18, 32, 0.82)');
+    await expect(details.locator('.title-details__text')).toHaveCSS('color', 'rgb(255, 255, 255)');
+    await expect(details).toHaveCSS('opacity', '1');
+    await expect(card).toHaveCSS('background-color', 'rgb(11, 18, 32)');
+    await expect(card).toHaveCSS('overflow', 'hidden');
+
+    if (color) {
+      await expect(image).toHaveCSS('object-fit', 'cover');
+      expect(await image.boundingBox()).toEqual(await details.boundingBox());
+    } else {
+      await expect(image).toHaveCount(0);
+    }
+
+    const buttonBox = (await toggle.boundingBox())!;
+    const cardBox = (await card.boundingBox())!;
+    expect(buttonBox).toMatchObject({ width: 28, height: 28 });
+    expect(cardBox.x + cardBox.width - buttonBox.x - buttonBox.width).toBeCloseTo(
+      cardBox.y + cardBox.height - buttonBox.y - buttonBox.height,
+    );
+    await details.evaluate((element) => {
+      element.scrollTop = 120;
+    });
+    await expect(details).toHaveJSProperty('scrollTop', 120);
+    expect(await toggle.boundingBox()).toEqual(buttonBox);
+    await details.evaluate((element) => {
+      element.scrollTop = 0;
+    });
+  }
+
+  expect(await Promise.all(posters.map((_, index) => cards.nth(index).boundingBox()))).toEqual(
+    boxes,
+  );
+  await page.screenshot({ path: testInfo.outputPath('expanded-library-posters.png') });
+  for (const card of await cards.all()) {
+    await card.getByRole('button', { name: 'Details' }).click();
+  }
+
+  await expect(page.locator('.title-details')).toHaveCount(0);
+  expect(await Promise.all(posters.map((_, index) => cards.nth(index).boundingBox()))).toEqual(
+    boxes,
+  );
+});
+
 test('unsaved catalog cards match the mockup size and covers scale on narrow screens', async ({
   page,
   context,
@@ -766,6 +985,7 @@ test('catalog loading skeletons match grid and list layouts and keep pagination 
 }) => {
   await backend(context);
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1312, height: 610 });
   for (const view of ['grid', 'list']) {
     await page.goto(`/#/catalog/films?q=older&view=${view}`);
 
@@ -774,10 +994,17 @@ test('catalog loading skeletons match grid and list layouts and keep pagination 
     const skeletons = page.locator('.catalog-skeleton');
     await expect(skeletons).toHaveCount(12);
     await expect(skeletons.first()).toHaveCSS('animation-name', 'none');
-    await expect(page.locator('.catalog-page .library-browser__pagination')).toBeVisible();
+    const pagination = page.locator('.catalog-page .library-browser__pagination');
+    await expect(pagination).toBeVisible();
     await expect(page.getByRole('button', { name: 'Next page', exact: true })).toBeDisabled();
     await expect(page.locator('.catalog-page .library-card')).toHaveCount(0);
     await expect(page.locator('.catalog-page .library-card__title')).toHaveText('older');
     await expect(skeletons).toHaveCount(0);
+    const toolbar = (await page.locator('.catalog-page .library-browser__toolbar').boundingBox())!;
+    const results = (await page.locator('.catalog-page .title-results-region').boundingBox())!;
+    const footer = (await pagination.boundingBox())!;
+    expect(results.y - (toolbar.y + toolbar.height)).toBeCloseTo(8);
+    expect(footer.y - (results.y + results.height)).toBeCloseTo(8);
+    await expect(pagination).toHaveCSS('padding-top', '0px');
   }
 });

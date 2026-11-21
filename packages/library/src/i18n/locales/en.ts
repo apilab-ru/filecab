@@ -17,8 +17,6 @@ export const EN = {
   catalogIdentityConflict:
     'Saved identities or categories conflict. Review the entries before continuing.',
   catalogAssociate: 'Associate this title',
-  catalogUseManual: 'Link manual entry: {{title}}',
-  catalogSelect: 'Select and edit',
   pageReading: 'Reading the page…',
   pageRestricted: 'This page cannot be read. Search the catalog or add the title manually.',
   pageReadFailed: 'The page did not answer. Retry, search the catalog or add the title manually.',
@@ -95,7 +93,6 @@ export const EN = {
   lowestFirst: 'Lowest first',
   newestFirst: 'Newest first',
   oldestFirst: 'Oldest first',
-  entryActions: 'Entry actions',
   dateAdded: 'Date added',
   recentlyUpdated: 'Recently updated',
   year: 'Year',

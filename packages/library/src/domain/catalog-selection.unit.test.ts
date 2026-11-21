@@ -2,12 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   Category,
   Granularity,
-  Locale,
   emptySnapshot,
   type CatalogRecord,
   type Entry,
 } from '@filecab/contracts';
-import { manualCandidates, savedCatalogMatch } from './catalog-selection';
+import { savedCatalogMatch } from './catalog-selection';
 
 const provenance = { source: 'fixture', retrievedAt: '2026-11-14T00:00:00.000Z', verified: true };
 const catalog: CatalogRecord = {
@@ -30,7 +29,7 @@ const catalog: CatalogRecord = {
   },
 };
 
-/** Creates a row for namespace and suggestion regressions. */
+/** Creates a row for catalog identity regressions. */
 function row(id: string, overrides: Partial<Entry> = {}) {
   return {
     version: '1',
@@ -66,10 +65,6 @@ describe('catalog selection', () => {
     });
 
     expect(savedCatalogMatch([manual, collision], catalog)).toEqual({ kind: 'none' });
-    expect(manualCandidates([manual], catalog, Locale.En)).toEqual([manual]);
-    expect(
-      manualCandidates([row('substring', { userTitle: 'Exact' })], catalog, Locale.En),
-    ).toEqual([]);
   });
 
   it('reports category and contradictory-reference conflicts before opening an editor', () => {

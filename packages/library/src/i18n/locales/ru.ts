@@ -20,8 +20,6 @@ export const RU = {
   catalogIdentityConflict:
     'Конфликт идентификаторов или категорий. Проверьте записи перед продолжением.',
   catalogAssociate: 'Связать с этим названием',
-  catalogUseManual: 'Связать ручную запись: {{title}}',
-  catalogSelect: 'Выбрать и изменить',
   pageReading: 'Чтение страницы…',
   pageRestricted:
     'Эту страницу нельзя прочитать. Найдите название в каталоге или добавьте вручную.',
@@ -101,7 +99,6 @@ export const RU = {
   lowestFirst: 'Сначала низкие',
   newestFirst: 'Сначала новые',
   oldestFirst: 'Сначала старые',
-  entryActions: 'Действия с записью',
   dateAdded: 'Дата добавления',
   recentlyUpdated: 'Недавно изменённые',
   year: 'Год',

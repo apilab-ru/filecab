@@ -1,17 +1,35 @@
 .title-details {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 4;
   display: grid;
   align-content: start;
   gap: 6px;
   box-sizing: border-box;
-  padding: 44px 12px 44px;
+  // Reserve the height and bottom inset of the fixed Details button.
+  padding: 14px 16px 42px;
   overflow: auto;
-  background: #101720fa;
+  background: rgb(11 18 32 / 82%);
   color: #fff;
-  font-size: 13px;
+  font-size: 15px;
   line-height: 1.4;
+
+  .title-results--list & {
+    display: none;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: clamp(17px, 1.5vw, 23px);
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  &__metadata {
+    margin: 0;
+    font-weight: 600;
+  }
 
   &__label {
     margin: 4px 0 0;
@@ -23,7 +41,7 @@
   }
 
   &__text {
-    margin: 0;
+    margin: 4px 0 0;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
 
@@ -32,25 +50,25 @@
       border-left: 3px solid var(--fc-accent);
       font-style: italic;
     }
-
-    &--fallback {
-      color: #c3cad6;
-    }
   }
 
   &__list {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px 6px;
+    gap: 0 6px;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  &__item + &__item::before {
+    content: '·';
+    margin-right: 6px;
+  }
+
   &__genre {
-    padding: 2px 8px;
-    border: 1px solid #ffffff40;
-    border-radius: 12px;
+    padding: 0;
+    border: 0;
     background: transparent;
     color: inherit;
     font: inherit;
@@ -59,7 +77,7 @@
       cursor: pointer;
 
       &:hover {
-        background: #ffffff1f;
+        text-decoration: underline;
       }
     }
 

@@ -1,7 +1,7 @@
 import { Button, Icon, IconName, Select } from '@filecab/ui';
 import { useTranslation } from 'react-i18next';
 import type { BrowserFiltersProps } from './model-browser-filters';
-import '../library-browser-filters/library-browser-filters.scss';
+import './browser-filters.scss';
 
 /** Renders the same toolbar for library and catalog filter configurations. */
 export function BrowserFilters({
@@ -31,7 +31,7 @@ export function BrowserFilters({
         filter.options ? (
           <Select
             key={filter.key}
-            className="library-browser__select"
+            className="library-browser__filter"
             aria-label={filter.label}
             placeholder={filter.label}
             value={filter.value}
@@ -42,7 +42,7 @@ export function BrowserFilters({
         ) : (
           <input
             key={filter.key}
-            className="library-browser__select"
+            className="library-browser__filter"
             aria-label={filter.label}
             placeholder={filter.label}
             inputMode="numeric"

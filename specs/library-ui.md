@@ -104,6 +104,7 @@ Edit opens the saved entry. Manual creation does not need a provider response.
 ## Toolbar and views
 
 - Library and catalog use one configurable filter toolbar.
+- Follow the [light mockup](mockup-light.png) for the search field, filters and Add title button.
 - Put one view switch at the right end of the category bar. It applies to the active page.
 - Offer card and list views. Keep the selected view when the query or page changes.
 - Use one result collection component and one result component for both views.
@@ -111,12 +112,16 @@ Edit opens the saved entry. Manual creation does not need a provider response.
 ## Cards
 
 Library entries and catalog results use the same card component. Follow the
-[dark mockup](mockup-dark.png):
+[light mockup](mockup-light.png) for the layout and use the current theme colors.
 
 - Put the poster above the title and year. Hide an unknown year.
-- Show the saved status and the action menu over the poster.
-- Show personal progress and rating below. Show personal values only for saved entries.
-- Put Add at the bottom of an unsaved catalog card. Keep Edit and association in the poster menu.
+- Show the saved status over the poster.
+- Put a trash button at the top right of each saved card that permits deletion. Show it in the library and catalog. Use the same delete and Undo action as the list.
+- Open Edit when the user clicks the surface of an editable card or list row. Make the title a button for keyboard access. Keep the other controls independent.
+- Put the rating on the year row. Show personal values only for saved entries.
+- Put episode controls below the year row. Put the progress bar across the card body.
+- Put Add at the bottom of an unsaved catalog card. Open a draft when the user clicks the card surface.
+- Start catalog association with Find catalog title in the manual entry editor. Show an association button on each result during association.
 - Use the same poster height, text sizes, status badge, rating row and progress track in both modes.
 
 For unsaved results, show an approximate provider rating on a 10-point scale:
@@ -132,7 +137,13 @@ If no score is available, show Unrated. Never save a provider score as a persona
 - Show genre icons in a row at the bottom of the poster. Use the genre icon font. Show an icon only for a genre key that has a glyph.
 - Give each icon the localized genre name as its accessible name and tooltip.
 - In library mode, a click on a genre applies the genre filter.
-- Put a Details button at the bottom right of the poster. It opens an overlay on the poster. The card size does not change.
+- Put a Details button at the bottom right of the poster. It opens an overlay across the card. The card size does not change.
+- Fill the open card with the poster. Crop the poster to fill the card. Clip the poster to the rounded card corners.
+- Put a dark overlay over the poster. Use `rgb(11 18 32 / 82%)` for the overlay. Use solid `#0B1220` if the poster is missing or cannot load.
+- Show the title, metadata, genres and description in white above the overlay.
+- Use 28 px controls for genre icons, Details and the trash button.
+- Show the title and available year and episode count at the top of the overlay.
+- Keep the Details button above the overlay with equal right and bottom insets. Keep the button in place when the content scrolls. Close the overlay with the button or Escape.
 - The overlay shows the description. If there is no description, it shows the comment, marked as a personal note. If there is no comment, it shows a localized empty text.
 - The overlay also shows all genre names and the viewing link. Open a link in a new tab with `noopener noreferrer`. Show a link only for HTTP and HTTPS.
 - List mode does not show genre icons or the Details button.

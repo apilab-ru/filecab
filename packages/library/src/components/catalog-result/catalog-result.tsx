@@ -1,11 +1,10 @@
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Status, titleFor, type EntryPatch } from '@filecab/contracts';
 import { useLocalStore } from '../../hooks/use-local-store';
 import { LibraryCard } from '../library-card/library-card';
 import { useTranslation } from 'react-i18next';
 import { useWorkspace } from '../../hooks/use-workspace';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
-import { manualCandidates } from '../../domain/catalog-selection';
 import { catalogResultState, useCatalogSelect } from '../../hooks/use-catalog-select';
 import type { CatalogResultProps } from './model-catalog-result';
 
@@ -13,17 +12,19 @@ import type { CatalogResultProps } from './model-catalog-result';
 export function CatalogResult({ record }: CatalogResultProps) {
   const { t } = useTranslation();
   const { locale } = useInterfacePreferences();
-  const { state, open, draft, reconciling } = useWorkspace();
+  const { state, open, draft, reconciling, remove } = useWorkspace();
   const [{ busy, error }, setters] = useLocalStore(() => ({ busy: false, error: '' }));
   const locked = useRef(false);
   const creationId = useRef(crypto.randomUUID());
   const { saved, conflict } = catalogResultState(state.rows, record);
+  const savedId = saved?.entry.entryId;
   const select = useCatalogSelect();
-  const candidates = manualCandidates(state.rows, record, locale);
   const blocked = conflict || Boolean(draft) || !state.repository || busy;
-  let action: 'Edit' | 'addTitle' | 'catalogAssociate' = saved ? 'Edit' : 'addTitle';
 
-  if (reconciling) action = 'catalogAssociate';
+  useEffect(() => {
+    // Keep the creation ID for retries until the saved entry is visible.
+    if (savedId === creationId.current) creationId.current = crypto.randomUUID();
+  }, [savedId]);
 
   const save = async (fields: EntryPatch) => {
     if (locked.current || blocked || !state.repository) return;
@@ -48,7 +49,7 @@ export function CatalogResult({ record }: CatalogResultProps) {
     }
   };
   const primaryAction = {
-    label: t(action),
+    label: t(reconciling ? 'catalogAssociate' : 'addTitle'),
     disabled: blocked,
     onClick: () => {
       if (reconciling) {
@@ -58,8 +59,6 @@ export function CatalogResult({ record }: CatalogResultProps) {
           record,
           saved?.entry.entryId !== reconciling.entry.entryId ? saved : undefined,
         );
-      } else if (saved) {
-        open(record.category, saved);
       } else {
         void save({
           userTitle: titleFor(record.snapshot, locale, t('Untitled')).text,
@@ -78,21 +77,10 @@ export function CatalogResult({ record }: CatalogResultProps) {
       entry={saved?.entry}
       snapshot={record.snapshot}
       showProviderRating={!saved}
-      primaryAction={!saved && !reconciling ? primaryAction : undefined}
+      edit={!reconciling && !blocked ? () => select(record) : undefined}
+      remove={saved && !blocked ? () => void remove(saved) : undefined}
+      primaryAction={!saved || reconciling ? primaryAction : undefined}
       alert={conflict ? t('catalogIdentityConflict') : error || undefined}
-      actions={[
-        ...(saved || reconciling ? [primaryAction] : []),
-        ...(!saved && !reconciling
-          ? [{ label: t('catalogSelect'), disabled: blocked, onClick: () => select(record) }]
-          : []),
-        ...(!reconciling
-          ? candidates.map((candidate) => ({
-              label: t('catalogUseManual', { title: candidate.entry.userTitle }),
-              disabled: blocked,
-              onClick: () => open(record.category, candidate, record, saved),
-            }))
-          : []),
-      ]}
     />
   );
 }

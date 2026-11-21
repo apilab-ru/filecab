@@ -156,7 +156,6 @@ test('full-page catalog Add/Edit share durable entries and preserve offline edit
       .click();
     await expect(full.locator('.catalog-page .fc-rating-picker__trigger')).toHaveText('8 / 10');
     await expect(popup.locator('.catalog-page .fc-rating-picker__trigger')).toHaveText('8 / 10');
-    await full.locator('.library-card__menu-trigger:visible').click();
     await full
       .locator('.library-card:visible')
       .getByRole('button', { name: 'Edit', exact: true })
@@ -164,14 +163,12 @@ test('full-page catalog Add/Edit share durable entries and preserve offline edit
     await full.getByLabel('Comment', { exact: true }).fill('First saved note');
     await full.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(full.getByRole('dialog')).toHaveCount(0);
-    await expect(popup.locator('.library-card__stats:visible')).toBeVisible();
-    await popup.locator('.library-card__menu-trigger:visible').click();
+    await expect(popup.locator('.catalog-page .progress-control__row')).toBeVisible();
     await popup
       .locator('.library-card:visible')
       .getByRole('button', { name: 'Edit', exact: true })
       .click();
     await expect(popup.getByLabel('Comment', { exact: true })).toHaveValue('First saved note');
-    await full.locator('.library-card__menu-trigger:visible').click();
     await full
       .locator('.library-card:visible')
       .getByRole('button', { name: 'Edit', exact: true })
@@ -198,7 +195,6 @@ test('full-page catalog Add/Edit share durable entries and preserve offline edit
       '24',
     );
     await expect(reopened.locator('.catalog-page .fc-rating-picker__trigger')).toHaveText('8 / 10');
-    await reopened.locator('.library-card__menu-trigger:visible').click();
     await reopened
       .locator('.library-card:visible')
       .getByRole('button', { name: 'Edit', exact: true })

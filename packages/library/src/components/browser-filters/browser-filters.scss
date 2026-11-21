@@ -1,0 +1,111 @@
+.library-browser {
+  &__toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+    background: var(--fc-surface);
+
+    .library-browser & {
+      margin-bottom: 22px;
+    }
+
+    @media (max-width: 850px) {
+      gap: 8px;
+    }
+  }
+
+  &__search {
+    display: flex;
+    flex: 1 1 240px;
+    align-items: center;
+    gap: 16px;
+    box-sizing: border-box;
+    min-height: 50px;
+    min-width: 0;
+    padding: 8px 16px;
+    border: 1px solid var(--fc-border);
+    border-radius: 12px;
+    background: var(--fc-input);
+    color: var(--fc-muted);
+
+    &:focus-within {
+      outline: 2px solid var(--fc-accent);
+      outline-offset: -1px;
+    }
+
+    .fc-icon {
+      flex: none;
+      width: 24px;
+      height: 24px;
+    }
+
+    @media (max-width: 850px) {
+      flex-basis: 100%;
+      min-height: 42px;
+      gap: 10px;
+      padding-inline: 12px;
+    }
+  }
+
+  &__search-input {
+    width: 100%;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--fc-text);
+    font: inherit;
+    font-size: clamp(16px, 1.25vw, 20px);
+
+    &::placeholder {
+      color: var(--fc-muted);
+    }
+  }
+
+  &__toolbar &__filter,
+  &__toolbar &__add {
+    box-sizing: border-box;
+    min-height: 50px;
+    max-width: 100%;
+    padding: 8px 18px;
+    border-radius: 12px;
+    font: inherit;
+    font-size: clamp(15px, 1.2vw, 19px);
+
+    @media (max-width: 850px) {
+      min-height: 40px;
+      padding-inline: 12px;
+    }
+  }
+
+  &__toolbar &__filter {
+    min-width: 0;
+    gap: 12px;
+    border: 1px solid var(--fc-border);
+    background: color-mix(in srgb, var(--fc-selected) 55%, var(--fc-input));
+    color: var(--fc-text);
+
+    &::placeholder {
+      color: var(--fc-muted);
+    }
+
+    &:is(input) {
+      width: 9em;
+    }
+  }
+
+  &__add {
+    flex-shrink: 0;
+    gap: 12px;
+    margin-left: auto;
+  }
+}

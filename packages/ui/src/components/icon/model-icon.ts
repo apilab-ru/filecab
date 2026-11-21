@@ -25,6 +25,7 @@ export const ASSETS: Record<IconName, string> = {
   link: new URL('../../assets/icons/link.svg', import.meta.url).href,
   minus: new URL('../../assets/icons/minus.svg', import.meta.url).href,
   ellipsis: new URL('../../assets/icons/ellipsis.svg', import.meta.url).href,
+  trash: new URL('../../assets/icons/trash.svg', import.meta.url).href,
   'arrow-left-right': new URL('../../assets/icons/arrow-left-right.svg', import.meta.url).href,
   'chevron-down': new URL('../../assets/icons/chevron-down.svg', import.meta.url).href,
   'status-dot': new URL('../../assets/icons/status-dot.svg', import.meta.url).href,
