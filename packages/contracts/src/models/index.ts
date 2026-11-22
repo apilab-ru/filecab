@@ -269,6 +269,34 @@ export interface Backup {
   entries: BackupEntry[];
 }
 
+/** Counts the effect of replacing the active library with a backup. */
+export interface BackupComparison {
+  current: number;
+  incoming: number;
+  added: number;
+  updated: number;
+  unchanged: number;
+  removed: number;
+  /** Updated entries whose current copy is newer than the backup copy. */
+  conflicts: number;
+}
+
+/** Binds a restore confirmation to the owner, backup digest and library revision. */
+export interface BackupPreview {
+  schemaVersion: 1;
+  confirmationToken: string;
+  expiresAt: string;
+  revision: string;
+  comparison: BackupComparison;
+}
+
+/** Confirms a previewed restore. An empty backup also needs `confirmEmpty`. */
+export interface BackupRestoreRequest {
+  backup: Backup;
+  confirmationToken: string;
+  confirmEmpty?: boolean;
+}
+
 /** Marks the position from which replication should resume. */
 export interface Checkpoint {
   cursor: string;

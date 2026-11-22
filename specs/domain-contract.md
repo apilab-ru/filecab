@@ -94,6 +94,10 @@ Exclude per-entry `schemaVersion`, `serverVersion`, deletion state, account data
 settings and credentials. Reject missing or invalid timestamps, unknown fields and old
 formats. Product rules are in [Backup and restore](functionality.md#8-backup-and-restore).
 
+`toBackup` builds a backup from active entries. `compareBackup` reports the counts and
+conflicts of a replacement for the server and the extension. Neither is a parser.
+Validation stays in the API DTOs and in the extension backup validator.
+
 ## Errors
 
 HTTP errors include a numeric `status`, a boolean `retryable`, a stable code, a safe

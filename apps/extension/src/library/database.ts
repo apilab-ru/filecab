@@ -105,7 +105,10 @@ async function createLocalDatabase(name: string): Promise<LocalDatabase> {
   });
   try {
     await database.addCollections({
-      merges: { schema: mergeSchema as RxJsonSchema<LocalMergeJournal>, migrationStrategies: {} },
+      merges: {
+        schema: mergeSchema as RxJsonSchema<LocalMergeJournal>,
+        migrationStrategies: { 1: (journal) => journal },
+      },
       entries: {
         schema: entrySchema as RxJsonSchema<LocalEntry>,
         migrationStrategies: {},

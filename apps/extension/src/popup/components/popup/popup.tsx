@@ -88,7 +88,15 @@ export function Popup({ fullPageUrl, iconUrl = FILECAB_ICON_URL, children }: Pop
         <Routes>
           <Route path="/page/:category" element={<PopupPage />} />
           <Route path="/search/:category" element={<PopupSearchPage />} />
-          <Route path="/settings" element={<SettingsPage popup />} />
+          <Route
+            path="/settings"
+            element={
+              <SettingsPage
+                popup
+                restoreUrl={fullPageUrl ? `${fullPageUrl}#/settings` : undefined}
+              />
+            }
+          />
           <Route path="*" element={<Navigate replace to="/page/anime" />} />
         </Routes>
       </main>

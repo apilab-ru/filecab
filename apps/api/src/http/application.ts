@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import type { Request, Response, NextFunction } from 'express';
+import { json, type Request, type Response, type NextFunction } from 'express';
 import { AppModule } from '../app.module';
 import type { ApiEnvironment } from '../config/environment';
 import { COOKIE_NAMES } from '../auth/credentials';
@@ -18,6 +18,9 @@ import {
   type RequestDiagnostic,
 } from './api-error';
 import { StrictValidationPipe } from './validation';
+
+/** Backup files can be up to 10 MiB. Other JSON bodies keep the 1 MiB limit. */
+const BACKUP_BODY_LIMIT = 10 * 1024 * 1024;
 
 /** Supplies controlled test dependencies without changing production routing. */
 export interface ApiOptions {
@@ -116,6 +119,11 @@ export function configureApiApplication(
     exposedHeaders: ['X-Correlation-ID'],
     maxAge: 600,
   });
+  // Backup routes parse first with their own limit; the general parser then skips the body.
+  app.use(
+    '/api/v1/library/backup',
+    json({ limit: BACKUP_BODY_LIMIT, strict: true, inflate: false }),
+  );
   app.useBodyParser('json', { limit: '1mb', strict: true, inflate: false });
   app.use((error: unknown, _request: Request, response: Response, _next: NextFunction) => {
     sendApiError(error, response);

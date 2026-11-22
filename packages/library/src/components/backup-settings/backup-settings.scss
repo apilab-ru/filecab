@@ -1,0 +1,59 @@
+.backup-settings {
+  display: grid;
+  gap: 12px;
+
+  &__description {
+    margin: 0;
+    color: var(--fc-muted);
+    font-size: 13px;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__button {
+    min-width: 160px;
+    text-decoration: none;
+
+    .popup & {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+
+  &__file {
+    display: none;
+  }
+
+  &__notice {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  &__issues {
+    display: grid;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px solid var(--fc-border);
+    border-radius: 9px;
+  }
+
+  &__issue-list {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding-left: 18px;
+    color: var(--fc-muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  &__conflicts {
+    flex: 1 1 100%;
+    margin: 0;
+    font-size: 13px;
+  }
+}

@@ -235,6 +235,9 @@ importers:
       dotenv:
         specifier: ^17.2.3
         version: 17.4.2
+      express:
+        specifier: ^5.3.0
+        version: 5.3.0(supports-color@7.2.0)
       jose:
         specifier: ^6.2.15
         version: 6.2.15
@@ -293,7 +296,7 @@ importers:
         version: 19.3.0(@types/react@19.3.0)
       '@wxt-dev/module-react':
         specifier: 1.2.2
-        version: 1.2.2(supports-color@7.2.0)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))(wxt@0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)))
+        version: 1.2.2(supports-color@7.2.0)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))(wxt@0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(oxc-parser@0.152.0)(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)))
       ajv:
         specifier: 8.20.0
         version: 8.20.0
@@ -308,7 +311,7 @@ importers:
         version: 7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)
       wxt:
         specifier: 0.21.5
-        version: 0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))
+        version: 0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(oxc-parser@0.152.0)(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))
 
   apps/web:
     dependencies:
@@ -5313,11 +5316,11 @@ snapshots:
     dependencies:
       '@types/har-format': 1.2.16
 
-  '@wxt-dev/module-react@1.2.2(supports-color@7.2.0)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))(wxt@0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)))':
+  '@wxt-dev/module-react@1.2.2(supports-color@7.2.0)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))(wxt@0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(oxc-parser@0.152.0)(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)))':
     dependencies:
       '@vitejs/plugin-react': 5.2.0(supports-color@7.2.0)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))
       vite: 7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)
-      wxt: 0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))
+      wxt: 0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(oxc-parser@0.152.0)(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))
     transitivePeerDependencies:
       - supports-color
 
@@ -7255,7 +7258,7 @@ snapshots:
 
   undici@7.30.1: {}
 
-  unimport@6.5.0(esbuild@0.28.2)(rollup@4.67.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)):
+  unimport@6.5.0(esbuild@0.28.2)(oxc-parser@0.152.0)(rollup@4.67.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)):
     dependencies:
       acorn: 8.19.0
       escape-string-regexp: 5.0.0
@@ -7271,6 +7274,8 @@ snapshots:
       tinyglobby: 0.2.17
       unplugin: 3.7.0(esbuild@0.28.2)(rollup@4.67.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))
       unplugin-utils: 0.3.2
+    optionalDependencies:
+      oxc-parser: 0.152.0
     transitivePeerDependencies:
       - '@farmfe/core'
       - '@rsbuild/core'
@@ -7407,7 +7412,7 @@ snapshots:
 
   ws@8.22.0: {}
 
-  wxt@0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)):
+  wxt@0.21.5(esbuild@0.28.2)(eslint@10.14.0(jiti@2.7.0)(supports-color@7.2.0))(oxc-parser@0.152.0)(rollup@4.67.3)(typescript@5.9.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)):
     dependencies:
       '@1natsu/wait-element': 5.0.0
       '@aklinker1/rollup-plugin-visualizer': 5.12.0(rollup@4.67.3)
@@ -7436,7 +7441,7 @@ snapshots:
       tiny-open: 1.3.0
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      unimport: 6.5.0(esbuild@0.28.2)(rollup@4.67.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))
+      unimport: 6.5.0(esbuild@0.28.2)(oxc-parser@0.152.0)(rollup@4.67.3)(vite@7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0))
       vite: 7.3.7(@types/node@24.19.2)(jiti@2.7.0)(sass@1.107.1)(tsx@4.23.15)(yaml@2.9.0)
     optionalDependencies:
       eslint: 10.14.0(jiti@2.7.0)(supports-color@7.2.0)

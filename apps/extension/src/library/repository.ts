@@ -1,4 +1,9 @@
 import {
+  backupChanges,
+  compareBackup,
+  toBackup,
+  type Backup,
+  type BackupComparison,
   emptySnapshot,
   associateCatalog,
   type CatalogRecord,
@@ -32,6 +37,13 @@ export class LocalLibraryError extends Error {
   ) {
     super(code);
   }
+}
+
+/** Binds a device restore preview to the account binding and the local library revision. */
+export interface LocalBackupPreview {
+  owner: string;
+  revision: number;
+  comparison: BackupComparison;
 }
 
 /** Computes revision metadata from the same committed rows as the entries. */
@@ -527,6 +539,99 @@ export class LocalLibraryRepository {
       }
 
       await issue.remove();
+    });
+  }
+
+  /** Names the bound account, or the device when no account is bound. */
+  private async owner(): Promise<string> {
+    const binding = await this.database.binding.findOne('device').exec();
+
+    return binding?.ownerId ?? 'device';
+  }
+
+  /** Exports the active device library in the current backup format. */
+  async exportBackup(): Promise<Backup> {
+    return toBackup((await this.snapshot()).rows.map((row) => row.entry));
+  }
+
+  /** Compares a validated backup with the device library without changing it. */
+  async previewBackup(backup: Backup): Promise<LocalBackupPreview> {
+    return this.locked(async () => {
+      const rows = await this.rows();
+
+      return {
+        owner: await this.owner(),
+        revision: snapshotOf(rows).revision,
+        comparison: compareBackup(
+          rows.map((row) => row.entry),
+          backup,
+        ),
+      };
+    });
+  }
+
+  /**
+   * Replaces the device library with a previewed backup. One journal document holds all
+   * changed rows: tombstones first, then added and updated entries. Existing UUIDs keep their
+   * server version, so replication pushes the rows as ordinary changes.
+   */
+  async restoreBackup(
+    backup: Backup,
+    preview: Pick<LocalBackupPreview, 'owner' | 'revision'>,
+    confirmEmpty: boolean,
+  ): Promise<void> {
+    if (!backup.entries.length && !confirmEmpty) throw new LocalLibraryError('INVALID_ENTRY');
+
+    await this.locked(async () => {
+      const rows = await this.rows();
+      const previous = snapshotOf(rows);
+
+      if (previous.revision !== preview.revision || (await this.owner()) !== preview.owner)
+        throw new LocalLibraryError('CONFLICT');
+
+      const current = new Map(rows.map((row) => [row.entryId.toLowerCase(), row]));
+      const incoming = new Set(backup.entries.map((entry) => entry.entryId.toLowerCase()));
+      const now = Date.now();
+      const removed: Entry[] = rows
+        .filter((row) => !row.entry.deleted && !incoming.has(row.entryId.toLowerCase()))
+        .map((row) => ({
+          ...row.entry,
+          deleted: true,
+          updatedAt: new Date(Math.max(now, Date.parse(row.entry.updatedAt))).toISOString(),
+        }));
+      const restored: Entry[] = backup.entries
+        .filter((entry) => backupChanges(current.get(entry.entryId.toLowerCase())?.entry, entry))
+        .map((entry) => {
+          const before = current.get(entry.entryId.toLowerCase());
+
+          return {
+            ...entry,
+            schemaVersion: 1,
+            entryId: before?.entryId ?? entry.entryId,
+            serverVersion: before?.entry.serverVersion ?? null,
+            deleted: false,
+          };
+        });
+      const changed = [...removed, ...restored];
+
+      if (!changed.length) return;
+
+      if (!Number.isSafeInteger(previous.revision + changed.length))
+        throw new LocalLibraryError('STORAGE_UNAVAILABLE');
+
+      const localUpdatedAt = Math.max(now, previous.updatedAt);
+      await this.database.merges.incrementalUpsert({
+        id: crypto.randomUUID(),
+        rows: changed.map((entry, index) => ({
+          entryId: entry.entryId,
+          entry,
+          localRevision: previous.revision + index + 1,
+          localUpdatedAt,
+          undoBefore: null,
+          undoUntil: null,
+        })),
+      });
+      await recoverLocalMerges(this.database);
     });
   }
 

@@ -1,5 +1,7 @@
 import {
   ApiErrorCode,
+  type Backup,
+  type BackupPreview,
   type LibraryMutationPreview,
   type LibraryMutationResult,
   type OwnerSnapshot,
@@ -57,6 +59,7 @@ import {
   ServerEntryDto,
 } from './response.dto';
 import { MutationError } from './proposals';
+import { BackupDto, BackupPreviewDto, BackupRestoreDto } from './backup.dto';
 
 /** Constructs manual metadata without accepting client-supplied catalog snapshots. */
 function manualSnapshot(): Snapshot {
@@ -286,5 +289,49 @@ export class LibraryController {
     );
 
     return { schemaVersion: 1, entries };
+  }
+
+  @Get('backup')
+  @ApiOperation({ summary: 'Export the active owner library in the current backup format' })
+  @ApiResponse({ status: 200, type: BackupDto })
+  exportBackup(@CurrentAccount() account: AuthIdentity): Promise<Backup> {
+    return this.mutations.exportBackup(account.ownerId);
+  }
+
+  @Post('backup/preview')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Validate a backup and preview the replacement',
+    description:
+      'Body limit 10 MiB. Issues locate errors as entries, index and field. The token binds the owner, backup digest and library revision.',
+  })
+  @ApiBody({ type: BackupDto })
+  @ApiResponse({ status: 200, type: BackupPreviewDto })
+  previewBackup(
+    @CurrentAccount() account: AuthIdentity,
+    @Body(new RequestDtoPipe(BackupDto)) input: BackupDto,
+  ): Promise<BackupPreview> {
+    return this.mutations.previewBackup(account.ownerId, input);
+  }
+
+  @Post('backup/restore')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Replace the active library with a previewed backup',
+    description:
+      'One transaction publishes tombstones and entries. A changed library or backup returns 409 without changes.',
+  })
+  @ApiBody({ type: BackupRestoreDto })
+  @ApiResponse({ status: 200, type: OwnerSnapshotDto })
+  restoreBackup(
+    @CurrentAccount() account: AuthIdentity,
+    @Body(new RequestDtoPipe(BackupRestoreDto)) input: BackupRestoreDto,
+  ): Promise<OwnerSnapshot> {
+    return this.mutations.restoreBackup(
+      account.ownerId,
+      input.backup,
+      input.confirmationToken,
+      input.confirmEmpty,
+    );
   }
 }

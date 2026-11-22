@@ -52,6 +52,7 @@ Use expected revisions for settings writes.
 - Register the RxDB migration plugin. Give each collection an explicit migration strategy map.
 - A schema change increases the version and adds a migration. Test that the migration keeps existing data.
 - The synchronization issue collection uses version 1. Its migration keeps version 0 issues and all entries unchanged.
+- The merge journal collection uses version 1. It holds any number of rows, so a restore fits in one journal. Its migration keeps version 0 journals unchanged.
 - Validate storage writes with build-time AJV standalone validators that work under the extension CSP. Bundle a validator for each supported old schema version, because migration validates old documents.
 - These validators are private to storage. They are not shared request parsers or client DTO validation.
 - Check stored records against the same schemas before showing data.
@@ -62,6 +63,20 @@ Create empty storage only when no storage exists. When a read fails:
 - show Retry;
 - allow a best-effort raw IndexedDB export, also when the store cannot be read;
 - never remove or recreate the database automatically.
+
+## Backup and restore
+
+The extension exports, validates and restores the device library offline. Use the
+[backup rules](functionality.md#8-backup-and-restore).
+
+- Validate the backup shape with a build-time AJV standalone validator from `backup.schema.json`. It is private to the extension, like the storage validators.
+- Extension checks then validate links, timestamps and duplicate UUIDs, catalog IDs and links. Each issue reports the entry index.
+- The preview uses the same counts and conflicts as the server preview. The confirmation binds the bound account or the device, the SHA-256 digest of the file and the local library revision.
+- Restore runs under the write lock. It checks the binding, the digest and the revision again.
+- Restore stores all changed rows in one merge journal document, then applies them. An interruption finishes the journal on the next locked operation.
+- Rows get new local revisions: tombstones for removed entries first, then added and updated entries. An existing UUID keeps its `serverVersion`. A new UUID gets a null `serverVersion`.
+- Ordinary replication then pushes the rows. The server sets versions, timestamps and snapshots again.
+- The popup shows Export. Restore opens the full-page settings, because a file picker closes the popup.
 
 ## Replication
 

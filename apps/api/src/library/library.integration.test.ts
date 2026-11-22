@@ -2,6 +2,9 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type {
+  ApiError,
+  Backup,
+  BackupPreview,
   LibraryMutationPreview,
   LibraryMutationResult,
   OwnerSnapshot,
@@ -18,6 +21,7 @@ import {
   verifierChallenge,
 } from '../auth/credentials';
 import { LibraryMutationService } from './mutation.service';
+import { emptySnapshot, toBackup } from '@filecab/contracts';
 
 const prefix = `library-api-${randomUUID()}`;
 const secret = Buffer.alloc(32, 21).toString('base64');
@@ -845,4 +849,237 @@ test('an explicit website owner precondition cannot write through a different au
   expect(response.status).toBe(409);
   const snapshot = (await (await request('')).json()) as OwnerSnapshot;
   expect(snapshot.entries.some((entry) => entry.userTitle === 'Must not be committed')).toBe(false);
+});
+
+/** Previews a backup for an owner and returns the response status and body. */
+async function previewBackup(backup: unknown, owner: SessionTokens) {
+  const response = await request('/backup/preview', 'POST', backup, owner);
+
+  return { status: response.status, body: (await response.json()) as BackupPreview & ApiError };
+}
+
+test('backup restore replaces the library atomically, exchanges claims and publishes tombstones', async () => {
+  const owner = await login(`backup-${randomUUID()}`);
+  const linkA = `https://example.com/${randomUUID()}`;
+  const linkB = `https://example.com/${randomUUID()}`;
+  const kept = await create({ userTitle: 'Kept' }, owner);
+  const changed = await create({ userTitle: 'Changed', sourceUrls: [linkA] }, owner);
+  const removed = await create({ userTitle: 'Removed', sourceUrls: [linkB] }, owner);
+  const catalogId = randomUUID();
+  catalogIds.push(catalogId);
+  await auth.database.catalogItem.create({
+    data: {
+      id: catalogId,
+      category: 'anime',
+      snapshot: JSON.parse(JSON.stringify({ ...emptySnapshot(), year: 2001 })),
+    },
+  });
+  const exported = (await (await request('/backup', 'GET', undefined, owner)).json()) as Backup;
+  expect(exported.entries).toHaveLength(3);
+  expect(exported.entries[0]).not.toHaveProperty('serverVersion');
+
+  const addedId = randomUUID();
+  const backup: Backup = {
+    schemaVersion: 1,
+    entries: [
+      exported.entries.find((entry) => entry.entryId === kept.entryId)!,
+      {
+        ...exported.entries.find((entry) => entry.entryId === changed.entryId)!,
+        userTitle: 'Restored',
+        sources: [{ originalUrl: linkB, normalizedUrl: linkB, policyVersion: 'generic-v1' }],
+        updatedAt: '2020-01-02T00:00:00.000Z',
+        createdAt: '2020-01-01T00:00:00.000Z',
+      },
+      {
+        ...exported.entries.find((entry) => entry.entryId === kept.entryId)!,
+        entryId: addedId,
+        catalogId,
+        userTitle: '',
+        sources: [{ originalUrl: linkA, normalizedUrl: linkA, policyVersion: 'generic-v1' }],
+        snapshot: { ...emptySnapshot(), year: 1900 },
+      },
+    ],
+  };
+  const preview = await previewBackup(backup, owner);
+  expect(preview.status).toBe(200);
+  expect(preview.body.comparison).toEqual({
+    current: 3,
+    incoming: 3,
+    added: 1,
+    updated: 1,
+    unchanged: 1,
+    removed: 1,
+    conflicts: 1,
+  });
+
+  const restored = await request(
+    '/backup/restore',
+    'POST',
+    { backup, confirmationToken: preview.body.confirmationToken },
+    owner,
+  );
+  expect(restored.status).toBe(200);
+  const snapshot = (await restored.json()) as OwnerSnapshot;
+  const byId = new Map(snapshot.entries.map((entry) => [entry.entryId, entry]));
+  expect(byId.size).toBe(3);
+  expect(byId.get(kept.entryId)).toEqual(kept);
+  expect(byId.get(changed.entryId)).toMatchObject({
+    userTitle: 'Restored',
+    sources: [{ normalizedUrl: linkB }],
+    createdAt: '2020-01-01T00:00:00.000Z',
+  });
+  expect(BigInt(byId.get(changed.entryId)!.serverVersion)).toBeGreaterThan(
+    BigInt(removed.serverVersion),
+  );
+  expect(byId.get(addedId)!.snapshot.year).toBe(2001);
+
+  const pulled = (await (
+    await fetch(base.replace(/\/library$/, '/replication/pull'), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${owner.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        schemaVersion: 1,
+        checkpoint: { cursor: removed.serverVersion, entryId: null },
+        limit: 100,
+      }),
+    })
+  ).json()) as { documents: ServerEntry[] };
+  expect(pulled.documents[0]).toMatchObject({ entryId: removed.entryId, deleted: true });
+
+  const replay = await request(
+    '/backup/restore',
+    'POST',
+    { backup, confirmationToken: preview.body.confirmationToken },
+    owner,
+  );
+  expect(replay.status).toBe(409);
+});
+
+test('backup validation reports entry indexes and rejects old formats and unavailable identities', async () => {
+  const owner = await login(`backup-${randomUUID()}`);
+  const foreign = await create({ userTitle: 'Foreign' }, other);
+  const valid = toBackup([{ ...foreign, entryId: randomUUID() }]).entries[0]!;
+
+  expect((await previewBackup([valid], owner)).status).toBe(400);
+  expect((await previewBackup({ data: { anime: [valid] } }, owner)).status).toBe(400);
+  expect((await previewBackup({ schemaVersion: 2, entries: [] }, owner)).status).toBe(400);
+  const unknown = await previewBackup(
+    { schemaVersion: 1, entries: [{ ...valid, serverVersion: '1' }] },
+    owner,
+  );
+  expect(unknown.status).toBe(400);
+
+  const invalid = await previewBackup(
+    {
+      schemaVersion: 1,
+      entries: [
+        valid,
+        { ...valid, userTitle: 'Again' },
+        { ...valid, entryId: foreign.entryId },
+        { ...valid, entryId: randomUUID(), catalogId: randomUUID() },
+        {
+          ...valid,
+          entryId: randomUUID(),
+          sources: [
+            {
+              originalUrl: 'https://u:p@example.com/',
+              normalizedUrl: 'https://u:p@example.com/',
+              policyVersion: 'generic-v1',
+            },
+          ],
+        },
+      ],
+    },
+    owner,
+  );
+  expect(invalid.status).toBe(400);
+  expect(invalid.body.issues!.map((issue) => issue.path)).toEqual([
+    ['entries', 1, 'entryId'],
+    ['entries', 4, 'sources', 0, 'originalUrl'],
+    ['entries', 2, 'entryId'],
+    ['entries', 3, 'catalogId'],
+  ]);
+  expect(JSON.stringify(invalid.body)).not.toContain('u:p@');
+  expect(
+    ((await (await request('', 'GET', undefined, owner)).json()) as OwnerSnapshot).entries,
+  ).toEqual([]);
+});
+
+test('a backup restore stops after a library change and an empty restore needs confirmation', async () => {
+  const owner = await login(`backup-${randomUUID()}`);
+  const entry = await create({ userTitle: 'Current' }, owner);
+  const backup = toBackup([{ ...entry, userTitle: 'Old' }]);
+  const preview = await previewBackup(backup, owner);
+  await create({ userTitle: 'Later' }, owner);
+  const stale = await request(
+    '/backup/restore',
+    'POST',
+    { backup, confirmationToken: preview.body.confirmationToken },
+    owner,
+  );
+  expect(stale.status).toBe(409);
+
+  const fresh = await previewBackup(backup, owner);
+  const altered = await request(
+    '/backup/restore',
+    'POST',
+    {
+      backup: { ...backup, entries: [{ ...backup.entries[0]!, userTitle: 'Altered' }] },
+      confirmationToken: fresh.body.confirmationToken,
+    },
+    owner,
+  );
+  expect(altered.status).toBe(409);
+  expect(
+    ((await (await request('', 'GET', undefined, owner)).json()) as OwnerSnapshot).entries,
+  ).toHaveLength(2);
+
+  const empty: Backup = { schemaVersion: 1, entries: [] };
+  const emptyPreview = await previewBackup(empty, owner);
+  expect(emptyPreview.body.comparison.removed).toBe(2);
+  const unconfirmed = await request(
+    '/backup/restore',
+    'POST',
+    { backup: empty, confirmationToken: emptyPreview.body.confirmationToken },
+    owner,
+  );
+  expect(unconfirmed.status).toBe(400);
+  const cleared = await request(
+    '/backup/restore',
+    'POST',
+    { backup: empty, confirmationToken: emptyPreview.body.confirmationToken, confirmEmpty: true },
+    owner,
+  );
+  expect(((await cleared.json()) as OwnerSnapshot).entries).toEqual([]);
+});
+
+test('backup routes accept bodies up to 10 MiB and other routes keep the 1 MiB limit', async () => {
+  const owner = await login(`backup-${randomUUID()}`);
+  const base = toBackup([{ ...(await create({ userTitle: 'Large' }, owner)) }]).entries[0]!;
+  const entries = Array.from({ length: 25 }, () => ({
+    ...base,
+    entryId: randomUUID(),
+    comment: 'x'.repeat(90000),
+  }));
+  expect((await previewBackup({ schemaVersion: 1, entries }, owner)).status).toBe(200);
+  expect(
+    (
+      await request(
+        '/entries',
+        'POST',
+        { category: 'anime', userTitle: 'x', comment: 'y'.repeat(1100000) },
+        owner,
+      )
+    ).status,
+  ).toBe(413);
+  const tooLarge = await request(
+    '/backup/preview',
+    'POST',
+    { schemaVersion: 1, entries: Array.from({ length: 120 }, () => entries[0]) },
+    owner,
+  );
+  expect(tooLarge.status).toBe(413);
 });

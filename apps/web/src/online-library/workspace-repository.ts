@@ -1,6 +1,13 @@
-import { WorkspaceConflictError, type WorkspaceRepository } from '@filecab/library';
+import {
+  BackupValidationError,
+  WorkspaceConflictError,
+  type WorkspaceRepository,
+} from '@filecab/library';
 import { MutationObserver } from '@tanstack/react-query';
 import type {
+  ApiError,
+  Backup,
+  BackupPreview,
   CatalogAssociationRequest,
   AccountInfo,
   LibraryMutationResult,
@@ -18,7 +25,10 @@ class LibraryRequestError extends Error {
   }
 }
 
-/** Sends an owner-bound website mutation through the existing HttpOnly session and CSRF policy. */
+/**
+ * Sends an owner-bound website mutation through the existing HttpOnly session and CSRF policy.
+ * A string `body` is sent as is, so the server validates a backup file without client parsing.
+ */
 async function ownerRequest<T>(
   ownerId: string,
   path: string,
@@ -37,10 +47,16 @@ async function ownerRequest<T>(
       'X-Filecab-Request': '1',
       'X-Filecab-Owner': ownerId,
     },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
   });
 
   if (response.status === 409) throw new WorkspaceConflictError();
+
+  if (response.status === 400 && path.startsWith('/backup')) {
+    const error = (await response.json().catch(() => null)) as ApiError | null;
+
+    throw new BackupValidationError(error?.issues ?? []);
+  }
 
   if (!response.ok) throw new LibraryRequestError(response.status);
 
@@ -179,5 +195,29 @@ export function onlineWorkspaceRepository(ownerId: string): WorkspaceRepository 
       accept([restored]);
     },
     refresh,
+    backup: {
+      exportBackup: () => ownerRequest<Backup>(ownerId, '/backup', undefined, 'GET'),
+      async previewRestore(text) {
+        const preview = await ownerRequest<BackupPreview>(ownerId, '/backup/preview', text);
+
+        return {
+          comparison: preview.comparison,
+          confirm: async (confirmEmpty) => {
+            // The preview accepted this exact text as JSON, so it can be embedded unchanged.
+            const body = `{"backup":${text},"confirmationToken":${JSON.stringify(
+              preview.confirmationToken,
+            )},"confirmEmpty":${confirmEmpty}}`;
+            const snapshot = await mutate(() =>
+              ownerRequest<OwnerSnapshot>(ownerId, '/backup/restore', body),
+            );
+
+            if (queryClient.getQueryData<AccountInfo | null>(['account'])?.ownerId === ownerId)
+              queryClient.setQueryData<OwnerSnapshot>(['library', ownerId], snapshot);
+
+            await refresh();
+          },
+        };
+      },
+    },
   };
 }

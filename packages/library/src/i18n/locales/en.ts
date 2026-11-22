@@ -329,4 +329,39 @@ export const EN = {
   reviewCount_few: '{{count, number}} saved edits need review.',
   reviewCount_other: '{{count, number}} saved edits need review.',
   reviewCount_many: '{{count, number}} saved edits need review.',
+  backup: 'Backup',
+  backupDescription: 'Export the library to backup.json, or replace the library with a backup.',
+  backupExport: 'Export',
+  backupRestore: 'Restore',
+  backupRestoreFullPage: 'Restore in full page',
+  backupUnavailable: 'The library is not available yet.',
+  backupExportFailed: 'The backup could not be exported.',
+  backupInvalid_one: 'The backup has {{count, number}} error. The library has not changed.',
+  backupInvalid_few: 'The backup has {{count, number}} errors. The library has not changed.',
+  backupInvalid_other: 'The backup has {{count, number}} errors. The library has not changed.',
+  backupInvalid_many: 'The backup has {{count, number}} errors. The library has not changed.',
+  backupInvalidUnknown: 'The backup is not valid. The library has not changed.',
+  backupIssueEntry: 'Entry {{index, number}}',
+  backupIssueFile: 'File',
+  backupIssuesMore: 'And {{count, number}} more.',
+  backupPreviewTitle: 'Replace the library?',
+  backupPreviewDescription:
+    'Library: {{current, number}} entries. Backup: {{incoming, number}} entries. Added: {{added, number}}. Updated: {{updated, number}}. Unchanged: {{unchanged, number}}. Removed: {{removed, number}}.',
+  backupConflicts_one:
+    '{{count, number}} updated entry changed after this backup was made. Restore replaces it.',
+  backupConflicts_few:
+    '{{count, number}} updated entries changed after this backup was made. Restore replaces them.',
+  backupConflicts_other:
+    '{{count, number}} updated entries changed after this backup was made. Restore replaces them.',
+  backupConflicts_many:
+    '{{count, number}} updated entries changed after this backup was made. Restore replaces them.',
+  backupDownloadCurrent: 'Download current library',
+  backupConfirm: 'Replace library',
+  backupEmptyTitle: 'Clear the library?',
+  backupEmptyDescription:
+    'The backup has no entries. Restore removes all {{count, number}} entries from the library.',
+  backupEmptyConfirm: 'Clear library',
+  backupStale: 'The library changed after the preview. Select the file again.',
+  backupFailed: 'The backup could not be restored. The library has not changed.',
+  backupRestored: 'The library was restored.',
 } as const;

@@ -14,3 +14,4 @@ export * from './models/page-rules';
 export { PAGE_RULES } from './domain/page-rules';
 export type { CatalogAssociationRequest } from './models/catalog-association';
 export { associateCatalog, CatalogAssociationConflictError } from './domain/catalog-association';
+export { toBackup, compareBackup, backupChanges } from './domain/backup';

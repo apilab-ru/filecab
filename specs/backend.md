@@ -388,12 +388,39 @@ Revocation blocks later requests. It cannot remove content that a viewer already
 Use the [backup rules](functionality.md#8-backup-and-restore) and the
 [v1 format](domain-contract.md#backup-format).
 
-- Reject files larger than 10 MiB before parsing.
+- Reject backup bodies larger than 10 MiB before parsing.
 - Bind restore confirmation to the owner, payload digest and library revision.
 - An empty replacement needs a separate confirmation.
 - Apply the replacement atomically and publish tombstones. A failure keeps the library unchanged.
 - Set server versions again through the common mutation service. Never trust versions from a backup.
 - Ordinary synchronization never replaces the complete library.
+
+| Operation | Route                          | Body                                                   | Result                     |
+| --------- | ------------------------------ | ------------------------------------------------------ | -------------------------- |
+| Export    | `GET /library/backup`          | None                                                   | `Backup` of active entries |
+| Preview   | `POST /library/backup/preview` | `Backup`                                               | `BackupPreview`            |
+| Restore   | `POST /library/backup/restore` | `backup`, `confirmationToken`, optional `confirmEmpty` | `OwnerSnapshot`            |
+
+Validation:
+
+- DTO validation rejects unknown fields, wrong types, bounds and enums. Issue paths start with `entries` and the entry index.
+- Each link is an absolute HTTP or HTTPS URL without credentials. `normalizedUrl` must equal the `generic-v1` result.
+- Reject duplicate entry UUIDs, catalog IDs and normalized links in the file.
+- A manual entry needs a title. A catalog ID must exist in the server catalog with the same category.
+- An entry UUID that belongs to another owner is not available.
+
+Preview:
+
+- The preview compares the backup with the active library. It reports the counts of current, incoming, added, updated, unchanged and removed entries.
+- A conflict is an updated entry whose current `updatedAt` is later than the backup copy.
+- The confirmation token is signed and expires after 5 minutes. It binds the owner, the SHA-256 digest of the canonical backup and the library revision.
+
+Restore:
+
+- Restore checks the token, the digest and the revision again under the owner lock. A change after the preview returns `CONFLICT`.
+- A backup without entries needs `confirmEmpty: true`.
+- One transaction publishes tombstones for removed entries first, then the added and updated entries. Unchanged entries keep their versions.
+- Each published entry gets a new server version and a change record. The server stores its catalog snapshot. A manual entry gets an empty snapshot. Timestamps come from the backup.
 
 ## Server-managed parser configuration
 

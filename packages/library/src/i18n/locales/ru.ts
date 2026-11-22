@@ -334,4 +334,40 @@ export const RU = {
   reviewCount_few: '{{count, number}} сохранённых изменения требуют проверки.',
   reviewCount_other: '{{count, number}} сохранённых изменений требуют проверки.',
   reviewCount_many: '{{count, number}} сохранённых изменений требуют проверки.',
+  backup: 'Резервная копия',
+  backupDescription:
+    'Экспортируйте библиотеку в backup.json или замените библиотеку резервной копией.',
+  backupExport: 'Экспорт',
+  backupRestore: 'Восстановить',
+  backupRestoreFullPage: 'Восстановить на полной странице',
+  backupUnavailable: 'Библиотека ещё недоступна.',
+  backupExportFailed: 'Не удалось экспортировать резервную копию.',
+  backupInvalid_one: 'В резервной копии {{count, number}} ошибка. Библиотека не изменилась.',
+  backupInvalid_few: 'В резервной копии {{count, number}} ошибки. Библиотека не изменилась.',
+  backupInvalid_other: 'В резервной копии {{count, number}} ошибок. Библиотека не изменилась.',
+  backupInvalid_many: 'В резервной копии {{count, number}} ошибок. Библиотека не изменилась.',
+  backupInvalidUnknown: 'Резервная копия недействительна. Библиотека не изменилась.',
+  backupIssueEntry: 'Запись {{index, number}}',
+  backupIssueFile: 'Файл',
+  backupIssuesMore: 'И ещё {{count, number}}.',
+  backupPreviewTitle: 'Заменить библиотеку?',
+  backupPreviewDescription:
+    'Библиотека: {{current, number}} записей. Резервная копия: {{incoming, number}} записей. Добавить: {{added, number}}. Изменить: {{updated, number}}. Без изменений: {{unchanged, number}}. Удалить: {{removed, number}}.',
+  backupConflicts_one:
+    '{{count, number}} изменяемая запись изменилась после создания копии. Восстановление заменит её.',
+  backupConflicts_few:
+    '{{count, number}} изменяемые записи изменились после создания копии. Восстановление заменит их.',
+  backupConflicts_other:
+    '{{count, number}} изменяемых записей изменились после создания копии. Восстановление заменит их.',
+  backupConflicts_many:
+    '{{count, number}} изменяемых записей изменились после создания копии. Восстановление заменит их.',
+  backupDownloadCurrent: 'Скачать текущую библиотеку',
+  backupConfirm: 'Заменить библиотеку',
+  backupEmptyTitle: 'Очистить библиотеку?',
+  backupEmptyDescription:
+    'В резервной копии нет записей. Восстановление удалит из библиотеки все записи: {{count, number}}.',
+  backupEmptyConfirm: 'Очистить библиотеку',
+  backupStale: 'Библиотека изменилась после предпросмотра. Выберите файл снова.',
+  backupFailed: 'Не удалось восстановить резервную копию. Библиотека не изменилась.',
+  backupRestored: 'Библиотека восстановлена.',
 } satisfies Record<keyof typeof EN, string>;

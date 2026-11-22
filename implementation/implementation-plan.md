@@ -20,6 +20,7 @@ Read these first. Search the code only when the list is not sufficient.
 | 10   | Shared UI, English and Russian, navigation, settings, preferences                                              |
 | 13   | Smotret anime catalog (no genre filter, no original-title language)                                            |
 | 14   | Kinopoisk film and TV catalog (no genre mapping or filter, no episode totals, production access not confirmed) |
+| 17   | Backup and restore: export, validation, preview, confirmation, atomic replacement, offline extension restore   |
 
 ## 11. Library browsing and editing
 
@@ -81,19 +82,6 @@ Tests: `tests/page-rules/page-rules.spec.ts` (live, `pnpm test:page-rules`), `te
 - [x] Limit extension permissions.
 - [x] Netflix and Crunchyroll rules (revision 2).
 - [x] Test all required sites. Live checks of `kinopoisk.ru`, `hd.kinopoisk.ru`, `jut.su`, `crunchyroll.com` and a `kino.mail.ru` series page are open. See the [check report](page-rules-check.md).
-
-## 17. Backup and restore
-
-Specs: [BACKUP-01–05](../specs/functionality.md#8-backup-and-restore), [Backup and restore](../specs/backend.md#backup-and-restore), [Schemas and recovery](../specs/extension-storage.md#schemas-and-recovery), [Domain contract](../specs/domain-contract.md).
-
-Code: `apps/api/src/library/`, `apps/extension/src/library/recovery.ts`, `apps/extension/src/library/database.ts`, `packages/library/src/pages/settings-page/`. No backup code exists yet.
-
-- [ ] Export the library to JSON.
-- [ ] Validate imports. Reject unsupported formats.
-- [ ] Preview and conflicts before replacement.
-- [ ] Confirmation before restore.
-- [ ] Atomic apply and rollback.
-- [ ] Offline backup and restore in the extension.
 
 ## 18. Library sharing
 

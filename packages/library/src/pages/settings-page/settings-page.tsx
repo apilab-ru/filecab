@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { AuthControls } from '../../components/auth-controls/auth-controls';
+import { BackupSettings } from '../../components/backup-settings/backup-settings';
 import '../../styles/interface-controls.scss';
 import './settings-page.scss';
 
@@ -10,7 +11,7 @@ import { Theme } from '../../models/theme';
 import type { SettingsPageProps } from './model-settings-page';
 
 /** Renders account, synchronization, appearance, and popup language settings. */
-export function SettingsPage({ popup }: SettingsPageProps) {
+export function SettingsPage({ popup, restoreUrl }: SettingsPageProps) {
   const { t } = useTranslation();
   const { locale, theme, setLocale, setTheme } = useInterfacePreferences();
   const { syncSettings, setSyncPanel } = useSyncSettings();
@@ -49,6 +50,10 @@ export function SettingsPage({ popup }: SettingsPageProps) {
           </p>
           <div className="settings-sync__panel" ref={setSyncPanel} />
         </div>
+      </section>
+      <section className="settings-card">
+        <h2 className="settings-card__title">{t('backup')}</h2>
+        <BackupSettings restoreUrl={restoreUrl} />
       </section>
       <section className="settings-card">
         <h2 className="settings-card__title">{t('theme')}</h2>

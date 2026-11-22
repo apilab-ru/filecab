@@ -220,3 +220,16 @@ Do not show an exact page count when the total is unknown.
 
 - Show a maximum of three toast messages at one time. Include error messages in this limit.
 - When a new message exceeds the limit, remove the oldest message.
+
+## Backup settings
+
+Settings shows a Backup section on the website and in the extension.
+
+- Export downloads `backup.json` of the active library.
+- Restore opens a file picker. An empty selection does nothing. The client does not limit the file size. The API body limit applies to the website.
+- The platform adapter validates the file. The website sends the file to the server. The extension validates it on the device.
+- Validation errors show the entry index and field path of up to 20 issues, and the total count. The library does not change.
+- The preview dialog shows the counts and conflicts. It offers a download of the current library before replacement, then Restore and Cancel.
+- A backup without entries shows a second confirmation before it can clear the library.
+- A changed library after the preview shows a conflict message. The owner must preview again.
+- In the popup, Restore opens the full-page settings.

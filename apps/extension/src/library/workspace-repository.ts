@@ -1,6 +1,7 @@
 import { WorkspaceConflictError, type WorkspaceRepository } from '@filecab/library';
 import { CatalogAssociationConflictError } from '@filecab/contracts';
 import { LocalLibraryError, type LocalLibraryRepository } from './repository';
+import { parseBackup } from './backup';
 
 /** Reports stale device revisions and association conflicts as workspace conflicts. */
 async function mapConflict<T>(action: () => Promise<T>): Promise<T> {
@@ -58,6 +59,19 @@ export function localWorkspaceRepository(repository: LocalLibraryRepository): Wo
     },
     async refresh() {
       await repository.snapshot();
+    },
+    backup: {
+      exportBackup: () => repository.exportBackup(),
+      async previewRestore(text) {
+        const backup = parseBackup(text);
+        const preview = await repository.previewBackup(backup);
+
+        return {
+          comparison: preview.comparison,
+          confirm: (confirmEmpty) =>
+            mapConflict(() => repository.restoreBackup(backup, preview, confirmEmpty)),
+        };
+      },
     },
   };
 }

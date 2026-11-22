@@ -192,7 +192,7 @@ can have format `movie`, `tv`, `special`, `ova`, `ona` or `music` and stay in th
 
 **BACKUP-04.** Before replacement, show counts and conflicts and offer a pre-restore backup. Require confirmation bound to the owner, payload digest and revision. Invalid data cannot replace the library. An empty replacement needs a separate confirmation.
 
-**BACKUP-05.** Replace atomically and publish replication tombstones. Cancel and failure keep the data. Settings and sharing stay separate. An empty file selection does nothing. Reject files over 10 MiB before parsing. Extension validation and restore work offline.
+**BACKUP-05.** Replace atomically and publish replication tombstones. Cancel and failure keep the data. Settings and sharing stay separate. An empty file selection does nothing. The API rejects backup bodies over 10 MiB before parsing. Extension validation and restore work offline.
 
 ## 9. Backend and shared contracts
 

@@ -11,7 +11,7 @@ import { useEffect, useMemo } from 'react';
 import { LocalLibraryRepository } from '../../repository';
 import type { LocalSnapshot } from '../../models/local-snapshot';
 import { exportRawLibrary } from '../../recovery';
-import { downloadJsonFile } from './download-json-file';
+import { downloadJsonFile } from '@filecab/library';
 import { SyncControls } from '../sync-controls/sync-controls';
 
 /** Keeps the same durable device library and editor visible across authentication changes. */

@@ -10,7 +10,7 @@ import { MutationError } from './proposals';
 const PREVIEW_LIFETIME_MS = 5 * 60 * 1000;
 
 /** Serializes JSON deterministically while preserving array/source order and omitting absent fields. */
-function canonical(value: unknown): string {
+export function canonical(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
 
   if (value !== null && typeof value === 'object')
@@ -39,6 +39,17 @@ export class LibraryPreviewSigner {
     return createHmac('sha256', this.secret)
       .update(`filecab-library-preview-v1:${payload}`)
       .digest();
+  }
+
+  /** Signs a confirmation for an owner-bound operation input without embedding the input. */
+  sign(ownerId: string, kind: string, input: unknown): { token: string; expiresAt: string } {
+    const expires = Date.now() + PREVIEW_LIFETIME_MS;
+    const payload = `${expires}.${this.digest(ownerId, kind, input, [])}`;
+
+    return {
+      token: `${payload}.${this.signature(payload).toString('base64url')}`,
+      expiresAt: new Date(expires).toISOString(),
+    };
   }
 
   create(

@@ -19,6 +19,12 @@ import {
   type OwnerSnapshot,
   type MergeEntriesRequest,
   type LibraryMutationPreview,
+  type Backup,
+  type BackupEntry,
+  type BackupPreview,
+  backupChanges,
+  compareBackup,
+  toBackup,
 } from '@filecab/contracts';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
@@ -26,11 +32,11 @@ import { ApiException } from '../http/api-error';
 import type { PrismaClient, Prisma } from '../generated/prisma/client';
 
 import { MutationError, patchDocument, validateEntry, proposeMerge } from './proposals';
-import { LibraryPreviewSigner } from './preview';
+import { canonical, LibraryPreviewSigner } from './preview';
+import { backupIssues } from './backup-validation';
 
 export { MutationError } from './proposals';
 
-/** Rejects a link that an update adds. Only a create can set the link; an update can remove it. */
 /** Carries a new entry without accepting client ownership or server timestamps. */
 export interface CreateEntry {
   entryId: string;
@@ -45,6 +51,42 @@ function json(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value)) as Prisma.InputJsonValue;
 }
 
+/** Gives a complete restore more time than an ordinary single-entry write. */
+const RESTORE_TRANSACTION = { maxWait: 10_000, timeout: 120_000 };
+
+/** Limits the number of validation issues in one response. */
+const MAX_BACKUP_ISSUES = 1000;
+
+/** Binds a restore confirmation to the backup content and the library revision. */
+function backupInput(backup: Backup, revision: string): { digest: string; revision: string } {
+  return { digest: createHash('sha256').update(canonical(backup)).digest('hex'), revision };
+}
+
+/** Builds a server document from a backup entry. The caller supplies the snapshot. */
+function restoredEntry(entry: BackupEntry, entryId: string, snapshot: Snapshot): ServerEntry {
+  return {
+    schemaVersion: 1,
+    entryId,
+    catalogId: entry.catalogId,
+    category: entry.category,
+    userTitle: entry.userTitle,
+    status: entry.status,
+    rating: entry.rating,
+    progress: entry.progress,
+    comment: entry.comment,
+    sources: entry.sources.map((source) => ({
+      originalUrl: source.originalUrl,
+      normalizedUrl: source.normalizedUrl,
+      policyVersion: source.policyVersion,
+    })),
+    snapshot,
+    createdAt: entry.createdAt,
+    updatedAt: entry.updatedAt,
+    serverVersion: '0',
+    deleted: false,
+  };
+}
+
 /** Serializes every mutation for one owner until its documents and change feed commit. */
 export class LibraryMutationService {
   constructor(
@@ -55,6 +97,7 @@ export class LibraryMutationService {
   private async transaction<T>(
     ownerId: string,
     action: (tx: Prisma.TransactionClient) => Promise<T>,
+    options?: { maxWait: number; timeout: number },
   ): Promise<T> {
     try {
       return await this.database.$transaction(async (tx) => {
@@ -65,7 +108,7 @@ export class LibraryMutationService {
         if (!libraries.length) throw new MutationError(ApiErrorCode.NotFound);
 
         return action(tx);
-      });
+      }, options);
     } catch (error) {
       if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002')
         throw new MutationError(ApiErrorCode.Conflict);
@@ -642,5 +685,207 @@ export class LibraryMutationService {
 
       return [saved, tombstone];
     });
+  }
+
+  /** Exports the active owner library in the current backup format. */
+  async exportBackup(ownerId: string): Promise<Backup> {
+    return toBackup((await this.snapshot(ownerId)).entries);
+  }
+
+  /** Rejects file, catalog and identity errors of a backup with entry-indexed issues. */
+  private async checkBackup(
+    tx: Prisma.TransactionClient,
+    ownerId: string,
+    backup: Backup,
+  ): Promise<void> {
+    const issues = backupIssues(backup);
+    const catalogIds = [
+      ...new Set(backup.entries.flatMap((entry) => (entry.catalogId ? [entry.catalogId] : []))),
+    ];
+    const catalogs = new Map(
+      (
+        await tx.catalogItem.findMany({
+          where: { id: { in: catalogIds } },
+          select: { id: true, category: true },
+        })
+      ).map((catalog) => [catalog.id, catalog.category]),
+    );
+    const foreign = new Set(
+      (
+        await tx.libraryEntry.findMany({
+          where: {
+            id: { in: backup.entries.map((entry) => entry.entryId) },
+            ownerId: { not: ownerId },
+          },
+          select: { id: true },
+        })
+      ).map((row) => row.id),
+    );
+
+    backup.entries.forEach((entry, index) => {
+      if (entry.catalogId && catalogs.get(entry.catalogId.toLowerCase()) !== entry.category)
+        issues.push({
+          path: ['entries', index, 'catalogId'],
+          message: 'The catalog item is missing or belongs to another category.',
+        });
+
+      if (foreign.has(entry.entryId.toLowerCase()))
+        issues.push({
+          path: ['entries', index, 'entryId'],
+          message: 'The entry ID is not available.',
+        });
+    });
+
+    if (issues.length)
+      throw new ApiException(
+        400,
+        ApiErrorCode.ValidationError,
+        'Backup validation failed',
+        false,
+        issues.slice(0, MAX_BACKUP_ISSUES),
+      );
+  }
+
+  /** Validates a backup and signs a confirmation bound to the owner, digest and revision. */
+  async previewBackup(ownerId: string, backup: Backup): Promise<BackupPreview> {
+    const previews = this.previews;
+
+    if (!previews) throw new MutationError(ApiErrorCode.Conflict);
+
+    return this.database.$transaction(
+      async (tx) => {
+        const library = await tx.userLibrary.findUnique({ where: { ownerId } });
+
+        if (!library) throw new MutationError(ApiErrorCode.NotFound);
+
+        await this.checkBackup(tx, ownerId, backup);
+        const rows = await tx.libraryEntry.findMany({ where: { ownerId, deleted: false } });
+        const revision = library.revision.toString();
+        const { token, expiresAt } = previews.sign(
+          ownerId,
+          'backup-restore',
+          backupInput(backup, revision),
+        );
+
+        return {
+          schemaVersion: 1,
+          confirmationToken: token,
+          expiresAt,
+          revision,
+          comparison: compareBackup(
+            rows.map((row) => row.document as unknown as ServerEntry),
+            backup,
+          ),
+        };
+      },
+      { isolationLevel: 'RepeatableRead' },
+    );
+  }
+
+  /**
+   * Replaces the active library in one transaction. Removed entries become tombstones first,
+   * then added and updated entries are published. Unchanged entries keep their versions.
+   */
+  async restoreBackup(
+    ownerId: string,
+    backup: Backup,
+    confirmationToken: string,
+    confirmEmpty = false,
+  ): Promise<OwnerSnapshot> {
+    const previews = this.previews;
+
+    if (!previews) throw new MutationError(ApiErrorCode.Conflict);
+
+    if (!backup.entries.length && !confirmEmpty)
+      throw new MutationError(ApiErrorCode.ValidationError, {
+        path: ['confirmEmpty'],
+        message: 'An empty backup needs a separate confirmation.',
+      });
+
+    await this.transaction(
+      ownerId,
+      async (tx) => {
+        const library = await tx.userLibrary.findUniqueOrThrow({ where: { ownerId } });
+        previews.verify(
+          confirmationToken,
+          ownerId,
+          'backup-restore',
+          backupInput(backup, library.revision.toString()),
+          [],
+        );
+        await this.checkBackup(tx, ownerId, backup);
+
+        const current = new Map(
+          (await tx.libraryEntry.findMany({ where: { ownerId } })).map((row) => [
+            row.id,
+            row.document as unknown as ServerEntry,
+          ]),
+        );
+        const incoming = new Set(backup.entries.map((entry) => entry.entryId.toLowerCase()));
+        const removed = [...current.entries()].filter(
+          ([id, entry]) => !entry.deleted && !incoming.has(id),
+        );
+        const changed = backup.entries.filter((entry) =>
+          backupChanges(current.get(entry.entryId.toLowerCase()), entry),
+        );
+        const released = [
+          ...removed.map(([id]) => id),
+          ...changed.flatMap((entry) => {
+            const id = entry.entryId.toLowerCase();
+
+            return current.has(id) ? [id] : [];
+          }),
+        ];
+
+        // Release link and catalog claims first, so entries can exchange them in any order.
+        await tx.sourceAssociation.deleteMany({ where: { ownerId, entryId: { in: released } } });
+        await tx.libraryEntry.updateMany({
+          where: { ownerId, id: { in: released } },
+          data: { deleted: true },
+        });
+
+        const catalogs = new Map(
+          (
+            await tx.catalogItem.findMany({
+              where: {
+                id: {
+                  in: changed.flatMap((entry) => (entry.catalogId ? [entry.catalogId] : [])),
+                },
+              },
+            })
+          ).map((catalog) => [catalog.id, catalog.snapshot as unknown as Snapshot]),
+        );
+        const now = Date.now();
+
+        for (const [, entry] of removed)
+          await this.publish(tx, ownerId, {
+            ...entry,
+            deleted: true,
+            updatedAt: new Date(Math.max(now, Date.parse(entry.updatedAt))).toISOString(),
+          });
+
+        for (const entry of changed) {
+          const before = current.get(entry.entryId.toLowerCase());
+          let snapshot = emptySnapshot();
+
+          if (entry.catalogId && before?.catalogId === entry.catalogId) snapshot = before.snapshot;
+          else if (entry.catalogId)
+            snapshot = mergeCatalogSnapshots(
+              emptySnapshot(),
+              catalogs.get(entry.catalogId.toLowerCase()) ?? emptySnapshot(),
+            );
+
+          await this.publish(
+            tx,
+            ownerId,
+            restoredEntry(entry, before?.entryId ?? entry.entryId, snapshot),
+            !before,
+          );
+        }
+      },
+      RESTORE_TRANSACTION,
+    );
+
+    return this.snapshot(ownerId);
   }
 }

@@ -1,5 +1,6 @@
 import { createContext } from 'react';
 import type { CatalogRecord, Category, Entry, EntryPatch } from '@filecab/contracts';
+import type { BackupRepository } from './backup';
 
 /** Pairs an entry with the platform revision used for optimistic concurrency. */
 export interface WorkspaceRow {
@@ -44,6 +45,8 @@ export interface WorkspaceRepository {
   /** Restores a tombstone that `remove` returned. */
   restore(tombstone: WorkspaceRow): Promise<void>;
   refresh(): Promise<void>;
+  /** Exports and restores the complete library. */
+  backup?: BackupRepository;
 }
 
 /** Supplies the complete active owner or device library to catalog matching. */

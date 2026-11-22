@@ -39,3 +39,6 @@ export { WorkspaceProvider } from './providers/workspace-provider/workspace-prov
 export { useWorkspace } from './hooks/use-workspace';
 export type { WorkspaceRepository, WorkspaceRow, WorkspacePreview } from './models/workspace';
 export { WorkspaceConflictError } from './models/workspace';
+export { BackupValidationError } from './models/backup';
+export type { BackupRepository, BackupRestorePreview } from './models/backup';
+export { downloadJsonFile } from './domain/download-json-file';
