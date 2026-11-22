@@ -18,82 +18,28 @@ Read these first. Search the code only when the list is not sufficient.
 | 8    | Offline extension storage with RxDB and Dexie                                                                  |
 | 9    | Extension replication, linking, conflict recovery and reset                                                    |
 | 10   | Shared UI, English and Russian, navigation, settings, preferences                                              |
+| 11   | Library browsing and editing: search, filters, sorting, pagination, editors, cards, Undo, one read-only link   |
+| 12   | Catalog services: capabilities, search, reference resolution, cache, genre administration                      |
 | 13   | Smotret anime catalog (no genre filter, no original-title language)                                            |
 | 14   | Kinopoisk film and TV catalog (no genre mapping or filter, no episode totals, production access not confirmed) |
+| 15   | Catalog search and editing: all clients, popup search, matching, merge with the latest link                    |
+| 16   | Page extraction: safe parser rules, page link save and move, limited permissions, Netflix and Crunchyroll      |
 | 17   | Backup and restore: export, validation, preview, confirmation, atomic replacement, offline extension restore   |
-
-## 11. Library browsing and editing
-
-- [x] Search, filters, sorting and pagination.
-- [x] Store user preferences.
-- [x] Match the dark mockup and verify layouts at 732 px height.
-- [x] Connect website and extension data to the shared screens.
-- [x] Complete entry editors and manual creation.
-- [x] Show cards with metadata, progress and ratings.
-- [x] Add Undo and conflict dialogs.
-- [x] Test website and extension workflows.
-- [x] One read-only viewing link that an edit can only remove (EDIT-03, EDIT-04).
-- [x] Show description, genres and viewing links (LIB-01).
-- [x] Update the old browser tests to the current routes and controls.
-
-## 12. Catalog services
-
-- [x] Provider capabilities and catalog IDs.
-- [x] Catalog search and reference resolution.
-- [x] Metadata and search cache with expiry and stale data.
-- [x] Genre administration and provider limits.
-- [x] Complete catalog integration tests.
-- [x] Verify genre mappings with providers.
-
-## 15. Catalog search and editing
-
-Specs: [MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching), [SEARCH and EDIT](../specs/functionality.md#5-catalog-search-editing-and-saving), [Catalog search](../specs/library-ui.md#catalog-search), [Popup search](../specs/library-ui.md#popup-search), [Matching](../specs/library-ui.md#matching-results-to-the-library), [Add and rating](../specs/library-ui.md#add-and-rating), [Association and merge](../specs/library-ui.md#association-and-merge), [Merge](../specs/backend.md#merge), [Catalog association](../specs/backend.md#catalog-association), [Search contract](../specs/catalog-spec.md#search-contract).
-
-Code: `packages/library/src/components/catalog-result/`, `packages/library/src/components/popup-card/`, `packages/library/src/components/progress-control/`, `packages/library/src/components/category-tabs/`, `packages/library/src/pages/popup-search-page/`, `packages/library/src/hooks/use-catalog-select.ts`, `packages/library/src/components/catalog-results/`, `packages/library/src/components/workspace-editor/`, `packages/library/src/pages/catalog-page/`, `packages/library/src/hooks/use-catalog-search.ts`, `packages/library/src/domain/catalog-selection.ts`, `apps/extension/src/popup/`, `apps/web/src/online-library/`, `apps/api/src/library/proposals.ts`, `apps/api/src/library/mutation.service.ts`, `apps/extension/src/library/repository.ts`, `apps/extension/src/library/merge-recovery.ts`.
-
-Tests: `tests/e2e/catalog.spec.ts`, `tests/e2e/catalog-extension.spec.ts`, `tests/integration/catalog-association.test.ts`.
-
-- [x] Connect catalog search to all clients.
-- [x] Debounce, cancellation, pagination and error states.
-- [x] Open the editor when a user selects a title.
-- [x] Select a single popup result automatically, one time for each query.
-- [x] Popup search: category select, title field and compact results.
-- [x] Merge keeps the link of the entry with the latest modified time.
-- [x] Remove the URL field from website manual entry.
-- [x] Show saved entries and personal progress in results.
-- [x] Match catalog results with manual entries.
-- [x] Merge confirmation that keeps user data.
-
-## 16. Page extraction
-
-Specs: [PAGE-01–04 and MATCH-01–03](../specs/functionality.md#4-page-extraction-and-matching), [EDIT-03–04](../specs/functionality.md#5-catalog-search-editing-and-saving), [Popup routes](../specs/functionality.md#23-popup-routes), [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability), [Parser configuration](../specs/backend.md#server-managed-parser-configuration), [Viewing sources](../specs/backend.md#viewing-sources), [Source normalization](../specs/domain-contract.md#viewing-source-normalization), [Entries and revisions](../specs/extension-storage.md#entries-and-revisions).
-
-Code: `packages/contracts/src/domain/page-rules.json`, `packages/contracts/src/models/page-rules.ts`, `apps/extension/src/page/`, `apps/api/src/page-rules/`, `packages/library/src/pages/page-capture-page/`, `packages/library/src/domain/page-match.ts`, `apps/extension/src/popup/`, `apps/extension/src/library/repository.ts`, `apps/api/src/library/mutation.service.ts`.
-
-Tests: `tests/page-rules/page-rules.spec.ts` (live, `pnpm test:page-rules`), `tests/e2e/page-capture.spec.ts`, `apps/api/src/page-rules/served-page-rules.unit.test.ts`, `apps/api/src/library/library.integration.test.ts`, `tests/e2e/extension-storage.spec.ts`.
-
-- [x] Extract titles and IDs from supported sites.
-- [x] Safe parser rules without remote code.
-- [x] Parser configuration, validation and rollback.
-- [x] Manual search when extraction fails.
-- [x] Complete entry editors and manual creation.
-- [x] Save the page URL with every Page tab save, without a confirmation (owner decision).
-- [x] Replace and move the page link on a Page tab save (server and extension).
-- [x] Limit extension permissions.
-- [x] Netflix and Crunchyroll rules (revision 2).
-- [x] Test all required sites. Live checks of `kinopoisk.ru`, `hd.kinopoisk.ru`, `jut.su`, `crunchyroll.com` and a `kino.mail.ru` series page are open. See the [check report](page-rules-check.md).
 
 ## 18. Public library
 
-Specs: [Public library](../specs/backend.md#public-library).
+Specs: [Public library](../specs/backend.md#public-library), [Public library settings](../specs/library-ui.md#public-library-settings), [BACKUP-05](../specs/functionality.md#8-backup-and-restore) (the username stays out of backups).
 
-Code: `apps/api/src/library/`, `apps/api/src/auth/`, `apps/web/src/`, `packages/library/src/pages/settings-page/`. No public library code exists yet.
+Code: `apps/api/prisma/schema.prisma` (username column and migration), `apps/api/src/auth/` (account username routes), `apps/api/src/library/` (public projection), `apps/api/src/http/application.ts` (headers and rate limit), `packages/library/src/pages/settings-page/`, `packages/library/src/components/library-browser/` (read-only mode), `apps/web/src/`, `apps/extension/src/popup/`. No public library code exists yet.
 
-- [ ] Username field in Settings. An empty username turns public access off.
-- [ ] Unique lowercase usernames and the account username API.
-- [ ] Public read-only library page at the username address.
+Tests: `apps/api/src/library/library.integration.test.ts`, `tests/e2e/website.spec.ts`, `tests/e2e/extension-storage.spec.ts`.
+
+- [ ] Username column, migration and the account username API. Unique lowercase usernames.
+- [ ] Username field in Settings with the privacy notice. An empty username turns public access off.
+- [ ] Public read-only library page at `/u/:username`.
 - [ ] Exclude hidden entries and private data.
-- [ ] Block private API access through the public route.
+- [ ] `no-store`, `noindex`, referrer policy and a rate limit on the public route.
+- [ ] The public route gives no write, owner lookup or sync access.
 
 ## 19. External list synchronization
 
