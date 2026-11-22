@@ -83,17 +83,17 @@ Tests: `tests/page-rules/page-rules.spec.ts` (live, `pnpm test:page-rules`), `te
 - [x] Netflix and Crunchyroll rules (revision 2).
 - [x] Test all required sites. Live checks of `kinopoisk.ru`, `hd.kinopoisk.ru`, `jut.su`, `crunchyroll.com` and a `kino.mail.ru` series page are open. See the [check report](page-rules-check.md).
 
-## 18. Library sharing
+## 18. Public library
 
-Specs: [Unlisted read-only sharing](../specs/backend.md#unlisted-read-only-sharing).
+Specs: [Public library](../specs/backend.md#public-library).
 
-Code: `apps/api/src/library/`, `apps/api/src/auth/`, `apps/web/src/`. No sharing code exists yet.
+Code: `apps/api/src/library/`, `apps/api/src/auth/`, `apps/web/src/`, `packages/library/src/pages/settings-page/`. No public library code exists yet.
 
-- [ ] Private read-only links.
+- [ ] Username field in Settings. An empty username turns public access off.
+- [ ] Unique lowercase usernames and the account username API.
+- [ ] Public read-only library page at the username address.
 - [ ] Exclude hidden entries and private data.
-- [ ] Public read-only library page.
-- [ ] Revocation and rotation.
-- [ ] Block private API access through shared links.
+- [ ] Block private API access through the public route.
 
 ## 19. External list synchronization
 

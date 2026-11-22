@@ -15,16 +15,16 @@ describe target behavior, not implementation status.
 
 ## Feature specifications
 
-| Document                                           | Owns                                                                              |
-| -------------------------------------------------- | --------------------------------------------------------------------------------- |
-| [Backend](backend.md)                              | Sessions, library API, replication server, sharing, parser config, API foundation |
-| [Extension storage](extension-storage.md)          | Device persistence, recovery and client replication                               |
-| [Library UI](library-ui.md)                        | Library and catalog screens, cards, ordering and loading                          |
-| [Catalog](catalog-spec.md)                         | Provider-independent discovery, metadata, genres and cache                        |
-| [External list sync](user-list-sync-spec.md)       | Common reconciliation, jobs, privacy and removal rules                            |
-| [Kinopoisk Dev](integration-kinopoisk-spec.md)     | Film and TV catalog adapter                                                       |
-| [Smotret Anime](integration-smotret-anime-spec.md) | Anime catalog adapter                                                             |
-| [Shikimori](integration-shikimori-spec.md)         | Personal-list adapter, OAuth and field mapping                                    |
+| Document                                           | Owns                                                                                     |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| [Backend](backend.md)                              | Sessions, library API, replication server, public library, parser config, API foundation |
+| [Extension storage](extension-storage.md)          | Device persistence, recovery and client replication                                      |
+| [Library UI](library-ui.md)                        | Library and catalog screens, cards, ordering and loading                                 |
+| [Catalog](catalog-spec.md)                         | Provider-independent discovery, metadata, genres and cache                               |
+| [External list sync](user-list-sync-spec.md)       | Common reconciliation, jobs, privacy and removal rules                                   |
+| [Kinopoisk Dev](integration-kinopoisk-spec.md)     | Film and TV catalog adapter                                                              |
+| [Smotret Anime](integration-smotret-anime-spec.md) | Anime catalog adapter                                                                    |
+| [Shikimori](integration-shikimori-spec.md)         | Personal-list adapter, OAuth and field mapping                                           |
 
 ## Delivery and ideas
 

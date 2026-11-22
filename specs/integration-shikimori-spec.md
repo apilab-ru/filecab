@@ -24,7 +24,7 @@ metadata can support import only.
 - Obey the returned expiry.
 - Serialize refresh for each connection. Replace rotating token pairs atomically.
 - Encrypt tokens at rest.
-- Exclude tokens from library sync, sharing, exports, client logs and Swagger examples.
+- Exclude tokens from library sync, the public library, exports, client logs and Swagger examples.
 - A failed or revoked refresh pauses the connection until reconnection. It deletes no data.
 
 ### Reading the anime list

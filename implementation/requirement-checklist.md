@@ -35,7 +35,7 @@ change logs before 18 November 2026.
 - [x] [Library data](../specs/backend.md#library-data) (steps 4, 7): Done. [Step 4](#step-4-transactional-persistence), [step 7](#step-7-library-api)
 - [x] [Library operations](../specs/backend.md#library-operations) (step 7): Done. [Step 7](#step-7-library-api)
 - [x] [Extension replication](../specs/backend.md#extension-replication) (step 9): Done. [Step 9](#step-9-extension-replication). History is kept without a time limit.
-- [ ] [Unlisted read-only sharing](../specs/backend.md#unlisted-read-only-sharing) (step 18): Pending.
+- [ ] [Public library](../specs/backend.md#public-library) (step 18): Pending.
 - [x] [Backup and restore](../specs/backend.md#backup-and-restore) (step 17): Done. [Step 17](#step-17-backup-and-restore)
 - [x] [Server-managed parser configuration](../specs/backend.md#server-managed-parser-configuration) (step 16): Done. [Step 16](#step-16-page-extraction)
 - [x] [API foundation](../specs/backend.md#api-foundation) (step 5): Done. [Step 5](#step-5-api-foundation)

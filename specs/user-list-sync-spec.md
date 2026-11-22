@@ -33,7 +33,7 @@ Embedded title metadata can support import and identity. It does not enable cata
 - Verify the remote identity through the authorized API. Never trust a submitted name or ID.
 - Google stays the Filecab login.
 - Encrypt provider credentials with a server key. They must be recoverable for upstream refresh, so a hash is not sufficient.
-- Exclude credentials from client responses, logs, backups, sharing, replication and content scripts.
+- Exclude credentials from client responses, logs, backups, the public library, replication and content scripts.
 - One connection for each provider and Filecab account. One Filecab owner for each remote account.
 - Linking a different remote account needs confirmation, a new generation and new mappings and jobs.
 

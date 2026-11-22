@@ -3,7 +3,7 @@
 ## Purpose
 
 This document defines the private library API, Google sessions, extension replication,
-sharing and parser configuration. [Domain contract](domain-contract.md) owns shared
+the public library and parser configuration. [Domain contract](domain-contract.md) owns shared
 models. [Catalog](catalog-spec.md) owns catalog services. [Extension storage](extension-storage.md)
 owns the client side of replication.
 
@@ -353,15 +353,29 @@ Keep one fixed device library visible across login, logout and account changes,
 including unsaved input. Linking and import require a revision-bound preview, explicit
 confirmation, identity and source conflict checks and retry-safe writes.
 
-## Unlisted read-only sharing
+## Public library
 
-### Sharing controls
+### Username
 
-An owner can enable, inspect, disable and rotate an anonymous read-only link.
+An owner can set a username in Settings. The username is the address of a public
+read-only copy of the owner's server library. There are no share tokens or share links to
+manage.
 
-- A token has at least 128 bits of cryptographic entropy.
-- Store only a hash of the token.
-- Return the plain token only at creation and rotation. Replace a lost token. Do not reconstruct it.
+- A username has 3 to 32 characters: lowercase Latin letters, digits, `-` and `_`. It starts with a letter or a digit.
+- Store the username in lowercase. Compare usernames without case. A username belongs to one account only.
+- A username that another account uses gets a `CONFLICT` error.
+- An empty username turns public access off. This is the default.
+- A changed username stops the old address at once. The new address works at once.
+- Account deletion removes the username.
+
+| Operation      | Route                              | Access                                |
+| -------------- | ---------------------------------- | ------------------------------------- |
+| Read username  | `GET /account/username`            | Owner session                         |
+| Set or clear   | `PUT /account/username`            | Owner session, `{ username: string }` |
+| Public library | `GET /public/libraries/{username}` | Anonymous                             |
+
+The extension shows the username field only when the device is linked to an account. The
+public library shows the server library of that account, not the device library.
 
 ### Shared data
 
@@ -371,17 +385,19 @@ An owner can enable, inspect, disable and rotate an anonymous read-only link.
 | Poster, year and format, when available | Notes and viewing URLs                                 |
 | Status, rating, progress                | Account and email data, sessions, replication metadata |
 
-Apply filters, order and counts only to the shared projection. A token gives no write,
-owner lookup or sync access. Shared pages have no persistent offline library.
+Apply filters, order and counts only to the shared projection. The public route gives no
+write, owner lookup or sync access. Public pages have no persistent offline library.
 
 ### Freshness and privacy
 
+- Anyone who knows or guesses a username can see that public library. Settings tells the owner this before they save a username.
 - Serve committed data with `Cache-Control: no-store`, `noindex` and a restrictive referrer policy.
-- Redact tokens in logs.
-- Unknown and revoked links get a not-found response that does not show if the link existed.
-- Exclude shared lists from discovery and sitemaps.
+- Exclude public libraries from discovery and sitemaps.
+- An unknown username and an empty username get the same not-found response.
+- Limit the rate of public library requests from one client.
 
-Revocation blocks later requests. It cannot remove content that a viewer already saw or copied.
+A cleared or changed username blocks later requests. It cannot remove content that a
+viewer already saw or copied.
 
 ## Backup and restore
 
@@ -536,7 +552,7 @@ the CSRF header. Use synthetic examples. Add the DTO and its documentation in th
 
 Test ownership, identity collisions, concurrent duplicates, stale versions, atomic source
 moves, merges and restores, delete and Undo, commit-safe checkpoints, batch retries,
-rejected-intent recovery, account switching, history reset, OAuth replay, sharing privacy
+rejected-intent recovery, account switching, history reset, OAuth replay, public library privacy
 and revocation, provider failure and parser rollback.
 
 Test idle and absolute expiry, rotation, replay, concurrent refresh, logout and all-session
