@@ -1,6 +1,7 @@
 export { ApplicationShell } from './components/application-shell/application-shell';
 export { LibraryMode, Theme, websitePreferences } from './models/preferences';
 export { LibraryLayout } from './models/library-layout';
+export { RouterMode } from './models/router-mode';
 export { LibrarySort } from './models/library-sort';
 export { SortDirection } from './models/sort-direction';
 export type { InterfacePreferences, PreferenceStorage } from './models/preferences';

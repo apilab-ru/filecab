@@ -52,7 +52,9 @@ Do not select the layout with a `popup` boolean. Do not forward layout-specific 
 | `Popup`     | `apps/extension/src/popup/components/popup/`: popup routes and navigation |
 | `PopupPage` | `apps/extension/src/popup/pages/popup-page/`: popup Page route            |
 
-- Use hash-based React Router routes and page components.
+- Use React Router routes and page components. Each entry point passes `routerMode` to `ApplicationShell`.
+- The website uses path routes, for example `/library/anime`. The website host must serve `index.html` for every application path.
+- Extension pages use hash routes, for example `full-page.html#/library/anime`, because extension pages are static files.
 - Get category and mode from the route. Do not use interface context or a second parser.
 - `FullPage` passes the category through `renderLibrary`. `Popup` navigates directly.
 - Keep adapters and editors mounted during navigation.
@@ -68,7 +70,7 @@ Do not select the layout with a `popup` boolean. Do not forward layout-specific 
 ## Local state
 
 - Use component-scoped Zustand stores. Surfaces do not share drafts or filters.
-- URLs can hold non-sensitive filters and sort. Keep website query parameters.
+- URLs can hold non-sensitive filters and sort. Keep query parameters in the current screen. A change of mode keeps only the layout.
 - Publish sync settings through `useSyncSettings`, not through interface context or page props.
 - Store only serializable status. Callbacks stay in memory.
 - Restored state cannot enable refresh until a live adapter registers it.

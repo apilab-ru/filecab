@@ -270,7 +270,7 @@ test('website editor keeps a conflicted draft, removes the link, deletes with Un
   context,
 }) => {
   const state = await backend(context, [saved()]);
-  await page.goto('/#/library/films');
+  await page.goto('/library/films');
   await expect(page.locator('.library-card__title:visible')).toHaveText('Catalog title');
   const card = page.locator('.library-card:visible').first();
   await expect(card.locator('summary')).toHaveCount(0);
@@ -331,7 +331,7 @@ test('catalog debounce, late responses, errors and hasMore retain the latest sea
   context,
 }) => {
   const state = await backend(context);
-  await page.goto('/#/catalog/films');
+  await page.goto('/catalog/films');
   await expect(page.locator('.library-card__title:visible')).toHaveText('Catalog title');
   const query = page.getByRole('searchbox', { name: 'Search catalog' });
   const baseline = state.searches.length;
@@ -367,7 +367,7 @@ test('selecting a result prepares an unsaved editor, changes the status and save
   context,
 }) => {
   const state = await backend(context);
-  await page.goto('/#/catalog/films');
+  await page.goto('/catalog/films');
   const card = page.locator('.catalog-page .library-card');
   await expect(card).toBeVisible();
   await expect(card.locator('summary')).toHaveCount(0);
@@ -406,7 +406,7 @@ test('direct Add retries failures and switches the retained result to personal r
 }) => {
   const state = await backend(context);
   state.failSave = true;
-  await page.goto('/#/catalog/films');
+  await page.goto('/catalog/films');
   const card = page.locator('.catalog-page .library-card');
   await card.getByRole('button', { name: 'Add title', exact: true }).click();
   await expect(card.getByRole('alert')).toContainText('Save failed');
@@ -434,7 +434,7 @@ test('direct Add retries failures and switches the retained result to personal r
 
 test('a saved catalog result can be deleted and restored in place', async ({ page, context }) => {
   const state = await backend(context);
-  await page.goto('/#/catalog/films');
+  await page.goto('/catalog/films');
   const card = page.locator('.catalog-page .library-card');
   const trash = card.getByRole('button', { name: 'Delete', exact: true });
   const add = card.getByRole('button', { name: 'Add title', exact: true });
@@ -471,7 +471,7 @@ test('manual-to-saved catalog merge requires preview, keeps the manual UUID and 
     updatedAt: '2026-11-15T00:00:00.000Z',
   };
   const state = await backend(context, [manual, donor]);
-  await page.goto('/#/library/films');
+  await page.goto('/library/films');
   const manualCard = page.locator('.library-card:visible').filter({ hasText: manual.userTitle });
   await manualCard.getByRole('button', { name: 'Edit', exact: true }).click();
   await page.getByRole('button', { name: 'Find catalog title' }).click();
@@ -500,7 +500,7 @@ test('a lost create response and duplicate submit do not create duplicate entrie
   context,
 }) => {
   const state = await backend(context);
-  await page.goto('/#/catalog/films');
+  await page.goto('/catalog/films');
   state.lostCreateResponse = true;
   await page
     .getByRole('button', { name: 'Add title', exact: true })
@@ -521,7 +521,7 @@ test('search omits removed controls and ignores their saved URL parameters', asy
 }) => {
   const state = await backend(context);
   await page.goto(
-    '/#/catalog/films?provider=obsolete&season=winter&myAnimeListId=12&providerRating=9',
+    '/catalog/films?provider=obsolete&season=winter&myAnimeListId=12&providerRating=9',
   );
   await expect(page.locator('.library-card__title:visible')).toHaveText('Catalog title');
   for (const label of ['Provider', 'Release season', 'MyAnimeList ID', 'Provider rating']) {
@@ -559,7 +559,7 @@ test('library and catalog share card geometry and category view controls', async
     catalogId: entry.catalogId!,
     snapshot: entry.snapshot,
   }));
-  await page.goto('/#/library/films');
+  await page.goto('/library/films');
   await expect(page.locator('.library-card:visible')).toHaveCount(8);
   const libraryCard = await page.locator('.library-card:visible').first().boundingBox();
   const libraryPoster = await page.locator('.library-card__artwork:visible').first().boundingBox();
@@ -567,7 +567,7 @@ test('library and catalog share card geometry and category view controls', async
   expect(Math.abs(libraryCard!.height - 327)).toBeLessThan(2);
   expect(Math.abs(libraryPoster!.height - 208)).toBeLessThan(2);
   await page.screenshot({ path: testInfo.outputPath('library-cards.png') });
-  await page.goto('/#/catalog/films');
+  await page.goto('/catalog/films');
   await expect(page.locator('.library-card:visible')).toHaveCount(8);
   const catalogCard = await page.locator('.library-card:visible').first().boundingBox();
   const catalogPoster = await page.locator('.library-card__artwork:visible').first().boundingBox();
@@ -618,7 +618,7 @@ test('catalog shows a bottom Add button, hides unknown years and averages provid
     { value: 0, scale: 10, provenance },
   ];
   state.records = [result];
-  await page.goto('/#/catalog/films');
+  await page.goto('/catalog/films');
   const card = page.locator('.catalog-page .library-card');
   await expect(card.getByTitle('Approximate provider rating')).toHaveText('≈ 7 / 10');
   await expect(card.locator('.library-card__year')).toHaveCount(0);
@@ -642,7 +642,7 @@ test('library list headers sort all rows and stay in sync with pagination contro
     snapshot: { ...record().snapshot, year: 2024 - index, episodeCount: 24 },
   }));
   await backend(context, entries);
-  await page.goto('/#/library/films?view=list');
+  await page.goto('/library/films?view=list');
   const region = page.getByRole('region', { name: 'Library', exact: true });
   const header = region.locator('.title-collection__header');
   await header.getByRole('button', { name: 'Title', exact: true }).click();
@@ -672,7 +672,7 @@ test('catalog list headers expose only supported directions and update the provi
 }, testInfo) => {
   const state = await backend(context);
   state.ordering = ['title-asc', 'title-desc', 'year-desc'];
-  await page.goto('/#/catalog/films?view=list');
+  await page.goto('/catalog/films?view=list');
   const header = page.locator('.catalog-page .title-collection__header');
   await expect(header.getByRole('button', { name: 'Rating', exact: true })).toHaveCount(0);
   await expect(header.getByRole('button', { name: 'Status', exact: true })).toHaveCount(0);
@@ -701,7 +701,7 @@ test('library rating popup selects, highlights, clears and restores focus in gri
   const state = await backend(context, [saved(manualId, catalogId)]);
   await page.setViewportSize({ width: 1660, height: 950 });
   await page.emulateMedia({ colorScheme: 'light' });
-  await page.goto('/#/library/films');
+  await page.goto('/library/films');
   const card = page.locator('.library-card:visible');
   const trigger = card.getByRole('button', { name: 'Rating', exact: true });
   await expect(trigger).toHaveText('9 / 10');
@@ -754,7 +754,7 @@ test('card details cover the grid card and keep list controls available', async 
   entry.snapshot.year = 2024;
   entry.snapshot.episodeCount = 24;
   await backend(context, [entry]);
-  await page.goto('/#/library/films');
+  await page.goto('/library/films');
   const card = page.locator('.library-card:visible');
   const toggle = card.getByRole('button', { name: 'Details' });
   const details = card.locator('.title-details');
@@ -806,7 +806,7 @@ test('short details fit on a compact card with wrapped genres', async ({ page, c
   }));
   await backend(context, [entry]);
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto('/#/library/films');
+  await page.goto('/library/films');
   await page.getByRole('button', { name: 'Details', exact: true }).click();
   const details = page.locator('.title-details');
   await expect(details).toContainText('No description');
@@ -855,7 +855,7 @@ test('expanded library details cover bright and dark posters and fall back for m
     }),
   );
   await page.setViewportSize({ width: 1660, height: 950 });
-  await page.goto('/#/library/films');
+  await page.goto('/library/films');
   const cards = page.locator('.library-card:visible');
   await expect(cards).toHaveCount(posters.length);
   const boxes = await Promise.all(posters.map((_, index) => cards.nth(index).boundingBox()));
@@ -931,7 +931,7 @@ test('unsaved catalog cards match the mockup size and covers scale on narrow scr
     }),
   );
   await page.setViewportSize({ width: 1662, height: 946 });
-  await page.goto('/#/catalog/films');
+  await page.goto('/catalog/films');
   const card = page.locator('.catalog-page .library-card');
   await expect(card).toBeVisible();
   const box = await card.boundingBox();
@@ -956,7 +956,7 @@ test('catalog separates sort field and supported direction and can restore provi
 }) => {
   const state = await backend(context);
   state.ordering = ['year-asc', 'year-desc', 'rating-desc'];
-  await page.goto('/#/catalog/films');
+  await page.goto('/catalog/films');
   const catalog = page.locator('.catalog-page');
   const sort = catalog.getByRole('combobox', { name: 'Sort by', exact: true });
   const direction = catalog.getByRole('combobox', { name: 'Order', exact: true });
@@ -987,7 +987,7 @@ test('catalog loading skeletons match grid and list layouts and keep pagination 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.setViewportSize({ width: 1312, height: 610 });
   for (const view of ['grid', 'list']) {
-    await page.goto(`/#/catalog/films?q=older&view=${view}`);
+    await page.goto(`/catalog/films?q=older&view=${view}`);
 
     if (view === 'list') await page.reload();
 

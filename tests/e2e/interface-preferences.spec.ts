@@ -10,7 +10,7 @@ test('preference hooks update the same document when persistence is unavailable'
       throw new Error('Storage unavailable');
     };
   });
-  await page.goto('/#/settings');
+  await page.goto('/settings');
   await choose(page, 'Language', 'Русский');
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
   await expect(page.getByRole('heading', { name: 'Оформление', exact: true })).toBeVisible();
@@ -22,9 +22,9 @@ test('preference hooks update the same document when persistence is unavailable'
     'true',
   );
   await page.getByRole('button', { name: 'Библиотека', exact: true }).click();
-  await expect(page).toHaveURL(/#\/library\/anime$/);
+  await expect(page).toHaveURL(/\/library\/anime$/);
   await page.getByRole('button', { name: 'Каталог', exact: true }).click();
-  await expect(page).toHaveURL(/#\/catalog\/anime$/);
+  await expect(page).toHaveURL(/\/catalog\/anime$/);
   await page.getByRole('button', { name: 'Настройки', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Тёмное', exact: true })).toHaveAttribute(
     'aria-pressed',

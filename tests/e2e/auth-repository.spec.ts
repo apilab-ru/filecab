@@ -42,7 +42,7 @@ test('shared website controls disable pending actions, report failures and recov
       json: signedIn ? { schemaVersion: 1, ownerId: 'fixture-owner' } : { code: 'UNAUTHORIZED' },
     });
   });
-  await page.goto('/#/settings');
+  await page.goto('/settings');
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Sign out all sessions' })).toBeDisabled();

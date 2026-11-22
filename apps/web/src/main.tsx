@@ -5,6 +5,7 @@ import {
   AuthProvider,
   ApplicationShell,
   FullPage,
+  RouterMode,
   WorkspaceProvider,
   websitePreferences,
 } from '@filecab/library';
@@ -17,7 +18,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider repository={authRepository}>
-        <ApplicationShell storage={websitePreferences}>
+        <ApplicationShell storage={websitePreferences} routerMode={RouterMode.Browser}>
           <WorkspaceProvider origin={API_ORIGIN}>
             <FullPage renderLibrary={(category) => <OnlineLibrary category={category} />} />
           </WorkspaceProvider>

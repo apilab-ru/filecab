@@ -238,9 +238,10 @@ Settings shows a Backup section on the website and in the extension.
 
 Settings shows a Public library section on the website and in the extension.
 
-- The section has one username field and Save. It shows the public address when the username is not empty.
+- The section has one username field and Save. It shows the public address `/u/:username` on the website origin when the username is not empty.
 - Before the first save, the section tells the owner that anyone with the username can see the library, except hidden entries, notes and links.
 - An empty username turns public access off.
 - A username of another account shows a "username taken" message. The field keeps the input.
 - In the extension, the section is available only when the device is linked to an account.
+- The website route `/u/:username` shows the public page. An unknown or empty username shows Not found.
 - The public page uses the library browser in read-only mode: no Add, Edit, Delete or rating and status controls.

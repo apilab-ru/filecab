@@ -39,10 +39,10 @@ test('signing out clears account state across website tabs', async ({ page, cont
       json: signedIn ? { schemaVersion: 1, ownerId: 'fixture-owner' } : { code: 'UNAUTHORIZED' },
     });
   });
-  await page.goto('/#/settings');
+  await page.goto('/settings');
   await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
   const second = await context.newPage();
-  await second.goto('/#/settings');
+  await second.goto('/settings');
   await expect(second.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Sign in with Google' })).toBeVisible();
@@ -53,9 +53,11 @@ test('language/theme preferences propagate across tabs, persist, and retain URL 
   page,
   context,
 }) => {
-  await page.goto('/?query=keep-me#/library/anime');
+  await page.goto('/library/anime?query=keep-me');
+  await page.reload();
+  expect(new URL(page.url()).searchParams.get('query')).toBe('keep-me');
   const second = await context.newPage();
-  await second.goto('/#/settings');
+  await second.goto('/settings');
   await choose(page, 'Language', 'Русский');
   await expect(page.getByRole('button', { name: 'Библиотека', exact: true })).toBeVisible();
   await expect(second.getByRole('heading', { name: 'Оформление', exact: true })).toBeVisible();
@@ -76,7 +78,6 @@ test('language/theme preferences propagate across tabs, persist, and retain URL 
     'true',
   );
   await expect(page.locator('html')).toHaveAttribute('lang', 'ru');
-  expect(new URL(page.url()).searchParams.get('query')).toBe('keep-me');
   await page.getByRole('button', { name: 'Библиотека', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Аниме', exact: true })).toHaveAttribute(
     'aria-current',
@@ -84,8 +85,9 @@ test('language/theme preferences propagate across tabs, persist, and retain URL 
   );
   await page.setViewportSize({ width: 400, height: 720 });
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-  await page.goto('/#/unknown/route');
-  await expect(page).toHaveURL(/#\/library\/anime$/);
+  await page.goto('/unknown/route');
+  await expect(page).toHaveURL(/\/library\/anime$/);
+  expect(new URL(page.url()).hash).toBe('');
 });
 
 test('first visit chooses a supported browser locale', async ({ browser }) => {

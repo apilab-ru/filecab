@@ -358,7 +358,8 @@ confirmation, identity and source conflict checks and retry-safe writes.
 ### Username
 
 An owner can set a username in Settings. The username is the address of a public
-read-only copy of the owner's server library. There are no share tokens or share links to
+read-only copy of the owner's server library. The website route is `/u/:username`, for
+example `/u/anna`. There are no share tokens or share links to
 manage.
 
 - A username has 3 to 32 characters: lowercase Latin letters, digits, `-` and `_`. It starts with a letter or a digit.

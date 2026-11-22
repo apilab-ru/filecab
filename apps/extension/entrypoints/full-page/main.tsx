@@ -2,7 +2,13 @@ import { authRepository } from '../../src/auth/auth-repository';
 import { browser } from 'wxt/browser';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AuthProvider, WorkspaceProvider, ApplicationShell, FullPage } from '@filecab/library';
+import {
+  AuthProvider,
+  WorkspaceProvider,
+  ApplicationShell,
+  FullPage,
+  RouterMode,
+} from '@filecab/library';
 import { API_ORIGIN } from '../../src/auth/connection';
 import { extensionPreferences } from '../../src/models/interface-preferences';
 import { LocalLibrary } from '../../src/library/components/local-library/local-library';
@@ -14,7 +20,11 @@ const LOGO_URL = browser.runtime.getURL('/wish-list-icon.png');
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider repository={authRepository}>
-      <ApplicationShell storage={extensionPreferences} iconsBaseUrl={ICON_BASE_URL}>
+      <ApplicationShell
+        storage={extensionPreferences}
+        iconsBaseUrl={ICON_BASE_URL}
+        routerMode={RouterMode.Hash}
+      >
         <WorkspaceProvider origin={API_ORIGIN}>
           <FullPage
             iconUrl={LOGO_URL}

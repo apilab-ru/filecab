@@ -3,7 +3,7 @@ import { authRepository } from '../../src/auth/auth-repository';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { browser } from 'wxt/browser';
-import { AuthProvider, WorkspaceProvider, ApplicationShell } from '@filecab/library';
+import { AuthProvider, WorkspaceProvider, ApplicationShell, RouterMode } from '@filecab/library';
 import { API_ORIGIN } from '../../src/auth/connection';
 import { extensionPreferences } from '../../src/models/interface-preferences';
 import { DeviceSync } from '../../src/library/components/device-sync/device-sync';
@@ -14,6 +14,7 @@ createRoot(document.getElementById('root')!).render(
     <AuthProvider repository={authRepository}>
       <ApplicationShell
         storage={extensionPreferences}
+        routerMode={RouterMode.Hash}
         iconsBaseUrl={new URL('.', browser.runtime.getURL('/icons/library.svg')).href}
       >
         <WorkspaceProvider origin={API_ORIGIN}>
