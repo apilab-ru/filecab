@@ -15,3 +15,4 @@ test-results/
 
 apps/extension/src/library/generated-*
 !apps/extension/src/library/generated-validators.d.mts
+storybook-static/

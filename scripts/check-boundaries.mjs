@@ -4,7 +4,14 @@ import { fileURLToPath } from 'node:url';
 import { builtinModules } from 'node:module';
 import ts from 'typescript';
 
-const ignored = new Set(['node_modules', 'dist', '.wxt', '.output', 'generated']);
+const ignored = new Set([
+  'node_modules',
+  'dist',
+  '.wxt',
+  '.output',
+  'generated',
+  'storybook-static',
+]);
 
 function files(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {

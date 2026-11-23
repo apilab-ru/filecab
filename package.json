@@ -11,6 +11,8 @@
     "dev:web": "nx dev web",
     "dev:extension": "nx dev extension",
     "dev:api": "nx dev api",
+    "storybook": "nx storybook library",
+    "build-storybook": "nx build-storybook library",
     "build": "nx run-many -t build",
     "typecheck": "nx run-many -t typecheck",
     "check:boundaries": "node scripts/check-boundaries.mjs",

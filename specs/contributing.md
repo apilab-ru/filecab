@@ -53,6 +53,16 @@ Some sites need a sign-in or a browser check. These cases use a local browser pr
 
 Every migration folder in `apps/api/prisma/migrations/` must contain `migration.sql`. An empty folder stops `pnpm db:deploy` with error P3015.
 
+### Component stories
+
+The `packages/library` package has Storybook. Run `pnpm storybook` to open it on port 6006. Run `pnpm build-storybook` to make a static copy in `packages/library/storybook-static/`.
+
+- Put a story file next to its component, with the name `<component>.stories.tsx`.
+- The Storybook toolbar sets the language and the theme.
+- `.storybook/story-providers` supplies the translations, the interface preferences and an empty workspace. Use `.storybook/story-workspace` to give entries to a story. It keeps the saved changes in memory.
+- Put shared story data in `.storybook/fixtures.ts`. Do not use network images in stories.
+- `pnpm typecheck` also checks the stories. The package build does not include them.
+
 ## Code rules
 
 [AGENTS.md](../AGENTS.md) owns the code, model placement, validation, function, constant,
