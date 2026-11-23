@@ -21,7 +21,8 @@ describe target behavior, not implementation status.
 | [Extension storage](extension-storage.md)          | Device persistence, recovery and client replication                                      |
 | [Library UI](library-ui.md)                        | Library and catalog screens, cards, ordering and loading                                 |
 | [Catalog](catalog-spec.md)                         | Provider-independent discovery, metadata, genres and cache                               |
-| [External list sync](user-list-sync-spec.md)       | Common reconciliation, jobs, privacy and removal rules                                   |
+| [Library import](library-import.md)                | CSV import of entries of any category, format and duplicates                             |
+| [External list sync](user-list-sync-spec.md)       | Manual export and import, jobs, privacy and deletion rules                               |
 | [Kinopoisk Dev](integration-kinopoisk-spec.md)     | Film and TV catalog adapter                                                              |
 | [Smotret Anime](integration-smotret-anime-spec.md) | Anime catalog adapter                                                                    |
 | [Shikimori](integration-shikimori-spec.md)         | Personal-list adapter, OAuth and field mapping                                           |

@@ -4,7 +4,8 @@
 
 Film and TV search, reference resolution and metadata through Kinopoisk Dev.
 All [Catalog rules](catalog-spec.md) apply. This file defines the adapter differences.
-Streaming, provider accounts and watchlist synchronization are not in scope.
+Streaming, provider accounts and watchlist synchronization are not in scope. To add personal
+Kinopoisk data, use the [library import from CSV](library-import.md).
 
 ## Requirements
 

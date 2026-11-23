@@ -54,69 +54,70 @@ anime and Filecab IDs separate. A scan succeeds only when all pages are read and
 
 | Filecab          | Shikimori    | Rule                                                              |
 | ---------------- | ------------ | ----------------------------------------------------------------- |
-| `planned`        | `planned`    | Two-way                                                           |
+| `planned`        | `planned`    | Export and import                                                 |
 | `process`        | `watching`   | Keep the remote rewatch state                                     |
-| `complete`       | `completed`  | Two-way                                                           |
-| `drop`           | `dropped`    | Two-way                                                           |
+| `complete`       | `completed`  | Export and import                                                 |
+| `drop`           | `dropped`    | Export and import                                                 |
 | `hide`           | None         | Local only. Never delete, drop or put on hold.                    |
 | null status      | None         | Do not guess. Remote creation needs an explicit supported status. |
-| Rating 0–10      | `score` 0–10 | Two-way. 0 clears.                                                |
+| Rating 0–10      | `score` 0–10 | Export and import. 0 clears.                                      |
 | Episode progress | `episodes`   | Absolute integers, also deliberate decreases                      |
-| Notes            | `text`       | Not synchronized by default                                       |
+| Notes            | `text`       | Not transferred by default                                        |
 | Viewing links    | None         | Never export                                                      |
 
 - Import `on_hold` as null status and keep the remote status.
 - Import `rewatching` as `process` and keep the remote status and rewatches.
-- Show these projections. They alone never start a reverse status write.
+- Show these projections. They alone never start a status write on export.
 - Unrelated score or progress edits keep the projected remote status. Only an explicit Filecab status action replaces it.
 - Keep provider-only metadata without new domain statuses.
-- Hiding does not export a status. An inbound status update changes shadow state and does not unhide the entry.
+- Hiding does not export a status. An imported status update changes shadow state and does not unhide the entry.
 - Omit unrelated remote text, rewatches, chapters and volumes from writes.
 - Never trust provider `text_html` as safe HTML.
 
 ### Remote mutations
 
-| Operation                       | Rule                                                                                        |
-| ------------------------------- | ------------------------------------------------------------------------------------------- |
-| `POST /api/v2/user_rates`       | Verified owner, mapped anime target, `target_type=Anime`, enabled fields inside `user_rate` |
-| `PATCH /api/v2/user_rates/:id`  | Changed fields only. Keep explicit score and progress zero.                                 |
-| `DELETE /api/v2/user_rates/:id` | Verified mapping and an explicit removal decision                                           |
+| Operation                      | Rule                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------- |
+| `POST /api/v2/user_rates`      | Verified owner, mapped anime target, `target_type=Anime`, enabled fields inside `user_rate` |
+| `PATCH /api/v2/user_rates/:id` | Changed fields only. Keep explicit score and progress zero.                                 |
 
-Do not use PUT or increment endpoints. Increments are unsafe for retries. Reconcile
-account and anime state before you retry an uncertain create. Read before a mutation,
-verify the result after it, then advance the acknowledged baseline.
+Do not use PUT, DELETE or increment endpoints. Increments are unsafe for retries. Read
+account and anime state again before you retry an uncertain create. Read before a mutation,
+verify the result after it, then record the acknowledged remote value.
 
-### Reconciliation
+### Export and import
 
-Use the common initial preview, per-field three-way reconciliation and explicit conflict
-resolution. Inbound changes use the Filecab ownership, version and change-feed services.
+Use the common [export](user-list-sync-spec.md#export) and [import](user-list-sync-spec.md#import)
+rules. Export replaces remote values with Filecab values. Import shows a preview and applies
+only the selected changes through the Filecab ownership, version and change-feed services.
 Do not claim compare-and-swap unless upstream supports it. Read-before and verify-after
-checks reduce races but do not give atomic protection. Uncertain results stay reconcilable.
+checks reduce races but do not give atomic protection.
 
 ### Scheduling, limits and failures
 
-- Use the common manual, debounced and periodic jobs, generation checks, per-target serialization and acknowledged state.
+- Use the common manual jobs, generation checks and acknowledged remote values. There are no periodic or debounced jobs.
 - Do not assume webhooks or realtime delivery.
 - Use one rate limiter across accounts and instances. Stay below the documented limits of 5 requests a second and 90 a minute, with space for bursts, OAuth and other traffic.
 - Obey stricter responses and changed limits. Obey 429 Retry-After with bounded backoff.
 - Classify 401 and 403 by provider meaning. Refresh a bounded number of times only for invalid or expired tokens. Do not refresh for a missing scope or access denial.
-- A missing rate creates a removal issue. It never deletes Filecab data silently.
+- A missing rate changes nothing in Filecab.
 
 ### Connection management
 
-Show the connected ID and name, write capability, last scan, mappings, conflicts,
-removals, pending count and actionable failures. Disconnect keeps entries, invalidates
-jobs and mappings and deletes credentials. Connecting a different account needs a new preview.
+Show the connected ID and name, write capability, last export, last import, mappings,
+job progress and actionable failures. Show separate Export and Import buttons. Disconnect
+keeps entries, invalidates jobs and mappings and deletes credentials. Connecting a different
+account needs new mappings.
 
 ## Verification
 
 Document Filecab operations without asking clients for provider tokens. Test scope,
 rotation, pagination differences, rate and media IDs, projections and hidden entries,
-explicit zeros, private text preservation, retry-safe creates, removals, quotas and remote races.
+explicit zeros, private text preservation, retry-safe creates, missing rates, quotas and remote races.
 
 Verify the schema and permissions before writes. The documented REST operations define
 the mutation contract. A later transport change, for example GraphQL, must keep the
-shared sync behavior and identity namespaces.
+shared export and import behavior and identity namespaces.
 
 ## API references
 

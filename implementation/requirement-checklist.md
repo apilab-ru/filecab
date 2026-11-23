@@ -27,7 +27,7 @@ change logs before 18 November 2026.
 - [ ] [LANG-01–06](../specs/functionality.md#10-english-and-russian) (steps 3, 10–15): Partial. Interface languages done. Metadata localization partly done.
 - [x] [PLAT-01–03](../specs/functionality.md#11-platform-privacy-and-usability) (steps 5, 6, 16): Done. [Step 16](#step-16-page-extraction)
 - [ ] [UX-01](../specs/functionality.md#11-platform-privacy-and-usability) (steps 10, 11, 21): Partial. Keyboard, focus and zoom tests for the shell.
-- [ ] [AC01–AC25](../specs/functionality.md#12-release-acceptance) (step 21): Pending. Run at release.
+- [ ] [AC01–AC25](../specs/functionality.md#12-release-acceptance) (step 22): Pending. Run at release.
 
 ## Backend
 
@@ -96,6 +96,7 @@ change logs before 18 November 2026.
 
 - [ ] [External list sync](../specs/user-list-sync-spec.md) (step 19): Pending.
 - [ ] [Shikimori](../specs/integration-shikimori-spec.md) (step 20): Pending.
+- [ ] [Library import from CSV](../specs/library-import.md) (step 21): Pending.
 
 ## Evidence
 

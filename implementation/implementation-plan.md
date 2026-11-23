@@ -35,11 +35,11 @@ Code: `apps/api/src/config/environment.ts`. No sync code exists yet.
 
 - [ ] Provider connections and secure token storage.
 - [ ] Match local and remote entries.
-- [ ] Preview imports and resolve duplicates.
-- [ ] Two-way sync of selected fields.
-- [ ] Detect and resolve conflicts.
-- [ ] Background jobs, retries and manual sync.
-- [ ] Prevent accidental deletions and repeated writes.
+- [ ] Export: Filecab values replace remote values, with a confirmation and a result report.
+- [ ] Import: preview additions and changed fields, apply the selected changes.
+- [ ] Separate Export and Import buttons.
+- [ ] Durable manual jobs, retries and one job for each connection.
+- [ ] Prevent deletions and repeated writes.
 - [ ] Pause, resume and disconnect.
 - [ ] Progress and error display.
 
@@ -52,13 +52,26 @@ Code: `apps/api/src/config/environment.ts` (`SHIKIMORI_*`). No adapter code exis
 - [ ] Shikimori OAuth.
 - [ ] Import anime lists and statuses.
 - [ ] Match anime with catalog entries.
-- [ ] Sync status, score and progress.
+- [ ] Export and import status, score and progress.
 - [ ] Keep unsupported remote fields and private data.
-- [ ] API limits, token refresh and conflicts.
-- [ ] Connection settings and manual sync.
-- [ ] Test sync and recovery.
+- [ ] API limits and token refresh.
+- [ ] Connection settings with Export and Import buttons.
+- [ ] Test export, import and recovery.
 
-## 21. Release readiness
+## 21. Library import from CSV
+
+Specs: [Library import](../specs/library-import.md).
+
+Code: backup and restore (step 17) for the file selection, preview and confirmation pattern. No import code exists yet.
+
+- [ ] CSV parser and validation of the documented columns and references, with line numbers in errors.
+- [ ] Preview: rows to add, skip and possible duplicates, with reasons and row selection.
+- [ ] Confirmation bound to the owner, file digest and library revision.
+- [ ] Add-only transaction through the common mutation service, with replication changes.
+- [ ] Import control in Settings, next to backup and restore.
+- [ ] Test format and reference errors, skipped rows, possible duplicates, cancel, stale previews and no provider requests.
+
+## 22. Release readiness
 
 Specs: [Release acceptance](../specs/functionality.md#12-release-acceptance) and the Verification section of each feature spec.
 

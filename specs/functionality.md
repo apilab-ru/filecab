@@ -25,6 +25,7 @@ These capabilities are also required. Other specs define them:
 | Server-managed parser configuration | [Backend](backend.md#server-managed-parser-configuration)                              |
 | Catalog and metadata cache          | [Catalog](catalog-spec.md)                                                             |
 | External list synchronization       | [External list sync](user-list-sync-spec.md)                                           |
+| Library import from CSV             | [Library import](library-import.md)                                                    |
 
 A guest does not need to sign in or connect an external account. Extension guest data
 stays in RxDB. Google login gives server access. The first device link requires confirmation.
