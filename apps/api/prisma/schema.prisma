@@ -22,6 +22,9 @@ model User {
   id            String          @id @db.Uuid
   /// Verified Google subject identifier; email is not the account identity.
   googleSubject String          @unique
+  /// Public library address. Lowercase; null turns public access off.
+  /// User_username_format is a SQL CHECK in the public library migration.
+  username      String?         @unique
   sessions      Session[]
   exchanges     LoginExchange[]
   /// Created with the account in the same transaction; optional only on the Prisma parent side.

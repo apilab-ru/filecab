@@ -27,7 +27,8 @@ These capabilities are also required. Other specs define them:
 | External list synchronization       | [External list sync](user-list-sync-spec.md)                                           |
 
 A guest does not need to sign in or connect an external account. Extension guest data
-stays in RxDB. Google login gives server access. Device replication needs explicit linking.
+stays in RxDB. Google login gives server access. The first device link requires confirmation.
+A later sign-in to a different account downloads that account's library and starts synchronization.
 Optional ideas are in [Plans](plans.md). They are not in the release scope.
 
 ## 2. Surfaces and navigation
@@ -66,13 +67,13 @@ Follow the [Settings mockup](mockup-settings.png): Account, Sync and Appearance 
 the full page, compact sections in the popup. Account and sign-in controls appear only
 in Settings. Keep logout, session controls and diagnostics available. Do not clear drafts.
 
-| Section      | Required behavior                                                                                                                                                                                 |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Account      | Show real account state only. Do not invent name, email or avatar fields.                                                                                                                         |
-| Sync         | Enable Sync now only for the linked, matching account. Explain signed-out, unlinked and suspended states. Show the last success only after an observed replication, with localized date and time. |
-| Website sync | Refresh the online library. Label the time as a refresh, not as offline replication.                                                                                                              |
-| Appearance   | Accessible Light and Dark segmented buttons and explicit language selection.                                                                                                                      |
-| Icons        | Use the supplied navigation, theme, sync, rating and pagination SVGs. Shared copies keep the original data.                                                                                       |
+| Section      | Required behavior                                                                                                                                                                                                            |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account      | Show real account state only. Do not invent name, email or avatar fields.                                                                                                                                                    |
+| Sync         | Enable Sync now for the active account after its device library is available. Show the status during linking, download and recovery. Show the last success only after an observed replication, with localized date and time. |
+| Website sync | Refresh the online library. Label the time as a refresh, not as offline replication.                                                                                                                                         |
+| Appearance   | Accessible Light and Dark segmented buttons and explicit language selection.                                                                                                                                                 |
+| Icons        | Use the supplied navigation, theme, sync, rating and pagination SVGs. Shared copies keep the original data.                                                                                                                  |
 
 ### 2.3 Popup routes
 

@@ -94,6 +94,29 @@ export async function currentAccount(signal?: AbortSignal): Promise<AccountInfo 
   return account;
 }
 
+/** Sends a request with the current website session and verifies the expected owner. */
+export async function fetchOwnerRequest(
+  ownerId: string,
+  path: string,
+  method: string,
+  body?: unknown,
+): Promise<Response> {
+  const current = await currentAccount();
+
+  if (current?.ownerId !== ownerId) throw new Error('Account changed');
+
+  return fetch(`${API_ORIGIN}/api/v1${path}`, {
+    method,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Filecab-Request': '1',
+      'X-Filecab-Owner': ownerId,
+    },
+    ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
+  });
+}
+
 /** Clears old account caches before navigating to the browser-bound Google flow. */
 export async function login(): Promise<void> {
   await clearAccountCache();

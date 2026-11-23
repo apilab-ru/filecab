@@ -297,6 +297,32 @@ export interface BackupRestoreRequest {
   confirmEmpty?: boolean;
 }
 
+/** Shows one entry in a public library without private or identifying fields. */
+export type PublicEntry = Pick<
+  Entry,
+  | 'category'
+  | 'userTitle'
+  | 'status'
+  | 'rating'
+  | 'progress'
+  | 'snapshot'
+  | 'createdAt'
+  | 'updatedAt'
+>;
+
+/** Returns the public read-only projection of an account library. */
+export interface PublicLibrary {
+  schemaVersion: 1;
+  username: string;
+  entries: PublicEntry[];
+}
+
+/** Reports the public library username of an account. Null means public access is off. */
+export interface AccountUsername {
+  schemaVersion: 1;
+  username: string | null;
+}
+
 /** Marks the position from which replication should resume. */
 export interface Checkpoint {
   cursor: string;

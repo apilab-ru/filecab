@@ -107,14 +107,17 @@ async function createLocalDatabase(name: string): Promise<LocalDatabase> {
     await database.addCollections({
       merges: {
         schema: mergeSchema as RxJsonSchema<LocalMergeJournal>,
-        migrationStrategies: { 1: (journal) => journal },
+        migrationStrategies: { 1: (journal) => journal, 2: (journal) => journal },
       },
       entries: {
         schema: entrySchema as RxJsonSchema<LocalEntry>,
         migrationStrategies: {},
         conflictHandler: libraryConflictHandler(() => database),
       },
-      binding: { schema: bindingSchema as RxJsonSchema<SyncBinding>, migrationStrategies: {} },
+      binding: {
+        schema: bindingSchema as RxJsonSchema<SyncBinding>,
+        migrationStrategies: { 1: (binding) => binding },
+      },
       issues: {
         schema: issueSchema as RxJsonSchema<SyncIssue>,
         migrationStrategies: { 1: (issue) => issue },

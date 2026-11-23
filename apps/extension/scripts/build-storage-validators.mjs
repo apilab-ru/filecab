@@ -18,6 +18,8 @@ for (const [index, name] of [
   'merge',
   'issue-v0',
   'merge-v0',
+  'merge-v1',
+  'binding-v0',
 ].entries()) {
   const schema = JSON.parse(readFileSync(new URL(`${name}.schema.json`, directory), 'utf8'));
   const jsonSchema = createRxSchema(schema).jsonSchema;

@@ -2,18 +2,23 @@ import { useTranslation, useInterfacePreferences } from '@filecab/library';
 import '../../styles/library-controls-shared.scss';
 import './sync-controls.scss';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocalStore, useSyncSettings } from '@filecab/library';
 import { ApiErrorCode, SyncErrorCode, type AccountInfo } from '@filecab/contracts';
 import { browser } from 'wxt/browser';
 import type { AuthReply } from '../../../auth/worker';
 import { LOCAL_DATABASE_NAME, readCollection } from '../../database';
-import { SYNC_MESSAGES, SYNC_PHASE_MESSAGES, type SyncControlsProps } from './model-sync-controls';
+import {
+  SYNC_MESSAGES,
+  SYNC_PHASE_MESSAGES,
+  type SyncControlsProps,
+  type SyncStatusUpdate,
+} from './model-sync-controls';
 import type { SyncBinding, SyncIssue } from '../../models/sync-models';
 import { startLibraryReplication } from '../../replication';
 import type { SyncStatus } from '../../models/sync-status';
-import { confirmLink, previewLink, reconcileReset } from '../../sync-session';
+import { confirmLink, previewLink, reconcileReset, switchAccount } from '../../sync-session';
 import type { LinkPreview } from '../../models/link-preview';
 import { SYNC_RUN_LOCK } from '../../models/sync-run-lock';
 import { SyncError } from '../../sync-transport';
@@ -93,6 +98,9 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
     resolutionChoices: {} as Record<string, 'device' | 'server'>,
   }));
   const seenValidationIds = useRef(new Set<string>());
+  const [switchFailed, setSwitchFailed] = useState(false);
+  const [switchAttempt, setSwitchAttempt] = useState(0);
+  const switching = !!account && !!binding && binding.ownerId !== account.ownerId;
 
   useEffect(() => {
     let active = true;
@@ -163,44 +171,82 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
     setLastSuccess(null);
   }, [account?.ownerId, binding?.generation]);
   useEffect(() => {
+    setSwitchFailed(false);
+
+    if (!switching || !account) return;
+
+    const controller = new AbortController();
+    void switchAccount(database, account.ownerId, controller.signal).catch(() => {
+      if (!controller.signal.aborted) setSwitchFailed(true);
+    });
+
+    return () => controller.abort();
+  }, [database, switching, binding?.ownerId, account?.ownerId, switchAttempt]);
+
+  useEffect(() => {
     if (!binding || binding.phase !== 'linked' || binding.ownerId !== account?.ownerId) return;
 
     const controller = new AbortController();
+    const channel = new BroadcastChannel(REFRESH_CHANNEL);
     let release: () => void = () => {};
-    let stopped = false;
+    let resync: (() => void) | undefined;
+    let latest: SyncStatusUpdate | undefined;
+    const accept = ({ status, lastSuccess }: SyncStatusUpdate) => {
+      setStatus(status);
+      setLastSuccess(lastSuccess);
+    };
+    channel.onmessage = ({ data }: MessageEvent<'refresh' | 'status' | SyncStatusUpdate>) => {
+      if (data === 'refresh') {
+        resync?.();
+
+        return;
+      }
+
+      if (data === 'status') {
+        if (latest) channel.postMessage(latest);
+
+        return;
+      }
+
+      if (data?.ownerId === binding.ownerId && data.generation === binding.generation) accept(data);
+    };
     const held = new Promise<void>((resolve) => {
       release = resolve;
     });
     setStatus({ phase: 'syncing' });
+    channel.postMessage('status');
     void navigator.locks
       .request(SYNC_RUN_LOCK, { signal: controller.signal }, async () => {
-        if (stopped) return;
+        if (controller.signal.aborted) return;
 
         const state = startLibraryReplication(database, binding, (value) => {
-          if (!stopped) {
-            setStatus(value);
+          if (controller.signal.aborted) return;
 
-            if (value.phase === 'idle') setLastSuccess(Date.now());
-          }
+          latest = {
+            ownerId: binding.ownerId,
+            generation: binding.generation,
+            status: value,
+            lastSuccess: value.phase === 'idle' ? Date.now() : (latest?.lastSuccess ?? null),
+          };
+          accept(latest);
+          channel.postMessage(latest);
         });
-        const channel = new BroadcastChannel(REFRESH_CHANNEL);
-        channel.onmessage = () => state.reSync();
-        const resync = () => state.reSync();
+        resync = () => state.reSync();
         window.addEventListener('online', resync);
         const timer = setInterval(resync, 30000);
         await held;
         clearInterval(timer);
         window.removeEventListener('online', resync);
-        channel.close();
         await state.cancel();
       })
       .catch(() => {
-        if (!stopped) setStatus({ phase: 'failed', error: SyncErrorCode.RequestFailed });
+        if (!controller.signal.aborted)
+          setStatus({ phase: 'failed', error: SyncErrorCode.RequestFailed });
       });
 
     return () => {
-      stopped = true;
       controller.abort();
+      channel.close();
       release();
     };
   }, [database, binding?.ownerId, binding?.generation, binding?.phase, account?.ownerId]);
@@ -220,7 +266,9 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
     }
   };
   const own = binding?.ownerId === account?.ownerId;
-  const visibleIssues = issues.filter((issue) => issue.ownerId === binding?.ownerId);
+  const visibleIssues = switching
+    ? []
+    : issues.filter((issue) => issue.ownerId === binding?.ownerId);
   const validationIssues = visibleIssues.filter((issue) => issue.kind === 'validation');
   const rejectedEntry = status.diagnostic?.entryId
     ? snapshot.rows.find((row) => row.entryId === status.diagnostic?.entryId)?.entry
@@ -250,9 +298,11 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
     // A linked device keeps its specific paused message; only an unlinked device needs a next step.
     if (!binding) descriptionText = account ? t('syncLinkFirst') : t('syncSignIn');
 
+    if (switching) descriptionText = t(switchFailed ? 'syncSwitchFailed' : 'syncSwitching');
+
     setSyncSettings({
       enabled: !!account && own && binding?.phase === 'linked',
-      working: busy,
+      working: busy || (switching && !switchFailed),
       online: false,
       message: descriptionText,
       lastSuccess: own ? lastSuccess : null,
@@ -268,6 +318,8 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
     status.phase,
     status.error,
     own,
+    switching,
+    switchFailed,
     busy,
     lastSuccess,
     locale,
@@ -276,6 +328,11 @@ export function SyncControls({ repository, snapshot }: SyncControlsProps) {
 
   const section = (
     <section className="library-sync" aria-label={t('Account synchronization')}>
+      {switching && switchFailed && (
+        <Button type="button" onClick={() => setSwitchAttempt((attempt) => attempt + 1)}>
+          {t('retryAccountDownload')}
+        </Button>
+      )}
       {binding && own && status.phase === 'failed' && status.diagnostic && (
         <p className="library-sync__diagnostic">
           {t('Code:')} {status.diagnostic.code}

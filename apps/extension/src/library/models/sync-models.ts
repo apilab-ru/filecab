@@ -7,6 +7,8 @@ export interface SyncBinding {
   generation: number;
   phase: 'linked' | 'reset-required' | 'resetting';
   initialCheckpoint: Checkpoint | null;
+  /** Local revision of the last row installed from an account snapshot. */
+  seedRevision?: number;
 }
 
 /** Retains rejected or pre-reset intent until explicit reapplication or dismissal. */

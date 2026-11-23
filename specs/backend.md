@@ -375,16 +375,23 @@ manage.
 | Set or clear   | `PUT /account/username`            | Owner session, `{ username: string }` |
 | Public library | `GET /public/libraries/{username}` | Anonymous                             |
 
-The extension shows the username field only when the device is linked to an account. The
-public library shows the server library of that account, not the device library.
+The extension uses the signed-in account for username requests. The public page shows
+the server library of that account. A device link controls synchronization only.
+The extension sends username requests through the worker with the `read-username`
+and `save-username` operations. `WXT_PUBLIC_WEBSITE_ORIGIN` gives the extension the
+website origin for the public address.
 
 ### Shared data
 
-| Include                                 | Exclude                                                |
-| --------------------------------------- | ------------------------------------------------------ |
-| Title, category                         | Hidden and deleted entries                             |
-| Poster, year and format, when available | Notes and viewing URLs                                 |
-| Status, rating, progress                | Account and email data, sessions, replication metadata |
+| Include                                                   | Exclude                                                |
+| --------------------------------------------------------- | ------------------------------------------------------ |
+| User title, category                                      | Hidden and deleted entries                             |
+| Catalog snapshot: titles, poster, year, format, genres    | Notes and viewing URLs                                 |
+| Catalog descriptions, episode totals, ratings, references | Entry UUIDs, catalog IDs and server versions           |
+| Status, rating, progress, creation and modification times | Account and email data, sessions, replication metadata |
+
+The response is `PublicLibrary`: `{ schemaVersion: 1, username, entries: PublicEntry[] }`.
+The account routes return `AccountUsername`: `{ schemaVersion: 1, username: string | null }`.
 
 Apply filters, order and counts only to the shared projection. The public route gives no
 write, owner lookup or sync access. Public pages have no persistent offline library.
@@ -395,7 +402,8 @@ write, owner lookup or sync access. Public pages have no persistent offline libr
 - Serve committed data with `Cache-Control: no-store`, `noindex` and a restrictive referrer policy.
 - Exclude public libraries from discovery and sitemaps.
 - An unknown username and an empty username get the same not-found response.
-- Limit the rate of public library requests from one client.
+- Limit the rate of public library requests from one client to 60 for each minute. More requests get `RATE_LIMITED` with `Retry-After`.
+- Invalid username formats get the same not-found response.
 
 A cleared or changed username blocks later requests. It cannot remove content that a
 viewer already saw or copied.

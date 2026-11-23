@@ -1,0 +1,70 @@
+.public-library-settings {
+  display: grid;
+  gap: 10px;
+
+  &__message {
+    margin: 0;
+    color: var(--fc-muted);
+    font-size: 13px;
+  }
+
+  &__label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  &__row {
+    display: flex;
+    gap: 12px;
+
+    .popup & {
+      flex-wrap: wrap;
+    }
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    min-height: 40px;
+    box-sizing: border-box;
+    padding: 0 12px;
+    border: 1px solid var(--fc-border);
+    border-radius: var(--fc-radius);
+    background: var(--fc-input);
+    color: var(--fc-text);
+    font: inherit;
+  }
+
+  &__save {
+    min-width: 120px;
+  }
+
+  &__address {
+    margin: 0;
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  &__link {
+    color: var(--fc-accent);
+  }
+
+  &__notice {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  &__read-error {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+
+  &__diagnostic {
+    display: block;
+    margin-top: 4px;
+    color: var(--fc-muted);
+    overflow-wrap: anywhere;
+  }
+}

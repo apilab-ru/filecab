@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser';
 import type { AuthReply } from './worker';
 import { AuthFailureCode, AuthStage, logAuthStage } from './diagnostics';
 import { debugContext } from './connection';
+import { publicLibraryRepository } from './public-library-repository';
 
 /** Maps safe worker failures into the shared error-reporting contract. */
 function authError(reply: AuthReply): AuthError | null {
@@ -26,6 +27,8 @@ function authError(reply: AuthReply): AuthError | null {
 
 /** Keeps privileged authentication in the worker and exposes only safe observable state. */
 export class ExtensionAuthRepository implements AuthRepository {
+  readonly publicLibrary = publicLibraryRepository;
+
   private readonly listeners = new Set<() => void>();
 
   private state: AuthState = { account: null, busy: false, error: null };

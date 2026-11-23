@@ -168,10 +168,11 @@ the local proposal in **saved edits need review**. Expand a saved edit to inspec
 its values, deliberately reapply it against the current version, or dismiss it.
 A later server change can require another review.
 
-The library stays bound to the selected account. Signing out or signing in to a
-different account pauses synchronization while keeping local entries and drafts
-visible. Pending data is never rebound to the other account. Sign back into the
-linked account to resume. There is no detach/rebind control in this delivery.
+Signing out pauses synchronization. Signing in to another account on a linked device
+downloads its library and starts synchronization. After the download, Filecab replaces
+the local entries and discards the previous account's pending edits and drafts.
+The previous account's server library is unaffected. If the download fails, use
+**Retry account download** in Settings.
 
 Keep a popup or full page open to synchronize. Local edits trigger native RxDB
 pushes; reconnect, opening, a 30-second open-surface timer and **Refresh account
@@ -189,8 +190,8 @@ The recovery log survives restart until you deliberately reapply or dismiss it.
 Existing bytes and unsaved editor input are preserved on storage failure. Server
 history and tombstones currently remain retained indefinitely.
 
-The device binding and review log are separate version-zero RxDB collections.
-Existing entry/settings schemas were not changed. Native RxDB metadata owns
+The device binding and review log are separate RxDB collections. The merge journal
+finishes an interrupted account replacement. Native RxDB metadata owns
 checkpoints and assumed master state; the review log is not a mutation outbox.
 `pnpm test:replication` requires an explicit disposable `DATABASE_URL` and installed
 Chromium and verifies the production extension against real API/PostgreSQL state.

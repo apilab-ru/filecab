@@ -1,10 +1,12 @@
 import { useTranslation } from 'react-i18next';
 import { AuthControls } from '../../components/auth-controls/auth-controls';
 import { BackupSettings } from '../../components/backup-settings/backup-settings';
+import { PublicLibrarySettings } from '../../components/public-library-settings/public-library-settings';
 import '../../styles/interface-controls.scss';
 import './settings-page.scss';
 
 import { Button, Icon, IconName, Select } from '@filecab/ui';
+import { useAuth } from '../../hooks/use-auth';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useSyncSettings } from '../../hooks/use-sync-settings';
 import { Theme } from '../../models/theme';
@@ -15,6 +17,7 @@ export function SettingsPage({ popup, restoreUrl }: SettingsPageProps) {
   const { t } = useTranslation();
   const { locale, theme, setLocale, setTheme } = useInterfacePreferences();
   const { syncSettings, setSyncPanel } = useSyncSettings();
+  const { account, publicLibrary } = useAuth();
 
   return (
     <div className="settings-content">
@@ -51,6 +54,16 @@ export function SettingsPage({ popup, restoreUrl }: SettingsPageProps) {
           <div className="settings-sync__panel" ref={setSyncPanel} />
         </div>
       </section>
+      {account && (
+        <section className="settings-card">
+          <h2 className="settings-card__title">{t('publicLibrary')}</h2>
+          <PublicLibrarySettings
+            key={account.ownerId}
+            ownerId={account.ownerId}
+            repository={publicLibrary}
+          />
+        </section>
+      )}
       <section className="settings-card">
         <h2 className="settings-card__title">{t('backup')}</h2>
         <BackupSettings restoreUrl={restoreUrl} />

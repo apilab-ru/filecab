@@ -23,10 +23,12 @@ const ACCESS_KEY = 'filecab.auth.access';
 
 const LOGIN_KEY = 'filecab.auth.login';
 
-const LIBRARY_ROUTES = new Map<string, string>([
-  [SyncOperation.Snapshot, 'library'],
-  [SyncOperation.Pull, 'replication/pull'],
-  [SyncOperation.Push, 'replication/push'],
+const LIBRARY_ROUTES = new Map<string, { path: string; method: 'GET' | 'POST' | 'PUT' }>([
+  [SyncOperation.Snapshot, { path: 'library', method: 'GET' }],
+  [SyncOperation.Pull, { path: 'replication/pull', method: 'POST' }],
+  [SyncOperation.Push, { path: 'replication/push', method: 'POST' }],
+  [SyncOperation.ReadUsername, { path: 'account/username', method: 'GET' }],
+  [SyncOperation.SaveUsername, { path: 'account/username', method: 'PUT' }],
 ]);
 
 const SYNC_HTTP_ERRORS: Partial<Record<number, ApiErrorCode | SyncErrorCode>> = {
@@ -34,6 +36,7 @@ const SYNC_HTTP_ERRORS: Partial<Record<number, ApiErrorCode | SyncErrorCode>> = 
   401: SyncErrorCode.AccountChanged,
   403: ApiErrorCode.Forbidden,
   404: SyncErrorCode.ApiOutdated,
+  409: ApiErrorCode.Conflict,
   413: ApiErrorCode.PayloadTooLarge,
   429: ApiErrorCode.RateLimited,
   503: ApiErrorCode.ServiceUnavailable,
@@ -405,18 +408,18 @@ async function libraryRequest(message: object): Promise<unknown> {
 
   if (!access || access.ownerId !== input.ownerId) return { error: SyncErrorCode.AccountChanged };
 
-  const operation = input.operation as
-    SyncOperation.Snapshot | SyncOperation.Pull | SyncOperation.Push;
+  const operation = input.operation as SyncOperation;
+  const reading = route.method === 'GET';
   let response: Response;
   try {
-    response = await fetch(`${API_ORIGIN}/api/v1/${route}`, {
-      method: operation === SyncOperation.Snapshot ? 'GET' : 'POST',
+    response = await fetch(`${API_ORIGIN}/api/v1/${route.path}`, {
+      method: route.method,
       credentials: 'omit',
       headers: {
         Authorization: `Bearer ${access.accessToken}`,
-        ...(operation === SyncOperation.Snapshot ? {} : { 'Content-Type': 'application/json' }),
+        ...(reading ? {} : { 'Content-Type': 'application/json' }),
       },
-      ...(operation === SyncOperation.Snapshot ? {} : { body: JSON.stringify(input.body) }),
+      ...(reading ? {} : { body: JSON.stringify(input.body) }),
       signal: AbortSignal.timeout(10000),
     });
   } catch {

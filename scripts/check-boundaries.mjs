@@ -210,6 +210,7 @@ export function checkBoundaries(root) {
                 'SSR',
                 'VITE_API_ORIGIN',
                 'WXT_PUBLIC_API_ORIGIN',
+                'WXT_PUBLIC_WEBSITE_ORIGIN',
               ].includes(key)
             )
               fail(

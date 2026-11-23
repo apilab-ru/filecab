@@ -35,7 +35,7 @@ change logs before 18 November 2026.
 - [x] [Library data](../specs/backend.md#library-data) (steps 4, 7): Done. [Step 4](#step-4-transactional-persistence), [step 7](#step-7-library-api)
 - [x] [Library operations](../specs/backend.md#library-operations) (step 7): Done. [Step 7](#step-7-library-api)
 - [x] [Extension replication](../specs/backend.md#extension-replication) (step 9): Done. [Step 9](#step-9-extension-replication). History is kept without a time limit.
-- [ ] [Public library](../specs/backend.md#public-library) (step 18): Pending.
+- [x] [Public library](../specs/backend.md#public-library) (step 18): Done. [Step 18](#step-18-public-library)
 - [x] [Backup and restore](../specs/backend.md#backup-and-restore) (step 17): Done. [Step 17](#step-17-backup-and-restore)
 - [x] [Server-managed parser configuration](../specs/backend.md#server-managed-parser-configuration) (step 16): Done. [Step 16](#step-16-page-extraction)
 - [x] [API foundation](../specs/backend.md#api-foundation) (step 5): Done. [Step 5](#step-5-api-foundation)
@@ -152,9 +152,11 @@ enrichment. Old-format backup compatibility was removed from scope.
 ### Step 9: extension replication
 
 - Server: [replication controller](../apps/api/src/library/replication.controller.ts), [DTOs](../apps/api/src/library/replication.dto.ts).
-- Client: [native adapter](../apps/extension/src/library/replication.ts), [link and reset session](../apps/extension/src/library/sync-session.ts), [conflict recovery](../apps/extension/src/library/sync-recovery.ts), [sync controls](../apps/extension/src/library/components/sync-controls/sync-controls.tsx).
+- Client: [native adapter](../apps/extension/src/library/replication.ts), [link, account replacement and reset](../apps/extension/src/library/sync-session.ts), [conflict recovery](../apps/extension/src/library/sync-recovery.ts), [sync controls](../apps/extension/src/library/components/sync-controls/sync-controls.tsx).
 - Tests: [Chromium protocol tests](../tests/e2e/extension-storage.spec.ts) and the [full-stack test](../tests/replication/extension.test.ts) (`pnpm test:replication`).
-- Limits: sync needs an open library surface. History is kept without a time limit. No detach or rebind UI.
+- Signing in to a different account replaces the linked device library after the download succeeds. The merge journal completes an interrupted replacement. The previous account's server data stays unchanged.
+- Account replacement checks: 46 browser tests and 211 unit tests passed. Browser tests cover retry, account isolation, migration from the previous binding, restart recovery and an empty account. A focused Chrome test against the real PostgreSQL API verified download and edits for the new account. The separate full-stack Undo assertion failed after server deletion. The extension typecheck reports its existing popup translation-key error.
+- Limits: sync needs an open library surface. History is kept without a time limit.
 - 18 November 2026: the server stores its own snapshot for a stale client snapshot, so "Use this device copy" resolves the issue.
 
 ### Step 10: shared UI
@@ -235,6 +237,15 @@ pagination during loading and skeletons (15–16 November 2026).
 - [Extension](../apps/extension/src/library/backup.ts): AJV standalone validator from [`backup.schema.json`](../apps/extension/src/library/backup.schema.json) and device checks. The [repository](../apps/extension/src/library/repository.ts) restores through one merge journal. The merge journal schema is version 1 without a row limit.
 - [Settings UI](../packages/library/src/components/backup-settings/backup-settings.tsx): Export, Restore, issue list, preview counts and conflicts, download of the current library, empty confirmation. The popup opens the full-page settings for restore. The website sends the file text to the server without parsing.
 - Tests (22 November 2026): unit 210, integration 54 (4 backup tests) and browser 44 pass. Format, lint and boundaries pass. Typecheck has one existing error in `apps/extension/src/popup/components/popup/popup.tsx` that this step did not change. No browser test covers the extension restore yet.
+
+### Step 18: public library
+
+- [Migration](../apps/api/prisma/migrations/20261122000000_public_library_username/migration.sql): unique nullable `User.username` with a lowercase format check.
+- [Account routes](../apps/api/src/auth/account.controller.ts): `GET` and `PUT /account/username`. A taken username returns 409. An empty value turns public access off.
+- [Public route](../apps/api/src/library/public-library.controller.ts): anonymous `GET /public/libraries/{username}`. The [projection](../apps/api/src/library/public-library.ts) excludes hidden and deleted entries, notes, links, entry UUIDs, catalog IDs and versions. [Middleware](../apps/api/src/http/public-rate-limit.ts) adds `no-store`, `noindex` and `no-referrer` and limits each client to 60 requests for each minute.
+- [Settings](../packages/library/src/components/public-library-settings/public-library-settings.tsx): username field with the privacy notice and the public address. Settings shows the section after sign-in. It uses the signed-in account independently of the device link. The worker uses `read-username` and `save-username`. `WXT_PUBLIC_WEBSITE_ORIGIN` gives the address origin.
+- [Public page](../apps/web/src/public-library/components/public-library/public-library.tsx): `/u/:username` and `/u/:username/:category` in the full-page layout without Catalog. Cards are read-only. The browser test checks that the title precedes the category tabs on desktop and sits above them on mobile.
+- Tests (22 November 2026): unit 211, integration 55 and browser 45 pass. Browser tests cover username loading before device linking, while a different account owns the link, and when the website library request fails. They verify that sign-out hides the section. After the Retry change, all 9 authentication and website browser tests passed, including recovery after HTTP 503. A temporary development account loaded its username in Chrome against the running API. Format, lint and boundaries pass. Typecheck has the existing error in `apps/extension/src/popup/components/popup/popup.tsx`.
 
 ### Tooling
 

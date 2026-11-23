@@ -10,6 +10,8 @@ export interface LibraryCardProps {
   edit?: () => void;
   remove?: () => void;
   onGenre?: (genreId: string) => void;
+  /** Shows status, progress and rating as text without controls, for a public library. */
+  readOnly?: boolean;
 }
 
 /** Defines the main action on a catalog result. */

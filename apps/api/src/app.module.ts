@@ -1,3 +1,5 @@
+import { AccountController } from './auth/account.controller';
+import { PublicLibraryController } from './library/public-library.controller';
 import { PAGE_RULES } from '@filecab/contracts';
 import { ReplicationController } from './library/replication.controller';
 import { LibraryController, LibraryInputGuard } from './library/library.controller';
@@ -39,6 +41,8 @@ export class AppModule {
         HealthController,
         AuthController,
         LibraryController,
+        AccountController,
+        PublicLibraryController,
         ReplicationController,
         CatalogController,
         CatalogGenreAdminController,

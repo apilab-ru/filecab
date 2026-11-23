@@ -4,6 +4,8 @@ import { LibrarySort } from '../../models/library-sort';
 /** Selects the category that the shared library browser shows from the active workspace. */
 export interface LibraryBrowserProps {
   category: Category;
+  /** Shows these entries read-only, without the workspace and its edit actions. */
+  readOnlyEntries?: Entry[];
 }
 
 /** Supplies the saved entries that the browser filters, sorts and paginates. */

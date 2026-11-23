@@ -19,12 +19,15 @@ async function mapConflict<T>(action: () => Promise<T>): Promise<T> {
 }
 
 /** Adapts device revisions and crash-recoverable associations to the shared editor. */
-export function localWorkspaceRepository(repository: LocalLibraryRepository): WorkspaceRepository {
+export function localWorkspaceRepository(
+  repository: LocalLibraryRepository,
+  scope: string,
+): WorkspaceRepository {
   return {
     async save(entryId, category, fields, row, catalog) {
       await mapConflict(async () => {
         if (row) await repository.update(row.entry.entryId, Number(row.version), fields);
-        else await repository.create(category, fields, catalog, entryId);
+        else await repository.create(category, fields, catalog, entryId, scope);
       });
     },
     async preview(row, catalog, other, fields) {

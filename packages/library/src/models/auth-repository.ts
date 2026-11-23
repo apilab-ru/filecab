@@ -1,4 +1,5 @@
 import type { AccountInfo } from '@filecab/contracts';
+import type { PublicLibraryRepository } from './public-library';
 
 /** Describes safe diagnostic metadata without credentials or raw server errors. */
 export interface AuthDiagnostic {
@@ -30,6 +31,7 @@ export interface AuthState {
 
 /** Exposes observable authentication state and application-specific session operations. */
 export interface AuthRepository {
+  readonly publicLibrary: PublicLibraryRepository;
   getSnapshot: () => AuthState;
   subscribe: (listener: () => void) => () => void;
   signIn: () => Promise<void>;

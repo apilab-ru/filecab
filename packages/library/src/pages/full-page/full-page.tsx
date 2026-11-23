@@ -18,7 +18,12 @@ import { SettingsPage } from '../settings-page/settings-page';
 import type { FullPageProps } from './model-full-page';
 
 /** Renders full-page navigation and routes while retaining the library adapter. */
-export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }: FullPageProps) {
+export function FullPage({
+  iconUrl = FILECAB_ICON_URL,
+  children,
+  renderLibrary,
+  renderPublicLibrary,
+}: FullPageProps) {
   const { t } = useTranslation();
   const [parameters, setParameters] = useSearchParams();
   const view = parameters.get('view') === 'list' ? 'list' : 'grid';
@@ -30,15 +35,25 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
   const { locale, setLocale } = useInterfacePreferences();
   const route = useMatch('/:mode/:category');
   const settings = useMatch('/settings');
+  const publicCategoryRoute = useMatch('/u/:username/:category');
+  const publicRoute = useMatch('/u/:username');
+  const username = renderPublicLibrary
+    ? (publicCategoryRoute ?? publicRoute)?.params.username
+    : undefined;
+  const publicMode = username !== undefined;
   let mode = LibraryMode.Library;
 
   if (settings) mode = LibraryMode.Settings;
 
   if (route?.params.mode === LibraryMode.Catalog) mode = LibraryMode.Catalog;
 
-  const category = Object.values(Category).includes(route?.params.category as Category)
-    ? (route?.params.category as Category)
+  const routeCategory = publicMode ? publicCategoryRoute?.params.category : route?.params.category;
+  const category = Object.values(Category).includes(routeCategory as Category)
+    ? (routeCategory as Category)
     : Category.Anime;
+  const modes = publicMode
+    ? FULL_MODES.filter((nextMode) => nextMode !== LibraryMode.Catalog)
+    : FULL_MODES;
   const routerNavigate = useNavigate();
   const navigate = (nextCategory: Category, nextMode: LibraryMode) => {
     if (nextCategory === category && nextMode === mode) return;
@@ -50,7 +65,15 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
     }
 
     // Keep the chosen layout; other query parameters belong to the previous screen.
-    routerNavigate(`/${nextMode}/${nextCategory}${view === 'list' ? '?view=list' : ''}`);
+    const layout = view === 'list' ? '?view=list' : '';
+
+    if (publicMode && nextMode === LibraryMode.Library) {
+      routerNavigate(`/u/${encodeURIComponent(username)}/${nextCategory}${layout}`);
+
+      return;
+    }
+
+    routerNavigate(`/${nextMode}/${nextCategory}${layout}`);
   };
 
   return (
@@ -63,7 +86,7 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
           </div>
         </div>
         <nav className="full-page__navigation" aria-label={t('navigation')}>
-          {FULL_MODES.map((nextMode) => (
+          {modes.map((nextMode) => (
             <Button
               key={nextMode}
               aria-current={mode === nextMode ? 'page' : undefined}
@@ -95,6 +118,11 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
       <main className="full-page__main">
         {mode !== LibraryMode.Settings && (
           <nav className="full-page__categories" aria-label={t('categories')}>
+            {publicMode && (
+              <h1 className="full-page__public-title" id="public-library-heading">
+                {t('publicLibraryHeading', { username: username.toLowerCase() })}
+              </h1>
+            )}
             {Object.values(Category).map((nextCategory) => (
               <Button
                 key={nextCategory}
@@ -122,7 +150,8 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
             </div>
           </nav>
         )}
-        <LibraryPage hidden={mode !== LibraryMode.Library}>
+        {publicMode && renderPublicLibrary?.(username, category)}
+        <LibraryPage hidden={mode !== LibraryMode.Library || publicMode}>
           {renderLibrary?.(category)}
           {children}
         </LibraryPage>
@@ -134,6 +163,8 @@ export function FullPage({ iconUrl = FILECAB_ICON_URL, children, renderLibrary }
           <Route path="/catalog/films" element={<CatalogPage category={category} />} />
           <Route path="/catalog/tv" element={<CatalogPage category={category} />} />
           <Route path="/settings" element={<SettingsPage popup={false} />} />
+          {renderPublicLibrary && <Route path="/u/:username" element={null} />}
+          {renderPublicLibrary && <Route path="/u/:username/:category" element={null} />}
           <Route path="*" element={<Navigate replace to="/library/anime" />} />
         </Routes>
       </main>

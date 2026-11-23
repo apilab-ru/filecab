@@ -1,6 +1,6 @@
 {
   "title": "Device account binding",
-  "version": 0,
+  "version": 1,
   "primaryKey": "key",
   "type": "object",
   "properties": {
@@ -51,6 +51,11 @@
           "type": "null"
         }
       ]
+    },
+    "seedRevision": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 9007199254740991
     }
   },
   "required": ["key", "ownerId", "generation", "phase", "initialCheckpoint"],

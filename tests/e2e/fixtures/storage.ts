@@ -14,6 +14,8 @@ export {
   previewLink,
   confirmLink,
   reconcileReset,
+  switchAccount,
 } from '../../../apps/extension/src/library/sync-session';
 export { SyncError } from '../../../apps/extension/src/library/sync-transport';
 export { readCollection } from '../../../apps/extension/src/library/database';
+export { writeLegacyBinding } from '../../../apps/extension/scripts/legacy-binding-fixture';

@@ -16,8 +16,52 @@ import { masterRow } from './replication';
 import { SyncError, syncRequest } from './sync-transport';
 import type { LinkPreview } from './models/link-preview';
 import { SYNC_RUN_LOCK } from './models/sync-run-lock';
+import { recoverLocalMerges } from './merge-recovery';
 export { SYNC_RUN_LOCK } from './models/sync-run-lock';
 export type { LinkPreview } from './models/link-preview';
+
+/** Downloads and installs the signed-in account after current replication stops. */
+export async function switchAccount(
+  database: LocalDatabase,
+  ownerId: string,
+  signal?: AbortSignal,
+  request = syncRequest,
+): Promise<void> {
+  await navigator.locks.request(SYNC_RUN_LOCK, { signal }, () =>
+    navigator.locks.request(`${database.name}:write`, async () => {
+      signal?.throwIfAborted();
+      await recoverLocalMerges(database);
+      const [binding] = await readCollection(database.binding);
+
+      if (!binding || binding.ownerId === ownerId) return;
+
+      const remote = await request<OwnerSnapshot>(ownerId, SyncOperation.Snapshot);
+      signal?.throwIfAborted();
+      const generation = binding.generation + 1;
+      const current = await readCollection(database.entries);
+      const seedRevision = current.reduce(
+        (revision, row) => Math.max(revision, row.localRevision + 1),
+        Date.now(),
+      );
+
+      if (!Number.isSafeInteger(generation) || !Number.isSafeInteger(seedRevision))
+        throw new SyncError(SyncErrorCode.StorageUnavailable);
+
+      const rows = remote.entries.map((entry) => {
+        const { _deleted: _ignored, ...row } = masterRow(entry);
+
+        return { ...row, localRevision: seedRevision };
+      });
+      signal?.throwIfAborted();
+      await database.merges.insert({
+        id: crypto.randomUUID(),
+        rows,
+        switchTo: { ownerId, generation, revision: remote.revision, seedRevision },
+      });
+      await recoverLocalMerges(database);
+    }),
+  );
+}
 
 /** Fingerprints local documents so confirmation cannot adopt data edited after the preview. */
 async function digest(rows: LocalEntry[]): Promise<string> {
@@ -107,12 +151,15 @@ export async function reconcileReset(
   ownerId: string,
   request = syncRequest,
 ): Promise<void> {
-  const binding = await database.binding.findOne('device').exec();
+  await navigator.locks.request(`${LOCAL_DATABASE_NAME}:write`, async () => {
+    await recoverLocalMerges(database);
+    const binding = await database.binding.findOne('device').exec();
 
-  if (!binding || binding.ownerId !== ownerId || binding.phase === 'linked')
-    throw new SyncError(SyncErrorCode.AccountChanged);
+    if (!binding || binding.ownerId !== ownerId || binding.phase === 'linked')
+      throw new SyncError(SyncErrorCode.AccountChanged);
 
-  await binding.incrementalPatch({ phase: 'resetting' });
+    await binding.incrementalPatch({ phase: 'resetting' });
+  });
   // All surfaces cancel replication when they observe this phase. The lease waits
   // for their in-flight network work before any reset writes are permitted.
   await navigator.locks.request(SYNC_RUN_LOCK, () =>

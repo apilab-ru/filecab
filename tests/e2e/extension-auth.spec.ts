@@ -64,6 +64,9 @@ test('extension worker reports preflight failures and completes a mocked login t
             }),
           );
 
+        if (path.endsWith('/account/username'))
+          return new Response(JSON.stringify({ schemaVersion: 1, username: null }));
+
         return new Response(JSON.stringify({ schemaVersion: 1, ownerId: 'fixture-owner' }));
       };
     });
@@ -91,7 +94,7 @@ test('extension worker reports preflight failures and completes a mocked login t
   }
 });
 
-test('link confirmation starts production replication and account changes suspend it without losing drafts', async () => {
+test('link confirmation starts replication and a later sign-in replaces the device library', async () => {
   test.setTimeout(30000);
   const extensionPath = resolve('apps/extension/.output/chrome-mv3');
   const context = await chromium.launchPersistentContext('', {
@@ -129,11 +132,23 @@ test('link confirmation starts production replication and account changes suspen
         entries: new Map<string, Record<string, unknown>>(),
         changes: [] as Record<string, unknown>[],
         wrongOwnerWrites: 0,
+        usernameReads: [] as string[],
+        usernameReadFailed: false,
+      };
+      const other = {
+        revision: 1,
+        pushes: 0,
+        entries: new Map<string, Record<string, unknown>>(),
+        changes: [] as Record<string, unknown>[],
+        downloadBlocked: true,
       };
       Object.assign(globalThis, { syncFixture: server });
+      Object.assign(globalThis, { otherSyncFixture: other });
       globalThis.fetch = async (input, init) => {
         const path = new URL(String(input)).pathname;
         const headers = init?.headers as Record<string, string>;
+        const different = headers?.Authorization?.includes('different-account');
+        const library = different ? other : server;
 
         if (path.endsWith('/auth/me'))
           return new Response(
@@ -145,21 +160,56 @@ test('link confirmation starts production replication and account changes suspen
             }),
           );
 
-        if (path.endsWith('/library'))
+        if (path.endsWith('/account/username')) {
+          const token = headers.Authorization;
+          server.usernameReads.push(token);
+
+          if (!server.usernameReadFailed) {
+            server.usernameReadFailed = true;
+
+            return new Response(JSON.stringify({ code: 'SERVICE_UNAVAILABLE' }), {
+              status: 503,
+              headers: { 'X-Correlation-ID': '10000000-0000-4000-8000-000000000008' },
+            });
+          }
+
+          const username = token.includes('different-account')
+            ? 'different-library'
+            : 'bound-library';
+
+          return new Response(JSON.stringify({ schemaVersion: 1, username }));
+        }
+
+        if (path.endsWith('/library')) {
+          if (different && other.downloadBlocked)
+            return new Response(JSON.stringify({ code: 'SERVICE_UNAVAILABLE' }), { status: 503 });
+
+          if (different && !other.entries.size) {
+            const entry = {
+              ...server.entries.values().next().value,
+              entryId: '10000000-0000-4000-8000-000000000006',
+              userTitle: 'Downloaded second library',
+              serverVersion: '1',
+            };
+            other.entries.set(entry.entryId, entry);
+            other.changes.push(entry);
+          }
+
           return new Response(
             JSON.stringify({
               schemaVersion: 1,
-              revision: String(server.revision),
-              entries: [...server.entries.values()],
+              revision: String(library.revision),
+              entries: [...library.entries.values()],
             }),
           );
+        }
 
         if (path.endsWith('/pull')) {
           const body = JSON.parse(String(init?.body)) as {
             checkpoint: { cursor: string } | null;
             limit: number;
           };
-          const changes = server.changes
+          const changes = library.changes
             .filter((entry) => Number(entry.serverVersion) > Number(body.checkpoint?.cursor ?? 0))
             .slice(0, body.limit);
 
@@ -177,20 +227,42 @@ test('link confirmation starts production replication and account changes suspen
         }
 
         if (path.endsWith('/push')) {
-          server.pushes++;
-
-          if (headers.Authorization.includes('different-account')) server.wrongOwnerWrites++;
+          library.pushes++;
 
           const body = JSON.parse(String(init?.body)) as {
-            rows: Array<{ proposed: Record<string, unknown> }>;
+            rows: Array<{
+              assumedMaster: Record<string, unknown> | null;
+              proposed: Record<string, unknown>;
+            }>;
           };
           for (const row of body.rows) {
+            if (different && server.entries.has(String(row.proposed.entryId)))
+              server.wrongOwnerWrites++;
+
+            if (different) {
+              const current = other.entries.get(String(row.proposed.entryId));
+
+              if (current && current.serverVersion !== row.assumedMaster?.serverVersion)
+                return new Response(
+                  JSON.stringify({
+                    schemaVersion: 1,
+                    conflicts: [
+                      {
+                        entryId: current.entryId,
+                        reason: 'version',
+                        serverDocument: current,
+                      },
+                    ],
+                  }),
+                );
+            }
+
             const entry: Record<string, unknown> = {
               ...row.proposed,
-              serverVersion: String(++server.revision),
+              serverVersion: String(++library.revision),
             };
-            server.entries.set(String(entry.entryId), entry);
-            server.changes.push(entry);
+            library.entries.set(String(entry.entryId), entry);
+            library.changes.push(entry);
           }
 
           return new Response(JSON.stringify({ schemaVersion: 1, conflicts: [] }));
@@ -208,6 +280,14 @@ test('link confirmation starts production replication and account changes suspen
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await page.getByRole('button', { name: 'Settings', exact: true }).click();
     await page.getByRole('button', { name: 'Preview account link' }).click();
+    const usernameError = page
+      .getByRole('alert')
+      .filter({ hasText: 'The username could not be read.' });
+    await expect(usernameError).toContainText('SERVICE_UNAVAILABLE · HTTP 503');
+    await expect(usernameError).toContainText('10000000-0000-4000-8000-000000000008');
+    await page.getByRole('button', { name: 'Retry', exact: true }).click();
+    await expect(page.getByRole('textbox', { name: 'Username' })).toHaveValue('bound-library');
+    await expect(usernameError).toHaveCount(0);
     await expect(page.getByText('Confirming authorizes uploading', { exact: false })).toBeVisible();
     expect(
       await worker.evaluate(
@@ -225,6 +305,7 @@ test('link confirmation starts production replication and account changes suspen
       )
       .toBeGreaterThan(0);
     await expect(page.getByText('Account synchronization is up to date.')).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Username' })).toHaveValue('bound-library');
     await worker.evaluate(() => {
       const previous = globalThis.fetch;
       Object.assign(globalThis, { settingsRefreshPulls: 0 });
@@ -289,8 +370,27 @@ test('link confirmation starts production replication and account changes suspen
     await cardAction(page, 'Edit');
     await page.getByLabel('Comment').fill('Unsaved draft through account switch');
     await popup.goto(`${origin}/full-page.html#/settings`);
+    await expect(popup.getByRole('textbox', { name: 'Username' })).toHaveValue('bound-library');
+    const usernameReads = () =>
+      worker.evaluate(
+        () =>
+          (globalThis as unknown as { syncFixture: { usernameReads: string[] } }).syncFixture
+            .usernameReads,
+      );
+    const readsBeforeSignOut = await usernameReads();
     await popup.getByRole('button', { name: 'Sign out', exact: true }).click();
     await expect(popup.getByText('Synchronization paused:', { exact: false })).toBeVisible();
+    await expect(popup.getByRole('heading', { name: 'Public library' })).toHaveCount(0);
+    await popup.reload();
+    await expect(popup.getByRole('button', { name: 'Sign in with Google' })).toBeEnabled();
+    await expect(popup.getByRole('heading', { name: 'Public library' })).toHaveCount(0);
+    expect(await usernameReads()).toEqual(readsBeforeSignOut);
+    await popup.getByRole('button', { name: 'Library', exact: true }).click();
+    await popup.getByRole('button', { name: 'Add manual entry' }).click();
+    await popup.getByLabel('Title', { exact: true }).fill('Previous account pending entry');
+    await popup.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect(popup.getByText('Previous account pending entry', { exact: true })).toBeVisible();
+    await popup.getByRole('button', { name: 'Settings', exact: true }).click();
     await worker.evaluate(async () => {
       const api = (
         globalThis as unknown as {
@@ -317,8 +417,52 @@ test('link confirmation starts production replication and account changes suspen
       await api.runtime.sendMessage({ action: 'auth.changed' });
     });
     await expect(popup.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+    await expect(popup.getByRole('textbox', { name: 'Username' })).toHaveValue('different-library');
+    expect((await usernameReads()).slice(readsBeforeSignOut.length)).toEqual([
+      'Bearer different-account',
+    ]);
     await expect(page.getByLabel('Comment')).toHaveValue('Unsaved draft through account switch');
-    await expect(popup.getByText('Synchronization paused:', { exact: false })).toBeVisible();
+    const retryDownload = popup.getByRole('button', { name: 'Retry account download' });
+    await expect(retryDownload).toBeVisible();
+    await expect(popup.getByRole('button', { name: 'Sync now', exact: true })).toBeDisabled();
+    await expect(page.locator('.local-library__entry-title')).toHaveCount(2);
+    await worker.evaluate(() => {
+      const other = (globalThis as unknown as { otherSyncFixture: { downloadBlocked: boolean } })
+        .otherSyncFixture;
+      other.downloadBlocked = false;
+    });
+    await retryDownload.click();
+    await expect(popup.getByRole('button', { name: 'Sync now', exact: true })).toBeEnabled();
+    await expect(popup.getByText('Account synchronization is up to date.')).toBeVisible();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('.local-library__entry-title')).toHaveText(
+      'Downloaded second library',
+    );
+    const otherPushes = () =>
+      worker.evaluate(
+        () =>
+          (globalThis as unknown as { otherSyncFixture: { pushes: number } }).otherSyncFixture
+            .pushes,
+      );
+    expect(await otherPushes()).toBe(0);
+    await cardAction(page, 'Edit');
+    await page.getByLabel('Title', { exact: true }).fill('Updated second library');
+    await page.getByRole('button', { name: 'Save', exact: true }).click();
+    await expect.poll(otherPushes).toBe(1);
+    await expect
+      .poll(() =>
+        worker.evaluate(
+          () =>
+            (
+              globalThis as unknown as {
+                otherSyncFixture: { entries: Map<string, { userTitle: string }> };
+              }
+            ).otherSyncFixture.entries
+              .values()
+              .next().value?.userTitle,
+        ),
+      )
+      .toBe('Updated second library');
     await expect(popup.getByRole('button', { name: 'Preview account link' })).toHaveCount(0);
     const blocked = await page.evaluate(async (ownerId) => {
       const api = (

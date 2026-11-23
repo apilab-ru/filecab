@@ -139,7 +139,12 @@ export function startLibraryReplication(
     },
     push: {
       batchSize: 50,
-      modifier: (row) => (row.entry.deleted && row.entry.serverVersion === null ? null : row),
+      modifier: (row) =>
+        row._deleted ||
+        (row.entry.deleted && row.entry.serverVersion === null) ||
+        (row.entry.serverVersion !== null && row.localRevision === binding.seedRevision)
+          ? null
+          : row,
       handler: async (rows) => {
         await navigator.locks.request(`${database.name}:write`, () => recoverLocalMerges(database));
         // Validate the persisted pull position before every upload, including retries
@@ -189,12 +194,18 @@ export function startLibraryReplication(
         try {
           result = await call<ReplicationPushResponse>(SyncOperation.Push, {
             schemaVersion: 1,
-            rows: orderedRows.map((row) => ({
-              assumedMaster: row.assumedMasterState?.entry.serverVersion
-                ? row.assumedMasterState.entry
-                : null,
-              proposed: row.newDocumentState.entry,
-            })),
+            rows: orderedRows.map((row) => {
+              const proposed = row.newDocumentState.entry;
+              const knownMaster = row.assumedMasterState?.entry;
+              // Snapshot rows have a server version before RxDB has an assumed master.
+              const baseline = binding.seedRevision === undefined ? null : proposed;
+              const assumedMaster = knownMaster?.serverVersion ? knownMaster : baseline;
+
+              return {
+                assumedMaster: assumedMaster?.serverVersion ? assumedMaster : null,
+                proposed,
+              };
+            }),
           });
         } catch (error) {
           const diagnostic = syncDiagnostic(error);

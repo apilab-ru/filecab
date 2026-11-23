@@ -25,21 +25,7 @@ Read these first. Search the code only when the list is not sufficient.
 | 15   | Catalog search and editing: all clients, popup search, matching, merge with the latest link                    |
 | 16   | Page extraction: safe parser rules, page link save and move, limited permissions, Netflix and Crunchyroll      |
 | 17   | Backup and restore: export, validation, preview, confirmation, atomic replacement, offline extension restore   |
-
-## 18. Public library
-
-Specs: [Public library](../specs/backend.md#public-library), [Public library settings](../specs/library-ui.md#public-library-settings), [BACKUP-05](../specs/functionality.md#8-backup-and-restore) (the username stays out of backups).
-
-Code: `apps/api/prisma/schema.prisma` (username column and migration), `apps/api/src/auth/` (account username routes), `apps/api/src/library/` (public projection), `apps/api/src/http/application.ts` (headers and rate limit), `packages/library/src/pages/settings-page/`, `packages/library/src/components/library-browser/` (read-only mode), `apps/web/src/`, `apps/extension/src/popup/`. No public library code exists yet.
-
-Tests: `apps/api/src/library/library.integration.test.ts`, `tests/e2e/website.spec.ts`, `tests/e2e/extension-storage.spec.ts`.
-
-- [ ] Username column, migration and the account username API. Unique lowercase usernames.
-- [ ] Username field in Settings with the privacy notice. An empty username turns public access off.
-- [ ] Public read-only library page at `/u/:username`.
-- [ ] Exclude hidden entries and private data.
-- [ ] `no-store`, `noindex`, referrer policy and a rate limit on the public route.
-- [ ] The public route gives no write, owner lookup or sync access.
+| 18   | Public library: username in Settings, read-only page at `/u/:username`, private data excluded, rate limit      |
 
 ## 19. External list synchronization
 

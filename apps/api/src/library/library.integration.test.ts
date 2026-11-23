@@ -4,6 +4,7 @@ import type { NestExpressApplication } from '@nestjs/platform-express';
 import type {
   ApiError,
   Backup,
+  PublicLibrary,
   BackupPreview,
   LibraryMutationPreview,
   LibraryMutationResult,
@@ -1082,4 +1083,113 @@ test('backup routes accept bodies up to 10 MiB and other routes keep the 1 MiB l
     owner,
   );
   expect(tooLarge.status).toBe(413);
+});
+
+/** Reads a public library anonymously. */
+function publicLibrary(username: string) {
+  return fetch(
+    `${base.replace(/\/library$/, '')}/public/libraries/${encodeURIComponent(username)}`,
+  );
+}
+
+/** Sets the public library username of an owner. */
+function setUsername(username: string, owner: SessionTokens) {
+  return fetch(`${base.replace(/\/library$/, '')}/account/username`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${owner.accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username }),
+  });
+}
+
+test('a username publishes a read-only projection without hidden entries or private data', async () => {
+  const owner = await login(`public-${randomUUID()}`);
+  const username = `u${randomUUID().slice(0, 8)}`;
+  const link = `https://example.com/${randomUUID()}`;
+  await create(
+    {
+      userTitle: 'Shown',
+      status: 'process',
+      rating: 7,
+      progress: 3,
+      comment: 'secret',
+      sourceUrls: [link],
+    },
+    owner,
+  );
+  await create({ userTitle: 'Hidden', status: 'hide' }, owner);
+  const deleted = await create({ userTitle: 'Deleted' }, owner);
+  await request(
+    `/entries/${deleted.entryId}`,
+    'DELETE',
+    { expectedVersion: deleted.serverVersion },
+    owner,
+  );
+
+  expect((await publicLibrary(username)).status).toBe(404);
+  const initial = await fetch(`${base.replace(/\/library$/, '')}/account/username`, {
+    headers: { Authorization: `Bearer ${owner.accessToken}` },
+  });
+  expect(await initial.json()).toEqual({ schemaVersion: 1, username: null });
+
+  const saved = await setUsername(username.toUpperCase(), owner);
+  expect(saved.status).toBe(200);
+  expect(await saved.json()).toEqual({ schemaVersion: 1, username });
+  expect((await setUsername(username, other)).status).toBe(409);
+  expect((await setUsername('-bad', owner)).status).toBe(400);
+  expect((await setUsername('ab', owner)).status).toBe(400);
+
+  const response = await publicLibrary(username.toUpperCase());
+  expect(response.status).toBe(200);
+  expect(response.headers.get('cache-control')).toBe('no-store');
+  expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow');
+  expect(response.headers.get('referrer-policy')).toBe('no-referrer');
+  const body = (await response.json()) as PublicLibrary;
+  expect(body.username).toBe(username);
+  expect(body.entries).toHaveLength(1);
+  expect(body.entries[0]).toMatchObject({
+    userTitle: 'Shown',
+    status: 'process',
+    rating: 7,
+    progress: 3,
+  });
+  const text = JSON.stringify(body);
+  for (const value of [
+    'secret',
+    link,
+    'entryId',
+    'catalogId',
+    'serverVersion',
+    'sources',
+    'comment',
+    owner.ownerId,
+  ])
+    expect(text).not.toContain(value);
+
+  const notFound = await publicLibrary(`missing${randomUUID().slice(0, 8)}`);
+  const invalid = await publicLibrary('%20');
+  expect(notFound.status).toBe(404);
+  expect(invalid.status).toBe(404);
+  expect(notFound.headers.get('x-robots-tag')).toBe('noindex, nofollow');
+  const notFoundBody = (await notFound.json()) as ApiError;
+  const invalidBody = (await invalid.json()) as ApiError;
+  expect([notFoundBody.code, notFoundBody.message]).toEqual([
+    invalidBody.code,
+    invalidBody.message,
+  ]);
+
+  const renamed = `r${randomUUID().slice(0, 8)}`;
+  expect((await setUsername(renamed, owner)).status).toBe(200);
+  expect((await publicLibrary(username)).status).toBe(404);
+  expect((await publicLibrary(renamed)).status).toBe(200);
+  expect((await setUsername('', owner)).status).toBe(200);
+  expect((await publicLibrary(renamed)).status).toBe(404);
+  expect((await setUsername(username, other)).status).toBe(200);
+  expect((await setUsername('', other)).status).toBe(200);
+
+  const write = await fetch(`${base.replace(/\/library$/, '')}/public/libraries/${renamed}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+  expect(write.status).toBe(404);
 });

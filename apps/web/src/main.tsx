@@ -13,6 +13,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { API_ORIGIN, queryClient } from './auth/session';
 import './styles.scss';
 import { OnlineLibrary } from './online-library/components/online-library/online-library';
+import { PublicLibrary } from './public-library/components/public-library/public-library';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -20,7 +21,12 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider repository={authRepository}>
         <ApplicationShell storage={websitePreferences} routerMode={RouterMode.Browser}>
           <WorkspaceProvider origin={API_ORIGIN}>
-            <FullPage renderLibrary={(category) => <OnlineLibrary category={category} />} />
+            <FullPage
+              renderLibrary={(category) => <OnlineLibrary category={category} />}
+              renderPublicLibrary={(username, category) => (
+                <PublicLibrary username={username} category={category} />
+              )}
+            />
           </WorkspaceProvider>
         </ApplicationShell>
       </AuthProvider>

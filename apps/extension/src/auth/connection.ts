@@ -3,6 +3,9 @@ import { browser } from 'wxt/browser';
 
 export const API_ORIGIN = import.meta.env.WXT_PUBLIC_API_ORIGIN ?? 'http://127.0.0.1:3001';
 
+/** The website that shows public libraries at `/u/:username`. */
+export const WEBSITE_ORIGIN = import.meta.env.WXT_PUBLIC_WEBSITE_ORIGIN ?? 'http://127.0.0.1:5173';
+
 /** Reports only public connection metadata and extension identity for troubleshooting. */
 export interface AuthDebugContext {
   extensionId: string;

@@ -123,6 +123,27 @@
     }
   }
 
+  &__public-title {
+    align-self: center;
+    max-width: 36%;
+    min-width: 0;
+    margin: 0 4px 0 0;
+    padding-inline-end: 16px;
+    border-inline-end: 1px solid var(--fc-border);
+    font-size: 22px;
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    overflow-wrap: anywhere;
+
+    @media (max-width: 900px) {
+      flex-basis: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+  }
+
   &__language-label {
     position: absolute;
     width: 1px;

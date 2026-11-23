@@ -44,12 +44,12 @@ export function DeviceSync() {
   }, []);
 
   const adapter = useMemo(
-    () => (state ? localWorkspaceRepository(state.repository) : null),
-    [state?.repository],
+    () => (state ? localWorkspaceRepository(state.repository, state.snapshot.scope) : null),
+    [state?.repository, state?.snapshot.scope],
   );
   useEffect(() => {
     workspace.register({
-      scope: 'device',
+      scope: state?.snapshot.scope ?? 'device',
       rows:
         state?.snapshot.rows
           .filter((row) => !row.entry.deleted)

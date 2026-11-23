@@ -42,4 +42,10 @@ export type { WorkspaceRepository, WorkspaceRow, WorkspacePreview } from './mode
 export { WorkspaceConflictError } from './models/workspace';
 export { BackupValidationError } from './models/backup';
 export type { BackupRepository, BackupRestorePreview } from './models/backup';
+export {
+  UsernameInvalidError,
+  UsernameReadError,
+  UsernameTakenError,
+} from './models/public-library';
+export type { PublicLibraryRepository } from './models/public-library';
 export { downloadJsonFile } from './domain/download-json-file';

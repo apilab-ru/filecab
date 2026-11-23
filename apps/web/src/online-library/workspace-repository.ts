@@ -15,7 +15,7 @@ import type {
   OwnerSnapshot,
   ServerEntry,
 } from '@filecab/contracts';
-import { API_ORIGIN, currentAccount, queryClient } from '../auth/session';
+import { fetchOwnerRequest, queryClient } from '../auth/session';
 
 /** Carries the HTTP status of a rejected library request without its response body. */
 class LibraryRequestError extends Error {
@@ -35,20 +35,7 @@ async function ownerRequest<T>(
   body?: unknown,
   method = 'POST',
 ): Promise<T> {
-  const current = await currentAccount();
-
-  if (current?.ownerId !== ownerId) throw new Error('Account changed');
-
-  const response = await fetch(`${API_ORIGIN}/api/v1/library${path}`, {
-    method,
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Filecab-Request': '1',
-      'X-Filecab-Owner': ownerId,
-    },
-    ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }),
-  });
+  const response = await fetchOwnerRequest(ownerId, `/library${path}`, method, body);
 
   if (response.status === 409) throw new WorkspaceConflictError();
 

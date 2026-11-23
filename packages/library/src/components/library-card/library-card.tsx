@@ -27,6 +27,7 @@ export function LibraryCard({
   edit,
   remove,
   onGenre,
+  readOnly = false,
 }: LibraryCardProps) {
   const { t } = useTranslation();
   const changes = useEntryUpdate(entry);
@@ -102,7 +103,12 @@ export function LibraryCard({
             <span className="library-card__placeholder-label">{t('noPoster')}</span>
           </div>
         )}
-        {entry && (
+        {entry && readOnly && entry.status && (
+          <span className={`library-card__status-text library-card__status-text--${entry.status}`}>
+            {t(entry.status)}
+          </span>
+        )}
+        {entry && !readOnly && (
           <StatusSelect
             allowNone
             className="library-card__status"
@@ -143,7 +149,13 @@ export function LibraryCard({
           )}
         </span>
         {snapshot.year !== null && <span className="library-card__year">{snapshot.year}</span>}
-        {entry && (
+        {entry && readOnly && (
+          <span className="library-card__progress-text">
+            {t('Progress')}: {entry.progress}
+            {total ? ` / ${total}` : ''}
+          </span>
+        )}
+        {entry && !readOnly && (
           <ProgressControl
             className="library-card__episodes"
             value={entry.progress}
@@ -157,7 +169,7 @@ export function LibraryCard({
             className={`library-card__rating${rating > 0 ? ' library-card__rating--rated' : ''}`}
             title={showProviderRating ? t('approximateProviderRating') : t('Rating')}
           >
-            {entry ? (
+            {entry && !readOnly ? (
               <RatingPicker
                 anchor={() =>
                   titleElement.current?.closest('.title-results--list')

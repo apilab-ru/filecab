@@ -14,9 +14,10 @@ This document defines device persistence and replication in the extension.
 - Web Locks serialize repository reads and writes across surfaces.
 - When Web Locks are missing or storage access fails, enter recovery. Never use volatile storage instead.
 
-Sign-in, sign-out and account changes keep the same entries, settings and unsaved editor
-visible. Authentication does not select storage. Credentials are never stored in library
-or settings collections. Sign-in alone never uploads or replaces local data.
+Sign-out keeps the device entries and the open editor. First sign-in keeps a guest
+library until the user confirms the first link. When a different account signs in
+on a linked device, replace the device library as specified in Account binding.
+Keep interface settings. Do not store credentials in library or settings collections.
 
 Support these operations offline: manual CRUD, browsing, filters, import and export, and
 available snapshots. Show catalog operations as offline. Acknowledge a save only after a
@@ -52,7 +53,8 @@ Use expected revisions for settings writes.
 - Register the RxDB migration plugin. Give each collection an explicit migration strategy map.
 - A schema change increases the version and adds a migration. Test that the migration keeps existing data.
 - The synchronization issue collection uses version 1. Its migration keeps version 0 issues and all entries unchanged.
-- The merge journal collection uses version 1. It holds any number of rows, so a restore fits in one journal. Its migration keeps version 0 journals unchanged.
+- The merge journal collection uses version 2. It records an account replacement and its entries in one document. Its migration keeps earlier journals unchanged.
+- The binding collection uses version 1. Its migration keeps version 0 bindings and their checkpoints.
 - Validate storage writes with build-time AJV standalone validators that work under the extension CSP. Bundle a validator for each supported old schema version, because migration validates old documents.
 - These validators are private to storage. They are not shared request parsers or client DTO validation.
 - Check stored records against the same schemas before showing data.
@@ -102,7 +104,12 @@ deletion intent in a separate issue collection.
 
 - Store one account binding and a reset generation in a separate collection.
 - Only the bound account can replicate this library.
-- Another account sees a suspended link. It cannot take the pending intent of the previous account.
+- When a different account signs in, download its server snapshot before changing device data.
+- Replace the device entries with that snapshot. Discard the previous account's local entries, pending edits, recovery issues, Undo state and open drafts.
+- Do not upload any data from the previous account. Do not change its server library.
+- Record the replacement before it starts. Complete an interrupted replacement before another device write.
+- Start a new replication generation from the downloaded snapshot. Do not upload the downloaded rows as local edits.
+- If the download fails, keep the device entries and show Retry.
 - First linking requires a preview of local and remote content, bound to the owner and both revisions, and explicit confirmation.
 - Confirmation checks both revisions again before it stores the binding.
 - After a restart, replication continues from RxDB metadata. Partial network results use retry-safe server writes.
@@ -120,7 +127,7 @@ tokens. Content scripts cannot call these operations.
 - Retry failures. Synchronize again on reconnect, on a periodic timer and on manual refresh.
 - Closing a surface or stopping the worker must not lose pending state.
 - Show active, error, suspended and reset states and the count of stored issues.
-- Keep the same editor mounted during authentication and status changes.
+- Keep the same editor mounted during sign-out and status changes. Close the editor when the device library changes accounts.
 
 ### History reset
 

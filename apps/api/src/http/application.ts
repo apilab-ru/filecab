@@ -18,6 +18,7 @@ import {
   type RequestDiagnostic,
 } from './api-error';
 import { StrictValidationPipe } from './validation';
+import { publicRouteMiddleware } from './public-rate-limit';
 
 /** Backup files can be up to 10 MiB. Other JSON bodies keep the 1 MiB limit. */
 const BACKUP_BODY_LIMIT = 10 * 1024 * 1024;
@@ -119,6 +120,7 @@ export function configureApiApplication(
     exposedHeaders: ['X-Correlation-ID'],
     maxAge: 600,
   });
+  app.use('/api/v1/public', publicRouteMiddleware());
   // Backup routes parse first with their own limit; the general parser then skips the body.
   app.use(
     '/api/v1/library/backup',

@@ -229,3 +229,137 @@ test('website snapshot errors remain distinct from an empty library and can be r
   await expect(page.locator('.library-browser__pagination')).toContainText('0 of 0');
   await expect(page.getByText('Your library is empty.', { exact: false })).toBeVisible();
 });
+
+test('a public library page is read-only and hides Catalog; Settings saves the username', async ({
+  page,
+  context,
+}) => {
+  const headers = {
+    'Access-Control-Allow-Origin': 'http://127.0.0.1:5173',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Headers': 'X-Filecab-Request,X-Filecab-Owner,Content-Type',
+    'Access-Control-Allow-Methods': 'GET,PUT,POST,OPTIONS',
+  };
+  const publicEntry = (title: string, category: Category) => ({
+    category,
+    userTitle: title,
+    status: Status.Process,
+    rating: 8,
+    progress: 2,
+    snapshot: { ...emptySnapshot(), episodeCount: 12 },
+    createdAt: '2026-10-01T00:00:00.000Z',
+    updatedAt: '2026-10-02T00:00:00.000Z',
+  });
+  let username: string | null = null;
+  let signedIn = false;
+  let usernameReads = 0;
+  await context.route('http://127.0.0.1:3001/api/v1/**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+
+    if (request.method() === 'OPTIONS') return route.fulfill({ status: 204, headers });
+
+    if (path === '/api/v1/public/libraries/anna')
+      return route.fulfill({
+        headers,
+        json: {
+          schemaVersion: 1,
+          username: 'anna',
+          entries: [
+            publicEntry('Public anime', Category.Anime),
+            publicEntry('Public film', Category.Films),
+          ],
+        },
+      });
+
+    if (path.startsWith('/api/v1/public/libraries/'))
+      return route.fulfill({ status: 404, headers, json: { code: 'NOT_FOUND' } });
+
+    if (path === '/api/v1/account/username' && request.method() === 'PUT') {
+      const next = (request.postDataJSON() as { username: string }).username;
+
+      if (next === 'taken')
+        return route.fulfill({ status: 409, headers, json: { code: 'CONFLICT' } });
+
+      username = next || null;
+    }
+
+    if (path === '/api/v1/account/username') {
+      if (request.method() === 'GET') usernameReads++;
+
+      return route.fulfill({ headers, json: { schemaVersion: 1, username } });
+    }
+
+    if (path === '/api/v1/library')
+      return route.fulfill({ status: 503, headers, json: { code: 'SERVICE_UNAVAILABLE' } });
+
+    return route.fulfill({
+      status: signedIn ? 200 : 401,
+      headers,
+      json: signedIn ? { schemaVersion: 1, ownerId: 'public-owner' } : { code: 'UNAUTHORIZED' },
+    });
+  });
+
+  await page.goto('/u/anna');
+  const header = page.getByRole('navigation', { name: 'Categories' });
+  const heading = header.getByRole('heading', { name: 'anna’s library', level: 1 });
+  await expect(heading).toBeVisible();
+  const [title, anime] = await Promise.all([
+    heading.boundingBox(),
+    header.getByRole('button', { name: 'Anime', exact: true }).boundingBox(),
+  ]);
+  expect(title!.x + title!.width).toBeLessThan(anime!.x);
+  await expect(page.getByText('Public anime')).toBeVisible();
+  await expect(page.getByText('Public film')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Catalog', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Library', exact: true })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  const card = page.locator('.library-card');
+  await expect(card.getByRole('combobox')).toHaveCount(0);
+  await expect(card.getByRole('spinbutton')).toHaveCount(0);
+  await expect(card.getByRole('textbox')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Add', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Edit' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Delete' })).toHaveCount(0);
+  await expect(page.locator('.library-card__progress-text')).toHaveText('Progress: 2 / 12');
+  await page.getByRole('button', { name: 'Films', exact: true }).click();
+  await expect(page).toHaveURL(/\/u\/anna\/films$/);
+  await expect(heading).toBeVisible();
+  await expect(page.getByText('Public film')).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const [mobileTitle, mobileAnime] = await Promise.all([
+    heading.boundingBox(),
+    header.getByRole('button', { name: 'Anime', exact: true }).boundingBox(),
+  ]);
+  expect(mobileTitle!.y + mobileTitle!.height).toBeLessThan(mobileAnime!.y);
+  await page.setViewportSize({ width: 1280, height: 720 });
+
+  await page.goto('/u/nobody');
+  await expect(
+    page.getByText('This public library does not exist or is not public.'),
+  ).toBeVisible();
+
+  await page.goto('/settings');
+  await expect(page.getByRole('button', { name: 'Sign in with Google' })).toBeEnabled();
+  await expect(page.getByRole('heading', { name: 'Public library' })).toHaveCount(0);
+  expect(usernameReads).toBe(0);
+
+  signedIn = true;
+  await page.reload();
+  const field = page.getByRole('textbox', { name: 'Username' });
+  await field.fill('taken');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(
+    page.getByText('Another account uses this username.', { exact: false }),
+  ).toBeVisible();
+  await expect(field).toHaveValue('taken');
+  await field.fill('anna');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('link', { name: 'http://127.0.0.1:5173/u/anna' })).toBeVisible();
+  await field.fill('');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByText('Public access is off.')).toBeVisible();
+});

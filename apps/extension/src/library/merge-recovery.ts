@@ -14,6 +14,13 @@ export async function recoverLocalMerges(database: LocalDatabase): Promise<void>
   );
 
   for (const journal of journals) {
+    if (journal.switchTo) {
+      await recoverAccountSwitch(database, journal.switchTo, journal.rows);
+      const document = await database.merges.findOne(journal.id).exec();
+      await document?.remove();
+      continue;
+    }
+
     const conflicted = journal.rows.some((row) => {
       const current = entries.get(row.entryId);
 
@@ -38,6 +45,54 @@ export async function recoverLocalMerges(database: LocalDatabase): Promise<void>
     const document = await database.merges.findOne(journal.id).exec();
     await document?.remove();
   }
+}
+
+/** Replaces device data and publishes the new binding after every write succeeds. */
+async function recoverAccountSwitch(
+  database: LocalDatabase,
+  target: NonNullable<LocalMergeJournal['switchTo']>,
+  rows: LocalEntry[],
+): Promise<void> {
+  const binding = await database.binding.findOne('device').exec();
+
+  if (binding?.ownerId === target.ownerId && binding.generation === target.generation) return;
+
+  if (!binding || binding.generation + 1 !== target.generation)
+    throw new Error('Device binding changed during account replacement');
+
+  const incoming = new Set(rows.map((row) => row.entryId));
+  const previous = (await readCollection(database.entries))
+    .filter((row) => !incoming.has(row.entryId))
+    .map((row) => row.entryId);
+  const removed = await database.entries.bulkRemove(previous);
+
+  if (
+    removed.error.length ||
+    (await readCollection(database.entries)).some((row) => !incoming.has(row.entryId))
+  )
+    throw new Error('Previous account entries could not be discarded');
+
+  for (const row of rows) {
+    await database.entries.incrementalUpsert(row);
+  }
+  const previousIssues = (await readCollection(database.issues))
+    .filter((issue) => issue.ownerId !== target.ownerId)
+    .map((issue) => issue.id);
+  const removedIssues = await database.issues.bulkRemove(previousIssues);
+
+  if (
+    removedIssues.error.length ||
+    (await readCollection(database.issues)).some((issue) => issue.ownerId !== target.ownerId)
+  )
+    throw new Error('Previous account issues could not be discarded');
+
+  await binding.incrementalPatch({
+    ownerId: target.ownerId,
+    generation: target.generation,
+    phase: 'linked',
+    initialCheckpoint: { cursor: target.revision, entryId: null },
+    seedRevision: target.seedRevision,
+  });
 }
 
 /** Keeps unapplied merge rows as recoverable issues when newer data, such as a pull, changed them. */

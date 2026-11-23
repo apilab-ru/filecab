@@ -1,10 +1,19 @@
 import { ApiErrorCode, SyncErrorCode } from '@filecab/contracts';
 import type { LocalLibraryRepository } from '../../repository';
 import type { LocalSnapshot } from '../../models/local-snapshot';
+import type { SyncStatus } from '../../models/sync-status';
 
 export interface SyncControlsProps {
   repository: LocalLibraryRepository;
   snapshot: LocalSnapshot;
+}
+
+/** Shares the current replication status only with surfaces for the same binding. */
+export interface SyncStatusUpdate {
+  ownerId: string;
+  generation: number;
+  status: SyncStatus;
+  lastSuccess: number | null;
 }
 
 export const SYNC_MESSAGES: Partial<Record<ApiErrorCode | SyncErrorCode, string>> = {

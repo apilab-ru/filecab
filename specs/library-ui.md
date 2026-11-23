@@ -236,12 +236,16 @@ Settings shows a Backup section on the website and in the extension.
 
 ## Public library settings
 
-Settings shows a Public library section on the website and in the extension.
+Show the Public library section in Settings only after the user signs in.
 
 - The section has one username field and Save. It shows the public address `/u/:username` on the website origin when the username is not empty.
 - Before the first save, the section tells the owner that anyone with the username can see the library, except hidden entries, notes and links.
 - An empty username turns public access off.
 - A username of another account shows a "username taken" message. The field keeps the input.
-- In the extension, the section is available only when the device is linked to an account.
-- The website route `/u/:username` shows the public page. An unknown or empty username shows Not found.
+- If the username request fails, show a Retry action. Show the error code, HTTP status and request ID when available.
+- In the extension, show the section for the signed-in account even when device synchronization is paused or the device has no link.
+- When a different account signs in, Settings shows the download status until the device library is ready.
+- The website routes `/u/:username` and `/u/:username/:category` show the public page. The default category is anime. An unknown or empty username shows Not found.
+- The public page uses the full-page layout. The navigation hides Catalog. Library shows the public library. Settings opens the visitor's own settings.
+- Put the public library title before the category tabs in the top bar. On narrow screens, put the title above the tabs.
 - The public page uses the library browser in read-only mode: no Add, Edit, Delete or rating and status controls.

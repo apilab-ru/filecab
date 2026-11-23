@@ -4,4 +4,10 @@ import type { LocalEntry } from '../database';
 export interface LocalMergeJournal {
   id: string;
   rows: LocalEntry[];
+  switchTo?: {
+    ownerId: string;
+    generation: number;
+    revision: string;
+    seedRevision: number;
+  };
 }

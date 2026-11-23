@@ -20,9 +20,9 @@ export class SyncError extends Error {
 }
 
 /** Sends an allowlisted request through the worker without exposing reusable credentials. */
-export async function syncRequest<T>(
+async function bridgeRequest<T>(
   ownerId: string,
-  operation: SyncOperation.Snapshot | SyncOperation.Pull | SyncOperation.Push,
+  operation: SyncOperation,
   body?: unknown,
 ): Promise<T> {
   let result:
@@ -42,4 +42,22 @@ export async function syncRequest<T>(
     throw new SyncError(result?.error ?? SyncErrorCode.WorkerUnavailable, result?.diagnostic);
 
   return result.data as T;
+}
+
+/** Sends a replication request of the linked account through the worker. */
+export function syncRequest<T>(
+  ownerId: string,
+  operation: SyncOperation.Snapshot | SyncOperation.Pull | SyncOperation.Push,
+  body?: unknown,
+): Promise<T> {
+  return bridgeRequest<T>(ownerId, operation, body);
+}
+
+/** Reads or saves the public library username of the linked account through the worker. */
+export function accountRequest<T>(
+  ownerId: string,
+  operation: SyncOperation.ReadUsername | SyncOperation.SaveUsername,
+  body?: unknown,
+): Promise<T> {
+  return bridgeRequest<T>(ownerId, operation, body);
 }

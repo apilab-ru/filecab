@@ -848,6 +848,89 @@ test('history reset blocks uploads and preserves intent before any replacement, 
   }
 });
 
+test('an interrupted account replacement resumes after restart and an empty account clears the device', async () => {
+  const profile = await mkdtemp(join(tmpdir(), 'filecab-account-switch-'));
+  let { context, origin } = await launch(profile);
+  try {
+    const page = await context.newPage();
+    await page.goto(`${origin}/wish-list-icon.png`);
+    const interrupted = await page.evaluate(async (url) => {
+      const module = await import(url);
+      const ownerId = crypto.randomUUID();
+      await module.writeLegacyBinding(ownerId);
+      const repository = await module.LocalLibraryRepository.open();
+      const database = repository.database;
+      const nextOwnerId = crypto.randomUUID();
+      const old = await repository.create(module.Category.Anime, { userTitle: 'Previous account' });
+      const incoming = {
+        ...old.entry,
+        entryId: crypto.randomUUID(),
+        userTitle: 'New account',
+        serverVersion: '1',
+      };
+      const insert = database.entries.incrementalUpsert;
+      database.entries.incrementalUpsert = async () => {
+        throw new Error('Interrupted storage write');
+      };
+      let failed = false;
+      try {
+        await module.switchAccount(database, nextOwnerId, undefined, async () => ({
+          schemaVersion: 1,
+          revision: '1',
+          entries: [incoming],
+        }));
+      } catch {
+        failed = true;
+      } finally {
+        database.entries.incrementalUpsert = insert;
+      }
+      const [binding] = await module.readCollection(database.binding);
+      const journals = await module.readCollection(database.merges);
+      await repository.close();
+
+      return { failed, bindingUnchanged: binding.ownerId === ownerId, journals: journals.length };
+    }, `${origin}/storage-test.js`);
+    expect(interrupted).toEqual({ failed: true, bindingUnchanged: true, journals: 1 });
+    await context.close();
+    ({ context, origin } = await launch(profile));
+    const reopened = await context.newPage();
+    await reopened.goto(`${origin}/wish-list-icon.png`);
+    const recovered = await reopened.evaluate(async (url) => {
+      const module = await import(url);
+      const repository = await module.LocalLibraryRepository.open();
+      const database = repository.database;
+      const snapshot = await repository.snapshot();
+      const [binding] = await module.readCollection(database.binding);
+      const journals = await module.readCollection(database.merges);
+      await module.switchAccount(database, crypto.randomUUID(), undefined, async () => ({
+        schemaVersion: 1,
+        revision: '0',
+        entries: [],
+      }));
+      const empty = await repository.snapshot();
+      await repository.close();
+
+      return {
+        recovered: snapshot.rows.map(
+          (row: { entry: { userTitle: string } }) => row.entry.userTitle,
+        ),
+        checkpoint: binding.initialCheckpoint,
+        journals: journals.length,
+        empty: empty.rows.length,
+      };
+    }, `${origin}/storage-test.js`);
+    expect(recovered).toEqual({
+      recovered: ['New account'],
+      checkpoint: { cursor: '1', entryId: null },
+      journals: 0,
+      empty: 0,
+    });
+  } finally {
+    await context.close();
+    await rm(profile, { recursive: true, force: true });
+  }
+});
+
 test('collapsed pull pages reach the latest master and missing-master conflicts retain the rejected create', async () => {
   const profile = await mkdtemp(join(tmpdir(), 'filecab-pull-conflict-'));
   const { context, origin } = await launch(profile);
@@ -1095,6 +1178,8 @@ test('popup uses the existing brand icon, compact header actions and Page/Search
     await full.setViewportSize({ width: 1100, height: 820 });
     await full.goto(`${origin}/full-page.html#/settings`);
     await expect(full.getByRole('heading', { name: 'Account', exact: true })).toBeVisible();
+    await expect(full.getByRole('heading', { name: 'Public library' })).toHaveCount(0);
+    await expect(full.getByRole('textbox', { name: 'Username' })).toHaveCount(0);
     await full.screenshot({ path: 'test-results/settings-full-dark.png', fullPage: true });
     await page.getByRole('button', { name: 'Back', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Page', exact: true })).toHaveAttribute(

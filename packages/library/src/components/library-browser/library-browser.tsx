@@ -11,11 +11,15 @@ import { useLibraryBrowserDatasource } from './library-browser-datasource';
 import { useWorkspace } from '../../hooks/use-workspace';
 import type { LibraryBrowserProps } from './model-library-browser';
 
-/** Renders the active workspace library with shared add, edit and delete actions. */
-export function LibraryBrowser({ category }: LibraryBrowserProps) {
+/**
+ * Renders the active workspace library with shared add, edit and delete actions, or the given
+ * read-only entries of a public library.
+ */
+export function LibraryBrowser({ category, readOnlyEntries }: LibraryBrowserProps) {
   const { state, open, remove } = useWorkspace();
-  const available = Boolean(state.repository);
-  const entries = state.rows.map(({ entry }) => entry);
+  const readOnly = readOnlyEntries !== undefined;
+  const available = !readOnly && Boolean(state.repository);
+  const entries = readOnlyEntries ?? state.rows.map(({ entry }) => entry);
   const rowFor = (entryId: string) => state.rows.find(({ entry }) => entry.entryId === entryId);
   const {
     current,
@@ -52,7 +56,7 @@ export function LibraryBrowser({ category }: LibraryBrowserProps) {
         genre={genre}
         genres={genres}
         layout={layout}
-        available={available}
+        available={available || readOnly}
         onQueryChange={setQuery}
         onStatusChange={setStatus}
         onRatingChange={setRating}
@@ -61,7 +65,7 @@ export function LibraryBrowser({ category }: LibraryBrowserProps) {
         onAdd={available ? () => open(category) : undefined}
       />
       <div className="title-results-region">
-        {available && displayed.length === 0 && (
+        {(available || readOnly) && displayed.length === 0 && (
           <div className="library-browser__empty">
             <Icon name={IconName.Library} />
             <p>{rows.length ? t('noMatches') : t('emptyLibrary')}</p>
@@ -95,6 +99,7 @@ export function LibraryBrowser({ category }: LibraryBrowserProps) {
                 edit={row ? () => open(category, row) : undefined}
                 remove={row ? () => void remove(row) : undefined}
                 onGenre={setGenre}
+                readOnly={readOnly}
               />
             );
           })}

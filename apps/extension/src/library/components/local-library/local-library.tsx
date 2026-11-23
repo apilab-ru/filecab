@@ -77,12 +77,12 @@ export function LocalLibrary({ category }: LibraryContentProps) {
   }, [attempt]);
 
   const adapter = useMemo(
-    () => (repository ? localWorkspaceRepository(repository) : null),
-    [repository],
+    () => (repository && snapshot ? localWorkspaceRepository(repository, snapshot.scope) : null),
+    [repository, snapshot?.scope],
   );
   useEffect(() => {
     workspace.register({
-      scope: 'device',
+      scope: snapshot?.scope ?? 'device',
       rows:
         snapshot?.rows
           .filter((row) => !row.entry.deleted)

@@ -47,8 +47,9 @@ export interface LocalBackupPreview {
 }
 
 /** Computes revision metadata from the same committed rows as the entries. */
-function snapshotOf(rows: LocalEntry[]): LocalSnapshot {
+function snapshotOf(rows: LocalEntry[], scope = 'device'): LocalSnapshot {
   return {
+    scope,
     revision: rows.reduce((maximum, row) => Math.max(maximum, row.localRevision), 0),
     updatedAt: rows.reduce((maximum, row) => Math.max(maximum, row.localUpdatedAt), 0),
     rows,
@@ -134,27 +135,34 @@ export class LocalLibraryRepository {
   }
 
   async snapshot(): Promise<LocalSnapshot> {
-    return this.locked(async () => snapshotOf(await this.rows()));
+    return this.locked(async () => snapshotOf(await this.rows(), await this.scope()));
+  }
+
+  /** Keeps the guest editor until a downloaded account replaces the device library. */
+  private async scope(): Promise<string> {
+    const [binding] = await readCollection(this.database.binding);
+
+    return binding?.seedRevision === undefined ? 'device' : `device:${binding.ownerId}`;
   }
 
   observe(next: (snapshot: LocalSnapshot) => void, error: () => void): () => void {
     let stopped = false;
-    const subscription = this.database.entries.find().$.subscribe({
-      next: () => {
-        void this.snapshot()
-          .then((snapshot) => {
-            if (!stopped) next(snapshot);
-          })
-          .catch(() => {
-            if (!stopped) error();
-          });
-      },
-      error,
-    });
+    const read = () => {
+      void this.snapshot()
+        .then((snapshot) => {
+          if (!stopped) next(snapshot);
+        })
+        .catch(() => {
+          if (!stopped) error();
+        });
+    };
+    const entries = this.database.entries.find().$.subscribe({ next: read, error });
+    const binding = this.database.binding.findOne('device').$.subscribe({ next: read, error });
 
     return () => {
       stopped = true;
-      subscription.unsubscribe();
+      entries.unsubscribe();
+      binding.unsubscribe();
     };
   }
 
@@ -222,8 +230,12 @@ export class LocalLibraryRepository {
     fields: EntryPatch,
     catalog?: CatalogRecord,
     entryId: string = crypto.randomUUID(),
+    scope?: string,
   ): Promise<LocalEntry> {
     return this.locked(async () => {
+      if (scope !== undefined && scope !== (await this.scope()))
+        throw new LocalLibraryError('CONFLICT');
+
       const now = new Date().toISOString();
       const entry = previewEntryPatch(
         {
