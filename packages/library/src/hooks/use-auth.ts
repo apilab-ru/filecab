@@ -16,6 +16,7 @@ export function useAuth() {
   return {
     ...state,
     publicLibrary: repository.publicLibrary,
+    listSync: repository.listSync,
     signIn: repository.signIn,
     signOut: repository.signOut,
     signOutAll: repository.signOutAll,

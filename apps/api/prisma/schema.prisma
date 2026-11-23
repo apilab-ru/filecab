@@ -19,16 +19,18 @@ model WorkspaceState {
 /// Account identity and authentication data, separate from library persistence.
 /// Deleting the account cascades through its library to entries, sources and history.
 model User {
-  id            String          @id @db.Uuid
+  id                     String                  @id @db.Uuid
   /// Verified Google subject identifier; email is not the account identity.
-  googleSubject String          @unique
+  googleSubject          String                  @unique
   /// Public library address. Lowercase; null turns public access off.
   /// User_username_format is a SQL CHECK in the public library migration.
-  username      String?         @unique
-  sessions      Session[]
-  exchanges     LoginExchange[]
+  username               String?                 @unique
+  sessions               Session[]
+  exchanges              LoginExchange[]
   /// Created with the account in the same transaction; optional only on the Prisma parent side.
-  library       UserLibrary?
+  library                UserLibrary?
+  listSyncs              ListSyncConnection[]
+  listSyncAuthorizations ListSyncAuthorization[]
 }
 
 /// One library per account; entries are stored as individual LibraryEntry rows.
@@ -276,4 +278,94 @@ model RefreshCredential {
   consumedAt DateTime? @db.Timestamptz(3)
 
   @@index([sessionId])
+}
+
+/// Connection of one Filecab account to one external list provider account.
+/// Disconnect deletes the row, so its mappings and jobs cascade.
+model ListSyncConnection {
+  id           String         @id @db.Uuid
+  ownerId      String         @db.Uuid
+  owner        User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  provider     String
+  /// Remote account ID verified through the authorized provider API.
+  accountId    String
+  accountName  String
+  /// ListSyncState value.
+  state        String
+  /// Increases on reconnection. Jobs stop when their generation is old.
+  generation   Int            @default(1)
+  /// AES-256-GCM ciphertext of the provider credentials. Null after authorization loss.
+  credentials  String?
+  scopes       Json
+  /// ListSyncField values that export and import transfer.
+  fields       Json
+  expiresAt    DateTime?      @db.Timestamptz(3)
+  lastExportAt DateTime?      @db.Timestamptz(3)
+  lastImportAt DateTime?      @db.Timestamptz(3)
+  createdAt    DateTime       @default(now()) @db.Timestamptz(3)
+  items        ListSyncItem[]
+  jobs         ListSyncJob[]
+
+  @@unique([ownerId, provider])
+  @@unique([provider, accountId])
+}
+
+/// Single-use provider consent request bound to its owner. Only the state hash is stored.
+model ListSyncAuthorization {
+  stateHash  String    @id
+  ownerId    String    @db.Uuid
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  provider   String
+  expiresAt  DateTime  @db.Timestamptz(3)
+  consumedAt DateTime? @db.Timestamptz(3)
+}
+
+/// Confirmed mapping of a Filecab entry to a remote list record, with acknowledged values.
+model ListSyncItem {
+  connectionId   String             @db.Uuid
+  connection     ListSyncConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  /// No entry foreign key: a deleted entry keeps its tombstone and the mapping stays inert.
+  entryId        String             @db.Uuid
+  namespace      String
+  entity         String
+  externalId     String
+  remoteRecordId String
+  /// Last ListSyncValues that the provider confirmed.
+  acknowledged   Json
+  /// Provider-only values, for example a remote status without a Filecab equivalent.
+  metadata       Json
+  updatedAt      DateTime           @db.Timestamptz(3)
+
+  @@id([connectionId, entryId])
+  @@unique([connectionId, remoteRecordId])
+  @@unique([connectionId, namespace, entity, externalId])
+}
+
+/// Durable export or import job. One queued or running job for each connection is enforced
+/// by ListSyncJob_active_connection_key, a partial SQL index.
+model ListSyncJob {
+  id           String             @id @db.Uuid
+  connectionId String             @db.Uuid
+  connection   ListSyncConnection @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+  generation   Int
+  /// ListSyncJobKind value.
+  kind         String
+  /// ListSyncJobState value.
+  state        String
+  /// Job input, for example the selected parts of an import preview.
+  input        Json
+  progress     Json
+  /// ListSyncJobResult, or the stored import preview of an import-preview job.
+  result       Json?
+  error        String?
+  /// True while an import-preview job waits for the owner to apply or cancel it.
+  previewOpen  Boolean            @default(false)
+  attempts     Int                @default(0)
+  runAfter     DateTime           @default(now()) @db.Timestamptz(3)
+  lockedUntil  DateTime?          @db.Timestamptz(3)
+  createdAt    DateTime           @default(now()) @db.Timestamptz(3)
+  finishedAt   DateTime?          @db.Timestamptz(3)
+
+  @@index([state, runAfter])
+  @@index([connectionId, createdAt])
 }

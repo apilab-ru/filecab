@@ -24,6 +24,7 @@ async function bridgeRequest<T>(
   ownerId: string,
   operation: SyncOperation,
   body?: unknown,
+  provider?: string,
 ): Promise<T> {
   let result:
     { data?: T; error?: ApiErrorCode | SyncErrorCode; diagnostic?: SyncDiagnostic } | undefined;
@@ -33,6 +34,7 @@ async function bridgeRequest<T>(
       ownerId,
       operation,
       body,
+      provider,
     })) as typeof result;
   } catch {
     throw new SyncError(SyncErrorCode.WorkerUnavailable, { operation: SyncOperation.Messaging });
@@ -60,4 +62,14 @@ export function accountRequest<T>(
   body?: unknown,
 ): Promise<T> {
   return bridgeRequest<T>(ownerId, operation, body);
+}
+
+/** Sends an external list request of the linked account through the worker. */
+export function listSyncRequest<T>(
+  ownerId: string,
+  operation: SyncOperation,
+  provider?: string,
+  body?: unknown,
+): Promise<T> {
+  return bridgeRequest<T>(ownerId, operation, body, provider);
 }

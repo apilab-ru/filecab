@@ -48,4 +48,7 @@ export {
   UsernameTakenError,
 } from './models/public-library';
 export type { PublicLibraryRepository } from './models/public-library';
+export { ListSyncRequestError } from './models/list-sync';
+export type { ListSyncRepository, ListSyncSend } from './models/list-sync';
+export { createListSyncRepository } from './domain/create-list-sync-repository';
 export { downloadJsonFile } from './domain/download-json-file';

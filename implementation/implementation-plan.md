@@ -31,17 +31,19 @@ Read these first. Search the code only when the list is not sufficient.
 
 Specs: [External list sync](../specs/user-list-sync-spec.md).
 
-Code: `apps/api/src/config/environment.ts`. No sync code exists yet.
+Code: `apps/api/src/list-sync/` (adapter interface, service, runner, controller), `packages/contracts/src/models/list-sync.ts`, `packages/contracts/src/domain/list-sync-routes.ts`, `packages/library/src/components/list-sync-settings/`, `packages/library/src/components/list-sync-preview/`, `apps/web/src/auth/list-sync-repository.ts`, `apps/extension/src/auth/list-sync-repository.ts`.
 
-- [ ] Provider connections and secure token storage.
-- [ ] Match local and remote entries.
-- [ ] Export: Filecab values replace remote values, with a confirmation and a result report.
-- [ ] Import: preview additions and changed fields, apply the selected changes.
-- [ ] Separate Export and Import buttons.
-- [ ] Durable manual jobs, retries and one job for each connection.
-- [ ] Prevent deletions and repeated writes.
-- [ ] Pause, resume and disconnect.
-- [ ] Progress and error display.
+Tests: `apps/api/src/list-sync/list-sync.integration.test.ts` (in-memory adapter), `list-sync-plan.unit.test.ts`, `credential-cipher.unit.test.ts`, `apps/extension/src/auth/worker.unit.test.ts`.
+
+- [x] Provider connections and secure token storage.
+- [x] Match local and remote entries.
+- [x] Export: Filecab values replace remote values, with a confirmation and a result report.
+- [x] Import: preview additions and changed fields, apply the selected changes.
+- [x] Separate Export and Import buttons.
+- [x] Durable manual jobs, retries and one job for each connection.
+- [x] Prevent deletions and repeated writes.
+- [x] Pause, resume and disconnect.
+- [x] Progress and error display.
 
 ## 20. Shikimori synchronization
 

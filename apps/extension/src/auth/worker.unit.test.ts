@@ -283,6 +283,31 @@ test('replication requests are owner-bound, route-allowlisted and unavailable to
   expect(fetch).not.toHaveBeenCalled();
 });
 
+test('list requests need a valid provider key and build only allowlisted paths', async () => {
+  mocks.session['filecab.auth.access'] = {
+    ownerId: tokens.ownerId,
+    accessToken: tokens.accessToken,
+    accessExpiresAt: tokens.accessExpiresAt,
+  };
+  vi.mocked(fetch).mockResolvedValue(new Response(JSON.stringify({ jobId: 'job' })));
+  const handler = await worker();
+  const message = {
+    action: 'sync.request',
+    ownerId: tokens.ownerId,
+    operation: 'list-sync-export',
+    provider: 'shikimori',
+  };
+  for (const provider of [undefined, '../auth', 'Shikimori', 'a/b'])
+    expect(await handler({ ...message, provider }, sender)).toEqual({ error: 'INVALID_REQUEST' });
+
+  expect(fetch).not.toHaveBeenCalled();
+  expect(await handler(message, sender)).toEqual({ data: { jobId: 'job' } });
+  expect(fetch).toHaveBeenCalledWith(
+    expect.stringMatching(/\/api\/v1\/list-sync\/shikimori\/export$/),
+    expect.objectContaining({ method: 'POST' }),
+  );
+});
+
 test.each([
   [400, 'VALIDATION_ERROR'],
   [401, 'ACCOUNT_CHANGED'],

@@ -47,6 +47,9 @@ test('extension worker reports preflight failures and completes a mocked login t
       globalThis.fetch = async (input) => {
         const path = new URL(String(input)).pathname;
 
+        if (path.endsWith('/list-sync'))
+          return new Response(JSON.stringify({ schemaVersion: 1, providers: [] }));
+
         if (path.endsWith('/extension/config'))
           return new Response(
             JSON.stringify({ schemaVersion: 1, googleEnabled: true, extensionAllowed: true }),
@@ -149,6 +152,9 @@ test('link confirmation starts replication and a later sign-in replaces the devi
         const headers = init?.headers as Record<string, string>;
         const different = headers?.Authorization?.includes('different-account');
         const library = different ? other : server;
+
+        if (path.endsWith('/list-sync'))
+          return new Response(JSON.stringify({ schemaVersion: 1, providers: [] }));
 
         if (path.endsWith('/auth/me'))
           return new Response(

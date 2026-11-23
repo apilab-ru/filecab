@@ -108,6 +108,9 @@ test('shared extension controls retain worker login diagnostics and react to acc
       globalThis.fetch = async (input) => {
         const path = new URL(String(input)).pathname;
 
+        if (path.endsWith('/list-sync'))
+          return new Response(JSON.stringify({ schemaVersion: 1, providers: [] }));
+
         if (path.endsWith('/extension/config'))
           return new Response(
             JSON.stringify({ schemaVersion: 1, googleEnabled: true, extensionAllowed: true }),

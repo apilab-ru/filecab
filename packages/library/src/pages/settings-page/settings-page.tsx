@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { AuthControls } from '../../components/auth-controls/auth-controls';
 import { BackupSettings } from '../../components/backup-settings/backup-settings';
 import { PublicLibrarySettings } from '../../components/public-library-settings/public-library-settings';
+import { ListSyncSettings } from '../../components/list-sync-settings/list-sync-settings';
 import '../../styles/interface-controls.scss';
 import './settings-page.scss';
 
@@ -17,7 +18,7 @@ export function SettingsPage({ popup, restoreUrl }: SettingsPageProps) {
   const { t } = useTranslation();
   const { locale, theme, setLocale, setTheme } = useInterfacePreferences();
   const { syncSettings, setSyncPanel } = useSyncSettings();
-  const { account, publicLibrary } = useAuth();
+  const { account, publicLibrary, listSync } = useAuth();
 
   return (
     <div className="settings-content">
@@ -63,6 +64,9 @@ export function SettingsPage({ popup, restoreUrl }: SettingsPageProps) {
             repository={publicLibrary}
           />
         </section>
+      )}
+      {account && (
+        <ListSyncSettings key={account.ownerId} ownerId={account.ownerId} repository={listSync} />
       )}
       <section className="settings-card">
         <h2 className="settings-card__title">{t('backup')}</h2>

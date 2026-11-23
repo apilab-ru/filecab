@@ -1,4 +1,6 @@
 import {
+  LIST_SYNC_ROUTES,
+  listSyncPath,
   SyncOperation,
   ApiErrorCode,
   SyncErrorCode,
@@ -397,10 +399,30 @@ function safeValidationIssues(data: unknown): { path: (string | number)[]; messa
   });
 }
 
+/** Resolves an allowlisted library or list route. List routes need a valid provider key. */
+function routeFor(
+  operation: string | undefined,
+  provider: string | undefined,
+): { path: string; method: 'GET' | 'POST' | 'PUT' | 'DELETE' } | null {
+  const library = LIBRARY_ROUTES.get(String(operation));
+
+  if (library) return library;
+
+  const list = LIST_SYNC_ROUTES.get(operation as SyncOperation);
+  const path = list && listSyncPath(list, typeof provider === 'string' ? provider : undefined);
+
+  return list && path ? { path, method: list.method } : null;
+}
+
 /** Fetches only library/replication routes after verifying the captured account identity. */
 async function libraryRequest(message: object): Promise<unknown> {
-  const input = message as { ownerId?: string; operation?: string; body?: unknown };
-  const route = LIBRARY_ROUTES.get(String(input.operation));
+  const input = message as {
+    ownerId?: string;
+    operation?: string;
+    provider?: string;
+    body?: unknown;
+  };
+  const route = routeFor(input.operation, input.provider);
 
   if (!route || typeof input.ownerId !== 'string') return { error: SyncErrorCode.InvalidRequest };
 
@@ -409,7 +431,7 @@ async function libraryRequest(message: object): Promise<unknown> {
   if (!access || access.ownerId !== input.ownerId) return { error: SyncErrorCode.AccountChanged };
 
   const operation = input.operation as SyncOperation;
-  const reading = route.method === 'GET';
+  const bodyless = route.method === 'GET' || input.body === undefined;
   let response: Response;
   try {
     response = await fetch(`${API_ORIGIN}/api/v1/${route.path}`, {
@@ -417,9 +439,9 @@ async function libraryRequest(message: object): Promise<unknown> {
       credentials: 'omit',
       headers: {
         Authorization: `Bearer ${access.accessToken}`,
-        ...(reading ? {} : { 'Content-Type': 'application/json' }),
+        ...(bodyless ? {} : { 'Content-Type': 'application/json' }),
       },
-      ...(reading ? {} : { body: JSON.stringify(input.body) }),
+      ...(bodyless ? {} : { body: JSON.stringify(input.body) }),
       signal: AbortSignal.timeout(10000),
     });
   } catch {

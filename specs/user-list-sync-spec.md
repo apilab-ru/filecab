@@ -131,6 +131,38 @@ changes nothing on the other side. A local delete or Undo never starts a remote 
 - Invalid authorization pauses the connection until reconnection.
 - A provider failure never erases a library.
 
+### Owner API
+
+All routes are under `/api/v1/list-sync` and need the Filecab session, except the consent callback.
+
+| Route                                                | Result                                                       |
+| ---------------------------------------------------- | ------------------------------------------------------------ |
+| `GET /list-sync`                                     | Registered providers, connections and the latest job of each |
+| `POST /list-sync/{provider}/authorize`               | Provider consent address with a single-use state             |
+| `GET /list-sync/{provider}/callback`                 | Redirect to website Settings with `listSyncResult`           |
+| `POST /list-sync/{provider}/pause`, `/resume`        | Connection state                                             |
+| `DELETE /list-sync/{provider}`                       | Disconnect                                                   |
+| `POST /list-sync/{provider}/export`                  | Queued export job                                            |
+| `POST /list-sync/{provider}/import`                  | Queued import preview job                                    |
+| `GET`, `DELETE /list-sync/{provider}/import/preview` | Open import preview, or cancel it                            |
+| `POST /list-sync/{provider}/import/apply`            | Queued apply job for the selected additions and fields       |
+
+- Connect only when the provider has no connection, or when the connection needs authorization again. To link another remote account, disconnect first.
+- Reconnection after authorization loss must use the same remote account.
+- The consent state expires after 10 minutes and works once. Store only its hash.
+- A job that starts closes an open import preview.
+- Store credentials with AES-256-GCM and `PROVIDER_ENCRYPTION_KEY`. The connection ID is the associated data.
+
+### Job execution
+
+- A `ListSyncJob` table holds the jobs. A partial unique index permits one queued or running job for each connection.
+- Each API instance polls every 2 seconds and claims a job with `FOR UPDATE SKIP LOCKED`. A claim locks the job for 2 minutes. Progress updates extend the lock. A job with an expired lock runs again after a restart.
+- A retryable provider failure requeues the job. The first retry waits 5 seconds or the provider delay, and each next retry waits twice as long. After 5 attempts the job fails.
+- A rejected token causes one refresh. If the refresh fails, the connection needs authorization again.
+- Export reads each record again before a write and after it. Only a confirmed value becomes the acknowledged value.
+- Import uses the entry version from the preview. A retried apply that finds its own earlier write counts the item as updated.
+- Without a registered adapter, the API does not poll and Settings does not show the External lists card.
+
 ### Visible state and API documentation
 
 Show account and connection state, enabled fields, last successful export and import,

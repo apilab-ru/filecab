@@ -1,0 +1,79 @@
+.list-sync-settings {
+  display: grid;
+  gap: 16px;
+
+  &__description {
+    margin: 0;
+    color: var(--fc-muted);
+    font-size: 13px;
+  }
+
+  &__provider {
+    display: grid;
+    gap: 10px;
+  }
+
+  &__header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: baseline;
+  }
+
+  &__name {
+    margin: 0;
+    font-size: 15px;
+  }
+
+  &__state,
+  &__dates {
+    margin: 0;
+    color: var(--fc-muted);
+    font-size: 13px;
+    overflow-wrap: anywhere;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__result {
+    display: grid;
+    gap: 6px;
+  }
+
+  &__job {
+    margin: 0;
+    font-size: 13px;
+
+    &--error {
+      color: var(--fc-danger);
+    }
+  }
+
+  &__items {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding-left: 18px;
+    font-size: 13px;
+  }
+
+  &__item {
+    overflow-wrap: anywhere;
+  }
+
+  &__notice {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  &__load-error {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: center;
+  }
+}

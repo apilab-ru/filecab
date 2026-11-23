@@ -27,6 +27,20 @@ import { CatalogCacheAdminController } from './catalog/catalog-cache-admin.contr
 import { CatalogOperatorGuard } from './catalog/catalog-operator';
 import { PageRulesController } from './page-rules/page-rules.controller';
 import { SERVED_PAGE_RULES, servePageRules } from './page-rules/served-page-rules';
+import { ListSyncController } from './list-sync/list-sync.controller';
+import { ListSyncService } from './list-sync/list-sync.service';
+import { ListSyncRunner } from './list-sync/list-sync-runner';
+import { CredentialCipher } from './list-sync/credential-cipher';
+import type { ListSyncAdapter } from './list-sync/list-sync-adapter';
+
+/** Configures external list adapters and the job poll interval. Null disables polling. */
+export interface ListSyncOptions {
+  adapters: ListSyncAdapter[];
+  pollMs: number | null;
+}
+
+/** Polls for list jobs every 2 seconds by default. */
+const LIST_SYNC_POLL_MS = 2000;
 
 @Module({})
 export class AppModule {
@@ -34,7 +48,12 @@ export class AppModule {
     environment: ApiEnvironment,
     readiness?: DatabaseReadiness,
     google?: GoogleIdentityProvider,
+    listSync: ListSyncOptions = { adapters: [], pollMs: LIST_SYNC_POLL_MS },
   ): DynamicModule {
+    const cipher = environment.encryptionKey
+      ? new CredentialCipher(environment.encryptionKey)
+      : null;
+
     return {
       module: AppModule,
       controllers: [
@@ -48,6 +67,7 @@ export class AppModule {
         CatalogGenreAdminController,
         CatalogCacheAdminController,
         PageRulesController,
+        ListSyncController,
       ],
       providers: [
         { provide: AUTH_ENVIRONMENT, useValue: environment },
@@ -114,6 +134,29 @@ export class AppModule {
             new LibraryMutationService(
               auth.database,
               new LibraryPreviewSigner(environment.sessionSecret),
+            ),
+        },
+        {
+          provide: ListSyncService,
+          inject: [AuthService],
+          useFactory: (auth: AuthService) =>
+            new ListSyncService(
+              auth.database,
+              listSync.adapters,
+              cipher,
+              `${environment.websiteOrigins[0]}/settings`,
+            ),
+        },
+        {
+          provide: ListSyncRunner,
+          inject: [AuthService, LibraryMutationService],
+          useFactory: (auth: AuthService, mutations: LibraryMutationService) =>
+            new ListSyncRunner(
+              auth.database,
+              listSync.adapters,
+              cipher,
+              mutations,
+              listSync.pollMs,
             ),
         },
         {

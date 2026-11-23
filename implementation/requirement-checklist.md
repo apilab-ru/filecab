@@ -94,7 +94,7 @@ change logs before 18 November 2026.
 
 ## External list synchronization and Shikimori
 
-- [ ] [External list sync](../specs/user-list-sync-spec.md) (step 19): Pending.
+- [x] [External list sync](../specs/user-list-sync-spec.md) (step 19): Done without a real provider. The Settings card stays hidden until step 20 registers Shikimori. [Step 19](#step-19-external-list-synchronization)
 - [ ] [Shikimori](../specs/integration-shikimori-spec.md) (step 20): Pending.
 - [ ] [Library import from CSV](../specs/library-import.md) (step 21): Pending.
 
@@ -247,6 +247,17 @@ pagination during loading and skeletons (15–16 November 2026).
 - [Settings](../packages/library/src/components/public-library-settings/public-library-settings.tsx): username field with the privacy notice and the public address. Settings shows the section after sign-in. It uses the signed-in account independently of the device link. The worker uses `read-username` and `save-username`. `WXT_PUBLIC_WEBSITE_ORIGIN` gives the address origin.
 - [Public page](../apps/web/src/public-library/components/public-library/public-library.tsx): `/u/:username` and `/u/:username/:category` in the full-page layout without Catalog. Cards are read-only. The browser test checks that the title precedes the category tabs on desktop and sits above them on mobile.
 - Tests (22 November 2026): unit 211, integration 55 and browser 45 pass. Browser tests cover username loading before device linking, while a different account owns the link, and when the website library request fails. They verify that sign-out hides the section. After the Retry change, all 9 authentication and website browser tests passed, including recovery after HTTP 503. A temporary development account loaded its username in Chrome against the running API. Format, lint and boundaries pass. Typecheck has the existing error in `apps/extension/src/popup/components/popup/popup.tsx`.
+
+### Step 19: external list synchronization
+
+- [Migration](../apps/api/prisma/migrations/20261124000000_list_sync/migration.sql): `ListSyncConnection`, `ListSyncAuthorization`, `ListSyncItem` and `ListSyncJob`. A partial unique index permits one queued or running job for each connection. Disconnect deletes the connection, its mappings and jobs.
+- [Adapter interface](../apps/api/src/list-sync/list-sync-adapter.ts): consent, refresh, revoke, complete-list read, record read, create and partial update. No delete operation. [Cipher](../apps/api/src/list-sync/credential-cipher.ts): AES-256-GCM with `PROVIDER_ENCRYPTION_KEY`, bound to the connection ID.
+- [Service](../apps/api/src/list-sync/list-sync.service.ts) and [controller](../apps/api/src/list-sync/list-sync.controller.ts): overview, consent with a hashed single-use state, callback redirect to Settings, pause, resume, disconnect, export, import preview, apply and cancel.
+- [Runner](../apps/api/src/list-sync/list-sync-runner.ts): `SKIP LOCKED` claims, lock renewal, retries with backoff, one token refresh, generation checks before writes, read before and verify after each export write. [Plan](../apps/api/src/list-sync/list-sync-plan.ts): export skips `hide` and null statuses, import ignores unrepresentable remote statuses and does not unhide entries.
+- Matching: confirmed mapping first, then exactly one verified reference from the entry snapshot or its catalog item. Titles never match.
+- [Settings card](../packages/library/src/components/list-sync-settings/list-sync-settings.tsx) with [import preview](../packages/library/src/components/list-sync-preview/list-sync-preview.tsx): Connect, Export (confirmation), Import, Pause, Resume and Disconnect, job progress, counts and skipped items. The website and the extension worker use the [route table](../packages/contracts/src/domain/list-sync-routes.ts). The worker accepts only valid provider keys.
+- Tests (23 November 2026): unit 222, integration 61 (6 list sync tests with an in-memory adapter) pass. Browser tests: 45 pass. `extension-auth.spec.ts` "link confirmation starts replication…" fails with and without this change. Browser mocks now answer `/list-sync` with no providers. Format, lint and boundaries pass. Typecheck has the existing error in `apps/extension/src/popup/components/popup/popup.tsx`.
+- Limits: no real provider yet. The Settings card was not checked in a browser with a provider.
 
 ### Tooling
 

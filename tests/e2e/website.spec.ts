@@ -140,6 +140,10 @@ test('mockup library renders actual snapshot cards, filters, pagination and post
       'Access-Control-Allow-Origin': 'http://127.0.0.1:5173',
       'Access-Control-Allow-Credentials': 'true',
     };
+
+    if (route.request().url().endsWith('/list-sync'))
+      return route.fulfill({ headers, json: { schemaVersion: 1, providers: [] } });
+
     const data = route.request().url().endsWith('/library')
       ? { schemaVersion: 1, revision: '1', entries }
       : { schemaVersion: 1, ownerId: 'mockup-owner' };
@@ -274,6 +278,9 @@ test('a public library page is read-only and hides Catalog; Settings saves the u
 
     if (path.startsWith('/api/v1/public/libraries/'))
       return route.fulfill({ status: 404, headers, json: { code: 'NOT_FOUND' } });
+
+    if (path === '/api/v1/list-sync')
+      return route.fulfill({ headers, json: { schemaVersion: 1, providers: [] } });
 
     if (path === '/api/v1/account/username' && request.method() === 'PUT') {
       const next = (request.postDataJSON() as { username: string }).username;
