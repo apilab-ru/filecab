@@ -113,10 +113,11 @@ export async function activeEntries(
 }
 
 /**
- * Finds the verified provider reference of each entry, from its snapshot and its catalog item.
- * An entry with two different verified IDs is ambiguous and gets no reference.
+ * Finds the provider ID of each entry, from its snapshot and its catalog item. Matching
+ * compares IDs in the provider namespace only, never IDs of other providers or titles.
+ * An entry with two different IDs is ambiguous and gets no reference.
  */
-export async function verifiedReferences(
+export async function providerReferences(
   database: PrismaClient,
   entries: ServerEntry[],
   adapter: ListSyncAdapter,
@@ -137,16 +138,10 @@ export async function verifiedReferences(
     const ids = new Set<string>();
 
     for (const reference of entry.snapshot.references)
-      if (
-        reference.namespace === adapter.namespace &&
-        reference.entity === adapter.entity &&
-        reference.provenance.verified
-      )
+      if (reference.namespace === adapter.namespace && reference.entity === adapter.entity)
         ids.add(reference.id);
 
-    for (const row of catalogRows)
-      if (row.catalogId === entry.catalogId && (row.provenance as { verified?: boolean }).verified)
-        ids.add(row.externalId);
+    for (const row of catalogRows) if (row.catalogId === entry.catalogId) ids.add(row.externalId);
 
     if (ids.size === 1)
       result.set(entry.entryId, {

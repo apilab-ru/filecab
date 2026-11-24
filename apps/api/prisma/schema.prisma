@@ -369,3 +369,13 @@ model ListSyncJob {
   @@index([state, runAfter])
   @@index([connectionId, createdAt])
 }
+
+/// One provider request in the last minute. All API instances share these rows, so the
+/// request rate limit of a provider applies across accounts and instances.
+model ProviderRequestSlot {
+  id       BigInt   @id @default(autoincrement())
+  provider String
+  takenAt  DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([provider, takenAt])
+}

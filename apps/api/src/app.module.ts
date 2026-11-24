@@ -32,11 +32,56 @@ import { ListSyncService } from './list-sync/list-sync.service';
 import { ListSyncRunner } from './list-sync/list-sync-runner';
 import { CredentialCipher } from './list-sync/credential-cipher';
 import type { ListSyncAdapter } from './list-sync/list-sync-adapter';
+import { ProviderRateLimiter, type RateWindow } from './list-sync/provider-rate-limiter';
+import { ShikimoriListAdapter } from './list-sync/shikimori-list.adapter';
+import type { PrismaClient } from './generated/prisma/client';
 
-/** Configures external list adapters and the job poll interval. Null disables polling. */
+/**
+ * Configures external list adapters and the job poll interval. Null disables polling.
+ * Without adapters, the adapters of the enabled providers are used.
+ */
 export interface ListSyncOptions {
-  adapters: ListSyncAdapter[];
+  adapters?: ListSyncAdapter[];
   pollMs: number | null;
+}
+
+/** Injects the external list adapters. */
+const LIST_SYNC_ADAPTERS = Symbol('LIST_SYNC_ADAPTERS');
+
+/** Shikimori allows 5 requests a second and 90 a minute. Keep space for bursts and OAuth. */
+const SHIKIMORI_RATE: RateWindow[] = [
+  { windowMs: 1000, max: 4 },
+  { windowMs: 60_000, max: 80 },
+];
+
+/** Builds the list adapters of the enabled providers. */
+function providerListAdapters(
+  environment: ApiEnvironment,
+  database: PrismaClient,
+): ListSyncAdapter[] {
+  const shikimori = environment.providers.shikimori;
+
+  if (
+    !shikimori.enabled ||
+    !shikimori.clientId ||
+    !shikimori.clientSecret ||
+    !shikimori.callbackUrl ||
+    !shikimori.userAgent
+  )
+    return [];
+
+  return [
+    new ShikimoriListAdapter(
+      {
+        origin: shikimori.origin,
+        clientId: shikimori.clientId,
+        clientSecret: shikimori.clientSecret,
+        callbackUrl: shikimori.callbackUrl,
+        userAgent: shikimori.userAgent,
+      },
+      new ProviderRateLimiter(database, 'shikimori', SHIKIMORI_RATE),
+    ),
+  ];
 }
 
 /** Polls for list jobs every 2 seconds by default. */
@@ -48,7 +93,7 @@ export class AppModule {
     environment: ApiEnvironment,
     readiness?: DatabaseReadiness,
     google?: GoogleIdentityProvider,
-    listSync: ListSyncOptions = { adapters: [], pollMs: LIST_SYNC_POLL_MS },
+    listSync: ListSyncOptions = { pollMs: LIST_SYNC_POLL_MS },
   ): DynamicModule {
     const cipher = environment.encryptionKey
       ? new CredentialCipher(environment.encryptionKey)
@@ -137,27 +182,30 @@ export class AppModule {
             ),
         },
         {
-          provide: ListSyncService,
+          provide: LIST_SYNC_ADAPTERS,
           inject: [AuthService],
           useFactory: (auth: AuthService) =>
+            listSync.adapters ?? providerListAdapters(environment, auth.database),
+        },
+        {
+          provide: ListSyncService,
+          inject: [AuthService, LIST_SYNC_ADAPTERS],
+          useFactory: (auth: AuthService, adapters: ListSyncAdapter[]) =>
             new ListSyncService(
               auth.database,
-              listSync.adapters,
+              adapters,
               cipher,
               `${environment.websiteOrigins[0]}/settings`,
             ),
         },
         {
           provide: ListSyncRunner,
-          inject: [AuthService, LibraryMutationService],
-          useFactory: (auth: AuthService, mutations: LibraryMutationService) =>
-            new ListSyncRunner(
-              auth.database,
-              listSync.adapters,
-              cipher,
-              mutations,
-              listSync.pollMs,
-            ),
+          inject: [AuthService, LibraryMutationService, LIST_SYNC_ADAPTERS],
+          useFactory: (
+            auth: AuthService,
+            mutations: LibraryMutationService,
+            adapters: ListSyncAdapter[],
+          ) => new ListSyncRunner(auth.database, adapters, cipher, mutations, listSync.pollMs),
         },
         {
           provide: DATABASE_READINESS,

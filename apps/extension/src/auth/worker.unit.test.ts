@@ -110,7 +110,9 @@ test('simultaneous UI requests serialize refresh and receive only account state'
 
 test('uncertain refresh outcomes consume local credentials before sending and cannot replay after restart', async () => {
   mocks.local['filecab.auth.refresh'] = { ownerId: tokens.ownerId, refreshToken: 'old-refresh' };
-  vi.mocked(fetch).mockImplementation(async () => {
+  vi.mocked(fetch).mockImplementation(async (url) => {
+    if (String(url).endsWith('/health/ready')) return Response.json({ status: 'ok' });
+
     expect(mocks.local['filecab.auth.refresh']).toBeUndefined();
     expect(mocks.session['filecab.auth.access']).toBeUndefined();
     throw new Error('private-server-payload');
@@ -122,7 +124,35 @@ test('uncertain refresh outcomes consume local credentials before sending and ca
   });
   handler = await worker();
   expect(await handler({ action: 'auth.status' }, sender)).toEqual({ account: null });
-  expect(fetch).toHaveBeenCalledTimes(1);
+  expect(fetch).toHaveBeenCalledTimes(2);
+});
+
+test('a stopped API keeps the refresh credential for the next attempt', async () => {
+  mocks.local['filecab.auth.refresh'] = { ownerId: tokens.ownerId, refreshToken: 'old-refresh' };
+  vi.mocked(fetch).mockRejectedValue(new TypeError('Failed to fetch'));
+  let handler = await worker();
+  expect(await handler({ action: 'auth.status' }, sender)).toMatchObject({
+    account: null,
+    diagnostic: { stage: 'refresh', code: 'API_UNREACHABLE' },
+  });
+  expect(mocks.local['filecab.auth.refresh']).toHaveProperty('refreshToken', 'old-refresh');
+  expect(vi.mocked(fetch).mock.calls.map(([url]) => String(url))).toEqual([
+    expect.stringMatching(/\/health\/ready$/),
+  ]);
+
+  // After the restart, the same credential refreshes the session.
+  vi.mocked(fetch).mockImplementation(async (url) => {
+    if (String(url).endsWith('/health/ready')) return Response.json({ status: 'ok' });
+
+    if (String(url).endsWith('/refresh')) return Response.json(tokens);
+
+    return Response.json({ schemaVersion: 1, ownerId: tokens.ownerId });
+  });
+  handler = await worker();
+  expect(await handler({ action: 'auth.status' }, sender)).toMatchObject({
+    account: { ownerId: tokens.ownerId },
+  });
+  expect(mocks.local['filecab.auth.refresh']).toHaveProperty('refreshToken', tokens.refreshToken);
 });
 
 test('interactive login binds the callback attempt and never puts reusable tokens in the launch URL', async () => {

@@ -94,8 +94,8 @@ change logs before 18 November 2026.
 
 ## External list synchronization and Shikimori
 
-- [x] [External list sync](../specs/user-list-sync-spec.md) (step 19): Done without a real provider. The Settings card stays hidden until step 20 registers Shikimori. [Step 19](#step-19-external-list-synchronization)
-- [ ] [Shikimori](../specs/integration-shikimori-spec.md) (step 20): Pending.
+- [x] [External list sync](../specs/user-list-sync-spec.md) (step 19): Done. Step 20 registers Shikimori, so the Settings card shows when `SHIKIMORI_ENABLED=true`. [Step 19](#step-19-external-list-synchronization)
+- [x] [Shikimori](../specs/integration-shikimori-spec.md) (step 20): Done with a mocked provider. Not checked against the live API. [Step 20](#step-20-shikimori-synchronization)
 - [ ] [Library import from CSV](../specs/library-import.md) (step 21): Pending.
 
 ## Evidence
@@ -258,6 +258,21 @@ pagination during loading and skeletons (15–16 November 2026).
 - [Settings card](../packages/library/src/components/list-sync-settings/list-sync-settings.tsx) with [import preview](../packages/library/src/components/list-sync-preview/list-sync-preview.tsx): Connect, Export (confirmation), Import, Pause, Resume and Disconnect, job progress, counts and skipped items. The website and the extension worker use the [route table](../packages/contracts/src/domain/list-sync-routes.ts). The worker accepts only valid provider keys.
 - Tests (23 November 2026): unit 222, integration 61 (6 list sync tests with an in-memory adapter) pass. Browser tests: 45 pass. `extension-auth.spec.ts` "link confirmation starts replication…" fails with and without this change. Browser mocks now answer `/list-sync` with no providers. Format, lint and boundaries pass. Typecheck has the existing error in `apps/extension/src/popup/components/popup/popup.tsx`.
 - Limits: no real provider yet. The Settings card was not checked in a browser with a provider.
+
+### Step 20: Shikimori synchronization
+
+- [Adapter](../apps/api/src/list-sync/shikimori-list.adapter.ts): OAuth with the `user_rates` scope, form token exchange and refresh, account check through `whoami`. A token without `user_rates` is rejected. The expiry comes from `created_at` and `expires_in`, or one day.
+- List read: `GET /api/users/:id/anime_rates` with `limit=5000`, all statuses, no `censored` filter, at most 20 pages. Duplicate rates keep the newest version. A 403 list or a repeated page is an incomplete scan. Manga records and records of other owners are excluded.
+- Projection: `watching` and `rewatching` become `process`, `on_hold` becomes null. Metadata keeps the rate ID, remote status, rewatches, target ID and timestamps. Notes and `text_html` are never stored.
+- Writes: `POST` and `PATCH /api/v2/user_rates` with only the changed fields, explicit zeros kept. No PUT, DELETE or increment. `hide`, fractional scores and negative progress are rejected before a request. A 422 response is an unsupported value. The owner and `target_type=Anime` are checked on every rate response.
+- Failures: 401 refreshes once. A 403 with `insufficient_scope` and a rejected refresh token need reconnection without a refresh (`ListSyncAuthorizationError.refreshable`). A 429 waits for Retry-After up to 30 seconds inside the call, then goes back to the job queue. Reads retry network and 5xx failures twice. Uncertain writes are not repeated: the job retry reads the list again first.
+- [Rate limiter](../apps/api/src/list-sync/provider-rate-limiter.ts): 4 requests a second and 80 a minute for all accounts and instances, through `ProviderRequestSlot` rows and an advisory lock.
+- Matching (owner decision, 23 November 2026): compare the `shikimori/anime` ID from the entry references or its catalog item. The verified flag does not matter, so Shikimori links on Smotret pages match. MAL numbers and titles never match. Specs: [list sync](../specs/user-list-sync-spec.md#identity-resolution), [Shikimori](../specs/integration-shikimori-spec.md), [Smotret](../specs/integration-smotret-anime-spec.md).
+- Runner: export compares with the scan first and reads a record again only before a write, so a repeated export makes no record reads. Imported entries get localized titles and the episode total.
+- Settings: the card shows the linked title count. [Stories](../packages/library/src/components/list-sync-settings/list-sync-settings.stories.tsx) cover not connected, finished export, running import, open preview, expired authorization and paused states.
+- Tests (23 November 2026): unit 237 (15 Shikimori adapter tests), integration 62, browser 46 pass. Format, lint and boundaries pass. Typecheck has the existing error in `apps/extension/src/popup/components/popup/popup.tsx`.
+- Fix (23 November 2026): imports from Shikimori failed with "service not available". Imported entries had no `userTitle` when the provider sent localized titles, so `validateEntry` rejected them. The runner reported the internal error as a provider failure. Now imported entries keep `userTitle` and the snapshot titles. A rejected entry fails only its item (`invalid-entry`). An unexpected error ends the job with `internal-error`. Job failures go to Sentry; before, the runner only wrote to the console.
+- Limits: not run against the live Shikimori API. The page signal and the token response fields are not documented, so the adapter handles both forms.
 
 ### Tooling
 

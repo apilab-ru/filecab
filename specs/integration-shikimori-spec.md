@@ -46,7 +46,9 @@ anime and Filecab IDs separate. A scan succeeds only when all pages are read and
 - Media reference: `{ provider: "shikimori", entityType: "anime", id: target_id }`.
 - Writes use the separate `user_rate.id`.
 - Check the owner and target type again.
-- Link by a verified reference, a verified crosswalk or explicit confirmation. Never link by equal MAL and Shikimori numbers or by title.
+- Link by a `shikimori/anime` ID in the entry references or in its catalog item. The ID can come from Shikimori itself or from a Shikimori link on a Smotret page. See [Identity resolution](user-list-sync-spec.md#identity-resolution).
+- Never link by equal MAL and Shikimori numbers or by title.
+- A wrong Shikimori link on a catalog page links the wrong record. Export reads the remote record before each write and reports the item in the result.
 - Imported list metadata can form a minimal snapshot.
 - Optional catalog enrichment must not drop unresolved imports or start a Shikimori search.
 
@@ -97,7 +99,7 @@ checks reduce races but do not give atomic protection.
 
 - Use the common manual jobs, generation checks and acknowledged remote values. There are no periodic or debounced jobs.
 - Do not assume webhooks or realtime delivery.
-- Use one rate limiter across accounts and instances. Stay below the documented limits of 5 requests a second and 90 a minute, with space for bursts, OAuth and other traffic.
+- Use one rate limiter across accounts and instances. Stay below the documented limits of 5 requests a second and 90 a minute, with space for bursts, OAuth and other traffic. The limit is 4 requests a second and 80 a minute. PostgreSQL rows in `ProviderRequestSlot` hold the recent requests, and an advisory lock serializes the slot check.
 - Obey stricter responses and changed limits. Obey 429 Retry-After with bounded backoff.
 - Classify 401 and 403 by provider meaning. Refresh a bounded number of times only for invalid or expired tokens. Do not refresh for a missing scope or access denial.
 - A missing rate changes nothing in Filecab.

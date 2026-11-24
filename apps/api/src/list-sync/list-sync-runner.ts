@@ -16,6 +16,7 @@ import {
   type Snapshot,
 } from '@filecab/contracts';
 import { randomUUID } from 'node:crypto';
+import * as Sentry from '@sentry/nestjs';
 import type { OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
 import type { PrismaClient } from '../generated/prisma/client';
 import type { LibraryMutationService } from '../library/mutation.service';
@@ -39,7 +40,7 @@ import {
   entryValues,
   indexRecords,
   json,
-  verifiedReferences,
+  providerReferences,
   type StoredAddition,
   type StoredChange,
   type StoredPreview,
@@ -65,6 +66,28 @@ class JobStop extends Error {
   constructor(readonly code: ListSyncErrorCode) {
     super(code);
   }
+}
+
+/**
+ * Reports a job failure to Sentry. The sanitizer keeps only the safe message and the stack,
+ * so titles, tokens and provider responses never leave the API.
+ */
+function reportJobFailure(
+  error: unknown,
+  job: { provider: string | null; kind: ListSyncJobKind | null },
+  code: ListSyncErrorCode | ListSyncIssue,
+): void {
+  Sentry.withScope((scope) => {
+    scope.setTag('list_sync_provider', job.provider ?? 'unknown');
+    scope.setTag('list_sync_job', job.kind ?? 'unknown');
+    scope.setTag('api_error_code', code);
+    scope.setContext('api_error', {
+      code,
+      status: 500,
+      message: `List sync ${job.kind ?? 'job'} failed: ${code}`,
+    });
+    Sentry.captureException(error);
+  });
 }
 
 /** Holds the claimed job, its connection and the decrypted credentials. */
@@ -99,6 +122,11 @@ class Report {
       this.items.push({ title, entryId, outcome, issue: issue ?? null });
   }
 
+  /** Returns true when an item already has the issue. */
+  has(issue: ListSyncIssue): boolean {
+    return this.items.some((item) => item.issue === issue);
+  }
+
   result(): ListSyncJobResult {
     return { counts: this.counts, items: this.items };
   }
@@ -114,13 +142,13 @@ function importedSnapshot(record: RemoteListRecord, adapter: ListSyncAdapter): S
 
   return {
     originalTitle: null,
-    titles: [],
+    titles: record.titles.map((title) => ({ ...title, provenance })),
     descriptions: [],
     posterUrl: record.posterUrl,
     year: record.year,
     genres: [],
     format: null,
-    episodeCount: null,
+    episodeCount: record.episodeCount,
     availableEpisodeCount: null,
     providerRatings: [],
     references: [{ ...record.reference, granularity: Granularity.Unknown, provenance }],
@@ -201,20 +229,31 @@ export class ListSyncRunner implements OnApplicationBootstrap, OnModuleDestroy {
 
     if (!job) return false;
 
+    const known: { provider: string | null; kind: ListSyncJobKind | null } = {
+      provider: null,
+      kind: null,
+    };
     try {
       if (job.attempts > MAX_ATTEMPTS) throw new JobStop(ListSyncErrorCode.ProviderUnavailable);
 
       const context = await this.context(job.id);
+      known.provider = context.adapter.provider;
+      known.kind = context.kind;
       const result = await this.execute(context);
       await this.finish(job.id, ListSyncJobState.Succeeded, result, null);
     } catch (error) {
-      await this.fail(job.id, job.attempts, error);
+      await this.fail(job.id, job.attempts, error, known);
     }
 
     return true;
   }
 
-  private async fail(jobId: string, attempts: number, error: unknown): Promise<void> {
+  private async fail(
+    jobId: string,
+    attempts: number,
+    error: unknown,
+    job: { provider: string | null; kind: ListSyncJobKind | null },
+  ): Promise<void> {
     if (error instanceof ListSyncProviderError && error.retryable && attempts < MAX_ATTEMPTS) {
       const delay = Math.max(error.retryAfterMs ?? 0, RETRY_BASE_MS * 2 ** (attempts - 1));
       // Database time drives claims, so compute the retry time in SQL as well.
@@ -227,10 +266,16 @@ export class ListSyncRunner implements OnApplicationBootstrap, OnModuleDestroy {
       return;
     }
 
-    const code = error instanceof JobStop ? error.code : ListSyncErrorCode.ProviderUnavailable;
+    let code = ListSyncErrorCode.InternalError;
 
-    if (!(error instanceof JobStop) && !(error instanceof ListSyncProviderError))
-      console.error(JSON.stringify({ event: 'list-sync-job-failed', jobId }));
+    if (error instanceof JobStop) code = error.code;
+    else if (error instanceof ListSyncProviderError) code = ListSyncErrorCode.ProviderUnavailable;
+
+    // Expected stops (lost authorization, partial scan, changed connection) are not reported.
+    if (!(error instanceof JobStop)) {
+      console.error(JSON.stringify({ event: 'list-sync-job-failed', jobId, code }));
+      reportJobFailure(error, job, code);
+    }
 
     await this.finish(jobId, ListSyncJobState.Failed, null, code);
   }
@@ -336,7 +381,7 @@ export class ListSyncRunner implements OnApplicationBootstrap, OnModuleDestroy {
       try {
         return await action(context.credentials);
       } catch (error) {
-        if (!(error instanceof ListSyncAuthorizationError)) throw error;
+        if (!(error instanceof ListSyncAuthorizationError) || !error.refreshable) throw error;
 
         await this.refresh(context);
 
@@ -431,10 +476,10 @@ export class ListSyncRunner implements OnApplicationBootstrap, OnModuleDestroy {
     ]);
   }
 
-  /** Pairs active entries with remote records by mapping, then by verified reference. */
+  /** Pairs active entries with remote records by mapping, then by provider ID. */
   private async pair(context: JobContext, records: RemoteListRecord[]) {
     const entries = await activeEntries(this.database, context.ownerId, context.adapter);
-    const references = await verifiedReferences(this.database, entries, context.adapter);
+    const references = await providerReferences(this.database, entries, context.adapter);
     const mappings = await this.mappings(context.connectionId);
     const { byId, byReference } = indexRecords(records);
     const claimed = new Map<string, string>();
@@ -523,6 +568,15 @@ export class ListSyncRunner implements OnApplicationBootstrap, OnModuleDestroy {
     const title = entryTitle(entry);
     const values = entryValues(entry);
     const { adapter } = context;
+    const planned = planExport(values, scanned?.values ?? null, context.fields, adapter.statuses);
+
+    if (planned.kind === 'unchanged') {
+      await this.acknowledge(context, entry.entryId, scanned!);
+      report.add(ListSyncOutcome.Unchanged, title, entry.entryId);
+
+      return;
+    }
+
     // Read before the write. The scan can be old when the list is long.
     const record = scanned
       ? await this.call(context, (credentials) =>
@@ -705,7 +759,7 @@ export class ListSyncRunner implements OnApplicationBootstrap, OnModuleDestroy {
       },
     });
     const entries = await activeEntries(this.database, context.ownerId, context.adapter);
-    const references = await verifiedReferences(this.database, entries, context.adapter);
+    const references = await providerReferences(this.database, entries, context.adapter);
     const key = referenceKey(record.reference);
     const linked =
       (existing && entries.some((entry) => entry.entryId === existing.entryId)) ||
@@ -723,13 +777,33 @@ export class ListSyncRunner implements OnApplicationBootstrap, OnModuleDestroy {
     }
 
     await this.checkConnection(context);
-    const entry = await this.mutations.create(context.ownerId, {
-      entryId: randomUUID(),
-      category: record.category,
-      catalogId: null,
-      snapshot: importedSnapshot(record, context.adapter),
-      fields: { userTitle: record.title, ...patchFor(record.values, context.fields) },
-    });
+    let entry: ServerEntry;
+    try {
+      // An entry without a catalog item needs its own title. The snapshot keeps the
+      // localized titles as well.
+      entry = await this.mutations.create(context.ownerId, {
+        entryId: randomUUID(),
+        category: record.category,
+        catalogId: null,
+        snapshot: importedSnapshot(record, context.adapter),
+        fields: { userTitle: record.title, ...patchFor(record.values, context.fields) },
+      });
+    } catch (error) {
+      if (!(error instanceof MutationError)) throw error;
+
+      // A rejected entry is a Filecab defect. Report it once for each job and continue.
+      if (!report.has(ListSyncIssue.InvalidEntry))
+        reportJobFailure(
+          error,
+          { provider: context.adapter.provider, kind: ListSyncJobKind.ImportApply },
+          ListSyncIssue.InvalidEntry,
+        );
+
+      report.add(ListSyncOutcome.Failed, addition.title, null, ListSyncIssue.InvalidEntry);
+
+      return;
+    }
+
     await this.acknowledge(context, entry.entryId, record);
     report.add(ListSyncOutcome.Added, addition.title, entry.entryId);
   }

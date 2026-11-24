@@ -4,6 +4,8 @@ export enum ListSyncErrorCode {
   IncompleteScan = 'incomplete-scan',
   /** The provider authorization is invalid. Reconnect the account. */
   AuthorizationRequired = 'authorization-required',
+  /** Filecab failed while it ran the job. The failure is reported to the operators. */
+  InternalError = 'internal-error',
   /** The provider failed after the retry limit. */
   ProviderUnavailable = 'provider-unavailable',
   /** The connection was paused, disconnected or relinked while the job ran. */

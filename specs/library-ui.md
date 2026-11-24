@@ -220,6 +220,9 @@ Do not show an exact page count when the total is unknown.
 
 - Show a maximum of three toast messages at one time. Include error messages in this limit.
 - When a new message exceeds the limit, remove the oldest message.
+- A message closes after 6 seconds. An error message closes after 10 seconds. Each message has a close button.
+- Deletions with Undo, delete and Undo failures, and the External lists results (connection result, failed request, busy connection) use the toast stack. Settings does not keep these messages in the page.
+- A list job that has not read the remote list yet shows "in progress", not a count of zero.
 
 ## Backup settings
 

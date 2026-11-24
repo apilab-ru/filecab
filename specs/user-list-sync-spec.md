@@ -49,7 +49,7 @@ Embedded title metadata can support import and identity. It does not enable cata
 For each connection, store the account ID, scopes and capabilities, expiry, generation,
 field policy, state, last successful export and last successful import.
 
-For each item, store the Filecab UUID, the verified media reference, the separate remote
+For each item, store the Filecab UUID, the provider media reference, the separate remote
 record ID, the last acknowledged remote values and the provider-only metadata.
 
 Common fields are status, score and episode progress. Keep provider-only statuses and
@@ -57,10 +57,16 @@ rewatch data in namespaced metadata. Do not change unrelated fields.
 
 ### Identity resolution
 
-Only verified references or confirmed mappings permit links and writes. Titles and equal
-numbers do not. Unresolved entries stay usable. Export skips them and reports them as
-items that need identification. Imports keep stable UUIDs, verified references and usable
-snapshots without duplicates. Optional catalog enrichment must not block a valid import.
+An entry links to a remote record through a saved mapping or through a provider ID.
+A provider ID is a reference in the namespace and entity of the provider, in the entry
+snapshot or in its catalog item. The source of the ID can be the provider itself or a link
+on another catalog page, for example a Shikimori link on a Smotret page. The verified flag
+of the reference does not change the match.
+
+- Compare IDs only in the provider namespace. IDs of other providers, equal numbers and titles never link.
+- An entry with two different IDs in the provider namespace is ambiguous. It gets no link.
+- Unresolved entries stay usable. Export skips them and reports them as items that need identification.
+- Imports keep stable UUIDs, provider references and usable snapshots without duplicates. Optional catalog enrichment must not block a valid import.
 
 ### Export
 

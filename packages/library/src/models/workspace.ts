@@ -84,6 +84,20 @@ export interface WorkspaceDeletion {
 
 export const UNDO_PERIOD = 10_000;
 
+/** A toast shows for 6 seconds. */
+export const TOAST_PERIOD = 6000;
+
+/** An error toast shows for 10 seconds. */
+export const ERROR_TOAST_PERIOD = 10_000;
+
+/** Shows one short message in the toast stack until `until`. */
+export interface WorkspaceToast {
+  id: string;
+  message: string;
+  error: boolean;
+  until: number;
+}
+
 /** Connects catalog screens, platform adapters and the persistent shared editor. */
 export interface WorkspaceContextValue {
   origin: string;
@@ -105,6 +119,10 @@ export interface WorkspaceContextValue {
   notice: '' | 'deleteFailed' | 'undoFailed';
   remove(row: WorkspaceRow): Promise<void>;
   undo(deletion: WorkspaceDeletion): Promise<void>;
+  toasts: WorkspaceToast[];
+  /** Shows a translated message. It closes by itself, or when the owner closes it. */
+  toast(message: string, error?: boolean): void;
+  dismissToast(id: string): void;
 }
 
 export const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);

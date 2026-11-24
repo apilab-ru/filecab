@@ -104,6 +104,7 @@ use the authenticated credential. They never use a submitted owner ID.
 - Store the refresh token in `storage.local`, restricted to `TRUSTED_CONTEXTS`.
 - Store the access token in trusted `storage.session`.
 - Serialize login, refresh and logout in the worker.
+- Before a refresh, check `GET /api/v1/health/ready`. When the API is not reachable or not ready, keep the refresh credential and report that the API is unreachable. A stopped or restarting API then does not end the session.
 - Clear local credentials before the refresh request. Worker suspension or an uncertain result then requires a new login, not a replay.
 - Reject messages from content scripts and other extensions.
 - Never return credentials to popup or full-page messages.
@@ -538,6 +539,7 @@ reporting and does not stop startup.
 
 - Report only unexpected errors and 5xx responses. Do not report expected client errors.
 - Also report a missing catalog genre mapping as a warning. See [Catalog genres](catalog-spec.md#genres).
+- Also report a list sync job that stops with an unexpected error or a final provider failure, and the first rejected import entry of a job. Do not report expected stops: lost authorization, an incomplete scan or a changed connection. Tags give the provider, the job kind and the error code. Titles and provider values stay out of the event.
 - Report each response once, through one common path for controllers and middleware.
 - Include the HTTP method and the Express route template. Do not include path parameter values or query text.
 - Omit request bodies, headers, parameter values, user identity, extra data and breadcrumbs.

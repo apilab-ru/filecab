@@ -4,6 +4,8 @@ import { titleFor, type CatalogRecord, type Category } from '@filecab/contracts'
 import { useLocalStore } from '../../hooks/use-local-store';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import {
+  ERROR_TOAST_PERIOD,
+  TOAST_PERIOD,
   UNDO_PERIOD,
   WorkspaceContext,
   type WorkspaceContextValue,
@@ -12,6 +14,7 @@ import {
   type WorkspaceOpenOptions,
   type WorkspaceRow,
   type WorkspaceState,
+  type WorkspaceToast,
 } from '../../models/workspace';
 import { WorkspaceEditor } from '../../components/workspace-editor/workspace-editor';
 import { UndoBar } from '../../components/undo-bar/undo-bar';
@@ -23,12 +26,13 @@ const MAX_TOASTS = 3;
 export function WorkspaceProvider({ origin, children }: WorkspaceProviderProps) {
   const { t } = useTranslation();
   const { locale } = useInterfacePreferences();
-  const [{ state, draft, reconciling, deletions, notice }, setters] = useLocalStore(() => ({
+  const [{ state, draft, reconciling, deletions, notice, toasts }, setters] = useLocalStore(() => ({
     state: { scope: '', rows: [], repository: null } as WorkspaceState,
     draft: null as WorkspaceDraft | null,
     reconciling: null as WorkspaceRow | null,
     deletions: [] as WorkspaceDeletion[],
     notice: '' as WorkspaceContextValue['notice'],
+    toasts: [] as WorkspaceToast[],
   }));
   const scope = useRef('');
   const register = useCallback((next: WorkspaceState) => {
@@ -117,6 +121,32 @@ export function WorkspaceProvider({ origin, children }: WorkspaceProviderProps) 
     [repository],
   );
 
+  const toast = useCallback((message: string, error = false) => {
+    const until = Date.now() + (error ? ERROR_TOAST_PERIOD : TOAST_PERIOD);
+    setters.toasts((current) =>
+      [
+        ...current.filter((item) => item.message !== message),
+        { id: crypto.randomUUID(), message, error, until },
+      ].slice(-MAX_TOASTS),
+    );
+  }, []);
+  const dismissToast = useCallback(
+    (id: string) => setters.toasts((current) => current.filter((item) => item.id !== id)),
+    [],
+  );
+
+  useEffect(() => {
+    if (!toasts.length) return;
+
+    const next = Math.min(...toasts.map(({ until }) => until));
+    const timer = setTimeout(
+      () => setters.toasts((current) => current.filter(({ until }) => until > Date.now())),
+      Math.max(0, next - Date.now()),
+    );
+
+    return () => clearTimeout(timer);
+  }, [toasts]);
+
   useEffect(() => {
     if (!deletions.length) return;
 
@@ -144,6 +174,9 @@ export function WorkspaceProvider({ origin, children }: WorkspaceProviderProps) 
       notice,
       remove,
       undo,
+      toasts,
+      toast,
+      dismissToast,
     }),
     [
       origin,
@@ -158,6 +191,9 @@ export function WorkspaceProvider({ origin, children }: WorkspaceProviderProps) 
       notice,
       remove,
       undo,
+      toasts,
+      toast,
+      dismissToast,
     ],
   );
 

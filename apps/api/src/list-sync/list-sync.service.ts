@@ -93,6 +93,12 @@ export class ListSyncService {
       select: { connectionId: true },
     });
     const previews = new Set(open.map((row) => row.connectionId));
+    const counts = await this.database.listSyncItem.groupBy({
+      by: ['connectionId'],
+      where: { connectionId: { in: connections.map((row) => row.id) } },
+      _count: { _all: true },
+    });
+    const mappings = new Map(counts.map((row) => [row.connectionId, row._count._all]));
 
     return {
       schemaVersion: 1,
@@ -113,6 +119,7 @@ export class ListSyncService {
                 lastImportAt: row.lastImportAt?.toISOString() ?? null,
                 job: row.jobs[0] ? publicJob(row.jobs[0]) : null,
                 previewReady: previews.has(row.id),
+                mappings: mappings.get(row.id) ?? 0,
               }
             : null,
         };

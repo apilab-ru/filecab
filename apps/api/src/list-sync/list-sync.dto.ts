@@ -107,6 +107,7 @@ export class ListSyncConnectionDto {
   @ApiProperty({ type: String, format: 'date-time', nullable: true }) lastImportAt!: string | null;
   @ApiProperty({ type: ListSyncJobDto, nullable: true }) job!: ListSyncJobDto | null;
   @ApiProperty({ type: Boolean }) previewReady!: boolean;
+  @ApiProperty({ type: Number, minimum: 0 }) mappings!: number;
 }
 
 /** Documents one registered list provider. */

@@ -1,15 +1,19 @@
 import { useMemo, useState } from 'react';
 import type { Entry } from '@filecab/contracts';
+import { UndoBar } from '../../src/components/undo-bar/undo-bar';
 import {
+  TOAST_PERIOD,
   WorkspaceContext,
   type WorkspaceContextValue,
   type WorkspaceRepository,
+  type WorkspaceToast,
 } from '../../src/models/workspace';
 import type { StoryWorkspaceProps } from './model-story-workspace';
 
 /** Pretends to persist entry changes so that card controls react like in the application. */
 export function StoryWorkspace({ entries: initial, children }: StoryWorkspaceProps) {
   const [entries, setEntries] = useState<Entry[]>(initial);
+  const [toasts, setToasts] = useState<WorkspaceToast[]>([]);
   const value = useMemo<WorkspaceContextValue>(() => {
     const repository: WorkspaceRepository = {
       save: async (entryId, _category, patch) => {
@@ -41,8 +45,22 @@ export function StoryWorkspace({ entries: initial, children }: StoryWorkspacePro
       notice: '',
       remove: async () => {},
       undo: async () => {},
+      toasts,
+      toast: (message, error = false) =>
+        setToasts((current) =>
+          [
+            ...current,
+            { id: crypto.randomUUID(), message, error, until: Date.now() + TOAST_PERIOD },
+          ].slice(-3),
+        ),
+      dismissToast: (id) => setToasts((current) => current.filter((item) => item.id !== id)),
     };
-  }, [entries]);
+  }, [entries, toasts]);
 
-  return <WorkspaceContext.Provider value={value}>{children(entries)}</WorkspaceContext.Provider>;
+  return (
+    <WorkspaceContext.Provider value={value}>
+      {children(entries)}
+      <UndoBar />
+    </WorkspaceContext.Provider>
+  );
 }

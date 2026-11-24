@@ -60,6 +60,8 @@ export interface ListSyncConnection {
   job: ListSyncJob | null;
   /** True when an import preview waits for a decision. */
   previewReady: boolean;
+  /** The number of Filecab entries with a saved link to a remote record. */
+  mappings: number;
 }
 
 /** Describes one registered list provider and its connection for the current account. */

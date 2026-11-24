@@ -253,6 +253,19 @@ export function validateEnvironment(env: Environment) {
     invalid.add('SMOTRET_API_ORIGIN');
   }
 
+  try {
+    const shikimoriOrigin = new URL(shikimori.origin);
+
+    if (
+      !['shikimori.io', 'shikimori.one'].includes(shikimoriOrigin.hostname) ||
+      shikimoriOrigin.protocol !== 'https:' ||
+      shikimoriOrigin.port
+    )
+      invalid.add('SHIKIMORI_API_ORIGIN');
+  } catch {
+    invalid.add('SHIKIMORI_API_ORIGIN');
+  }
+
   if (invalid.size) throw new EnvironmentValidationError([...invalid].sort());
 
   return {

@@ -169,6 +169,25 @@ async function storeSession(session: ExtensionSession): Promise<void> {
   });
 }
 
+/**
+ * Throws when the API cannot process a refresh now. Clearing the refresh token is final, so
+ * a stopped or restarting API must not cost the stored session.
+ */
+async function assertApiReady(): Promise<void> {
+  try {
+    const response = await fetch(`${API_ORIGIN}/api/v1/health/ready`, {
+      credentials: 'omit',
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (response.ok) return;
+  } catch {
+    // The API is not reachable.
+  }
+
+  throw new AuthFailure({ stage: AuthStage.Refresh, code: AuthFailureCode.ApiUnreachable });
+}
+
 /** Refreshes once with durable consumption before the network request to prevent restart replay. */
 async function accessCredential(): Promise<StoredAccess | null> {
   const current = (await browser.storage.session.get(ACCESS_KEY))[ACCESS_KEY] as
@@ -181,6 +200,7 @@ async function accessCredential(): Promise<StoredAccess | null> {
 
   if (!refresh) return null;
 
+  await assertApiReady();
   await clearCredentials();
   const response = await authFetch(
     AuthStage.Refresh,

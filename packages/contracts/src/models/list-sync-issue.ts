@@ -1,6 +1,6 @@
 /** Explains why an export or import skipped or failed one item. */
 export enum ListSyncIssue {
-  /** The entry has no verified reference or confirmed mapping for the provider. */
+  /** The entry has no ID or saved mapping for the provider. */
   Unidentified = 'unidentified',
   /** The entry has no status that the provider can store, so a remote record cannot be created. */
   UnsupportedStatus = 'unsupported-status',
@@ -10,6 +10,8 @@ export enum ListSyncIssue {
   ChangedAfterPreview = 'changed-after-preview',
   /** Another active entry already has the remote reference. */
   AlreadyLinked = 'already-linked',
+  /** Filecab could not save the item as a library entry. */
+  InvalidEntry = 'invalid-entry',
   /** The provider rejected or did not confirm the write. */
   ProviderError = 'provider-error',
 }

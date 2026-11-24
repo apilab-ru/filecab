@@ -49,16 +49,18 @@ Tests: `apps/api/src/list-sync/list-sync.integration.test.ts` (in-memory adapter
 
 Specs: [Shikimori](../specs/integration-shikimori-spec.md), [External list sync](../specs/user-list-sync-spec.md).
 
-Code: `apps/api/src/config/environment.ts` (`SHIKIMORI_*`). No adapter code exists yet.
+Code: `apps/api/src/list-sync/shikimori-list.adapter.ts`, `shikimori-list.dto.ts`, `provider-rate-limiter.ts`, `apps/api/src/app.module.ts` (adapter registration), `apps/api/src/config/environment.ts` (`SHIKIMORI_*`), `apps/api/prisma/migrations/20261125000000_provider_request_slot/`.
 
-- [ ] Shikimori OAuth.
-- [ ] Import anime lists and statuses.
-- [ ] Match anime with catalog entries.
-- [ ] Export and import status, score and progress.
-- [ ] Keep unsupported remote fields and private data.
-- [ ] API limits and token refresh.
-- [ ] Connection settings with Export and Import buttons.
-- [ ] Test export, import and recovery.
+Tests: `apps/api/src/list-sync/shikimori-list.adapter.unit.test.ts`, `list-sync.integration.test.ts` (ID matching, shared rate limit), `packages/library/src/components/list-sync-settings/list-sync-settings.stories.tsx`.
+
+- [x] Shikimori OAuth.
+- [x] Import anime lists and statuses.
+- [x] Match anime with catalog entries.
+- [x] Export and import status, score and progress.
+- [x] Keep unsupported remote fields and private data.
+- [x] API limits and token refresh.
+- [x] Connection settings with Export and Import buttons.
+- [x] Test export, import and recovery.
 
 ## 21. Library import from CSV
 

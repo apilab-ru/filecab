@@ -54,13 +54,13 @@ internal catalog ID.
 | Series ID       | `{ provider: "smotret", entityType: "series", id }` |
 | `myAnimeListId` | MyAnimeList anime. Never Shikimori.                 |
 | `aniDbId`       | AniDB anime                                         |
-| Shikimori ID    | Only a verified explicit mapping                    |
+| Shikimori ID    | Only from a Shikimori link of the series            |
 
 - Never pass Shikimori IDs as MAL IDs because the numbers are equal.
 - `myAnimeListId: 0` means no MAL match. Do not create a MAL reference or a MAL score for it.
 - Reject negative and noninteger MAL IDs. Keep the series ID and the other results usable.
 - Ordinary search keeps MAL IDs as unverified references. An exact MAL lookup verifies a reference only when the returned record has that exact ID.
-- IDs parsed from provider links stay unverified. Search results never establish a Shikimori mapping.
+- IDs parsed from provider links stay unverified for catalog identity. List synchronization compares the Shikimori ID from these links. See [Identity resolution](user-list-sync-spec.md#identity-resolution).
 - An unsupported lookup returns a capability or unresolved state.
 
 ### Titles and descriptions

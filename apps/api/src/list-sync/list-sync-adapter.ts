@@ -26,9 +26,13 @@ export interface RemoteListRecord {
   recordId: string;
   reference: ListSyncReference;
   category: Category;
+  /** A display title for previews and reports. */
   title: string;
+  /** Titles with their languages for the snapshot of an imported entry. */
+  titles: Array<{ text: string; language: string }>;
   year: number | null;
   posterUrl: string | null;
+  episodeCount: number | null;
   /** Projected values. A status that Filecab cannot represent is null. */
   values: ListSyncValues;
   /** Provider-only values, for example the original remote status. */
@@ -80,9 +84,12 @@ export interface ListSyncAdapter {
   ): Promise<RemoteListRecord>;
 }
 
-/** Reports invalid or expired provider authorization. */
+/**
+ * Reports invalid or expired provider authorization. A refresh can repair only an invalid or
+ * expired token. A missing scope or an access denial is not refreshable.
+ */
 export class ListSyncAuthorizationError extends Error {
-  constructor() {
+  constructor(readonly refreshable = true) {
     super('Provider authorization is invalid');
     this.name = 'ListSyncAuthorizationError';
   }

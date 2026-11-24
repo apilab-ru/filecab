@@ -59,6 +59,7 @@ export const ISSUE_LABELS = {
   [ListSyncIssue.ChangedAfterPreview]: 'listSyncIssueChangedAfterPreview',
   [ListSyncIssue.AlreadyLinked]: 'listSyncIssueAlreadyLinked',
   [ListSyncIssue.ProviderError]: 'listSyncIssueProviderError',
+  [ListSyncIssue.InvalidEntry]: 'listSyncIssueInvalidEntry',
 } as const satisfies Record<ListSyncIssue, MessageKey>;
 
 /** Explains why a job or a connection attempt stopped. */
@@ -66,6 +67,7 @@ export const ERROR_LABELS = {
   [ListSyncErrorCode.IncompleteScan]: 'listSyncErrorIncompleteScan',
   [ListSyncErrorCode.AuthorizationRequired]: 'listSyncStateAuthorizationRequired',
   [ListSyncErrorCode.ProviderUnavailable]: 'listSyncErrorProviderUnavailable',
+  [ListSyncErrorCode.InternalError]: 'listSyncErrorInternal',
   [ListSyncErrorCode.ConnectionChanged]: 'listSyncErrorConnectionChanged',
   [ListSyncErrorCode.AuthorizationFailed]: 'listSyncErrorAuthorizationFailed',
   [ListSyncErrorCode.AccountInUse]: 'listSyncErrorAccountInUse',

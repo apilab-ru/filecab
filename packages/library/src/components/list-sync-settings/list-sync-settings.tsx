@@ -16,6 +16,7 @@ import {
   type ListSyncProvider,
 } from '@filecab/contracts';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
+import { useWorkspace } from '../../hooks/use-workspace';
 import { ListSyncRequestError } from '../../models/list-sync';
 import { ListSyncPreview } from '../list-sync-preview/list-sync-preview';
 import {
@@ -56,24 +57,27 @@ export function ListSyncSettings({ ownerId, repository }: ListSyncSettingsProps)
   const [loadFailed, setLoadFailed] = useState(false);
   const [reload, setReload] = useState(0);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState<{ key: ListSyncNotice; error: boolean } | null>(null);
+  const { toast } = useWorkspace();
+  // An applied or cancelled preview stays ready in the overview until the next reload.
+  const [closedPreview, setClosedPreview] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<ListSyncConfirmation | null>(null);
   const [preview, setPreview] = useState<{
     provider: string;
     data: ListSyncImportPreview;
   } | null>(null);
 
+  const notify = (key: ListSyncNotice, error: boolean) => toast(t(key), error);
+
   useEffect(() => {
     const result = takeCallbackResult();
 
-    if (result === 'connected') setNotice({ key: 'listSyncConnected', error: false });
+    if (result === 'connected') notify('listSyncConnected', false);
     else if (result)
-      setNotice({
-        key:
-          ERROR_LABELS[result as ListSyncErrorCode] ??
+      notify(
+        ERROR_LABELS[result as ListSyncErrorCode] ??
           ERROR_LABELS[ListSyncErrorCode.AuthorizationFailed],
-        error: true,
-      });
+        true,
+      );
   }, []);
 
   useEffect(() => {
@@ -108,7 +112,19 @@ export function ListSyncSettings({ ownerId, repository }: ListSyncSettingsProps)
     return () => clearTimeout(timer);
   }, [polling, overview]);
 
-  const ready = overview?.providers.find((provider) => provider.connection?.previewReady)?.provider;
+  const ready = overview?.providers.find(
+    (provider) => provider.connection?.previewReady && provider.provider !== closedPreview,
+  )?.provider;
+
+  useEffect(() => {
+    if (
+      closedPreview &&
+      !overview?.providers.some(
+        (provider) => provider.provider === closedPreview && provider.connection?.previewReady,
+      )
+    )
+      setClosedPreview(null);
+  }, [overview, closedPreview]);
 
   useEffect(() => {
     if (!ready || preview?.provider === ready) return;
@@ -120,8 +136,13 @@ export function ListSyncSettings({ ownerId, repository }: ListSyncSettingsProps)
       .then((data) => {
         if (active) setPreview({ provider: ready, data });
       })
-      .catch(() => {
-        if (active) setNotice({ key: 'listSyncRequestFailed', error: true });
+      .catch((error: unknown) => {
+        if (!active) return;
+
+        // A preview that another tab applied or cancelled is gone. Reload without an error.
+        if (error instanceof ListSyncRequestError && error.status === 404)
+          setReload((value) => value + 1);
+        else notify('listSyncRequestFailed', true);
       });
 
     return () => {
@@ -131,20 +152,18 @@ export function ListSyncSettings({ ownerId, repository }: ListSyncSettingsProps)
 
   const run = async (action: () => Promise<ListSyncOverview | ListSyncJob | void>) => {
     setBusy(true);
-    setNotice(null);
     try {
       const result = await action();
 
       if (result && 'providers' in result) setOverview(result);
       else setReload((value) => value + 1);
     } catch (error) {
-      setNotice({
-        key:
-          error instanceof ListSyncRequestError && error.status === 409
-            ? 'listSyncBusy'
-            : 'listSyncRequestFailed',
-        error: true,
-      });
+      notify(
+        error instanceof ListSyncRequestError && error.status === 409
+          ? 'listSyncBusy'
+          : 'listSyncRequestFailed',
+        true,
+      );
     } finally {
       setBusy(false);
     }
@@ -170,6 +189,7 @@ export function ListSyncSettings({ ownerId, repository }: ListSyncSettingsProps)
     if (!preview) return;
 
     const jobId = preview.data.jobId;
+    setClosedPreview(provider);
     setPreview(null);
     void run(() =>
       repository.apply(provider, ownerId, {
@@ -183,6 +203,7 @@ export function ListSyncSettings({ ownerId, repository }: ListSyncSettingsProps)
   };
 
   const cancelPreview = (provider: string) => {
+    setClosedPreview(provider);
     setPreview(null);
     void run(() => repository.cancelPreview(provider, ownerId));
   };
@@ -198,10 +219,13 @@ export function ListSyncSettings({ ownerId, repository }: ListSyncSettingsProps)
     if (job.state === ListSyncJobState.Queued)
       return <p className="list-sync-settings__job">{t('listSyncQueued', { job: name })}</p>;
 
+    // The total is unknown until the remote list is read.
     if (job.state === ListSyncJobState.Running)
       return (
         <p className="list-sync-settings__job" role="status">
-          {t('listSyncRunning', { job: name, ...job.progress })}
+          {job.progress.total > 0
+            ? t('listSyncRunning', { job: name, ...job.progress })
+            : t('listSyncInProgress', { job: name })}
         </p>
       );
 
@@ -263,8 +287,10 @@ export function ListSyncSettings({ ownerId, repository }: ListSyncSettingsProps)
             </span>
           )}
         </div>
-        {connection && (connection.lastExportAt || connection.lastImportAt) && (
+        {connection && (
           <p className="list-sync-settings__dates">
+            {t('listSyncMappings', { count: connection.mappings })}
+            {(connection.lastExportAt || connection.lastImportAt) && ' · '}
             {connection.lastExportAt &&
               t('listSyncLastExport', { date: date(connection.lastExportAt) })}
             {connection.lastExportAt && connection.lastImportAt && ' · '}
@@ -355,11 +381,6 @@ export function ListSyncSettings({ ownerId, repository }: ListSyncSettingsProps)
           </div>
         )}
         {overview?.providers.map(renderProvider)}
-        {notice && (
-          <p className="list-sync-settings__notice" role={notice.error ? 'alert' : 'status'}>
-            {t(notice.key)}
-          </p>
-        )}
       </div>
       {confirmation && (
         <ConfirmDialog

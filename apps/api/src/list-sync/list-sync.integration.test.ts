@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, beforeEach, expect, test } from 'vitest';
+import * as Sentry from '@sentry/nestjs';
+import { afterAll, beforeAll, beforeEach, expect, test, vi } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import {
   Category,
@@ -34,6 +35,14 @@ import {
   type RemoteListRecord,
 } from './list-sync-adapter';
 import { ListSyncRunner } from './list-sync-runner';
+import { ProviderRateLimiter } from './provider-rate-limiter';
+
+vi.mock('@sentry/nestjs', async (original) => ({
+  ...(await original<typeof import('@sentry/nestjs')>()),
+  captureException: vi.fn(),
+  withScope: (callback: (scope: unknown) => void) =>
+    callback({ setTag: vi.fn(), setContext: vi.fn() }),
+}));
 
 const prefix = `list-sync-${randomUUID()}`;
 const secret = Buffer.alloc(32, 31).toString('base64');
@@ -67,6 +76,7 @@ class FakeListAdapter implements ListSyncAdapter {
   readonly statuses = [Status.Planned, Status.Process, Status.Complete, Status.Drop];
   records = new Map<string, RemoteListRecord>();
   writes = 0;
+  reads = 0;
   complete = true;
   failures: Error[] = [];
   refreshToken: string | null = 'refresh';
@@ -106,6 +116,8 @@ class FakeListAdapter implements ListSyncAdapter {
   }
 
   async readRecord(_credentials: ListSyncCredentials, _account: ListSyncAccount, id: string) {
+    this.reads += 1;
+
     return this.records.get(id) ?? null;
   }
 
@@ -145,8 +157,10 @@ class FakeListAdapter implements ListSyncAdapter {
       reference: { namespace: 'fake', entity: 'anime', id },
       category: Category.Anime,
       title,
+      titles: [],
       year: 2020,
       posterUrl: null,
+      episodeCount: null,
       values,
       metadata: {},
     };
@@ -212,7 +226,7 @@ async function connect(code: string, tokens = owner): Promise<URL> {
   return new URL(callback.headers.get('location')!);
 }
 
-/** Creates an anime entry with an optional verified fake reference. */
+/** Creates an anime entry with an optional fake provider ID. */
 async function entry(
   title: string,
   fields: Record<string, unknown>,
@@ -228,7 +242,8 @@ async function entry(
 
   if (!referenceId) return created;
 
-  // The public API cannot add verified references. Store one as a catalog resolution would.
+  // The public API cannot add references. Store an unverified one as a catalog link would.
+  // Matching compares the provider ID; the verified flag does not matter.
   const document: ServerEntry = {
     ...created,
     snapshot: {
@@ -239,7 +254,7 @@ async function entry(
           entity: 'anime',
           id: referenceId,
           granularity: 'unknown' as ServerEntry['snapshot']['references'][number]['granularity'],
-          provenance: { source: 'fixture', retrievedAt: created.createdAt, verified: true },
+          provenance: { source: 'fixture', retrievedAt: created.createdAt, verified: false },
         },
       ],
     },
@@ -366,10 +381,15 @@ test('export replaces remote values, skips unidentified items and repeats withou
   expect(changed.entryId && missing.entryId).toBeTruthy();
 
   const writes = adapter.writes;
+  adapter.reads = 0;
   await request('/list-sync/fake/export', 'POST');
   const repeated = latest(await run());
   expect(repeated.result?.counts).toEqual({ unchanged: 2, skipped: 2 });
   expect(adapter.writes).toBe(writes);
+  // Records that equal the scan need no extra provider reads.
+  expect(adapter.reads).toBe(0);
+  const overview = await run();
+  expect(overview.providers[0]!.connection!.mappings).toBe(2);
 });
 
 test('an incomplete scan stops the export without writes', async () => {
@@ -392,6 +412,11 @@ test('import previews additions and changes and applies only the selection', asy
   adapter.put('r-1', '1', { status: Status.Complete, rating: 9, progress: 24 });
   adapter.put('r-2', '2', { status: Status.Complete, rating: 0, progress: 10 });
   adapter.put('r-3', '3', { status: Status.Planned, rating: 0, progress: 0 }, 'New title');
+  // Shikimori sends localized titles. An entry without a catalog item still needs its own title.
+  adapter.records.get('r-3')!.titles = [
+    { text: 'New title', language: 'ru' },
+    { text: 'Shin', language: 'en' },
+  ];
   adapter.put('r-4', '4', { status: null, rating: 0, progress: 0 }, 'On hold');
 
   await request('/list-sync/fake/import', 'POST');
@@ -444,6 +469,7 @@ test('import previews additions and changes and applies only the selection', asy
     catalogId: null,
   });
   expect(added?.snapshot.references[0]).toMatchObject({ namespace: 'fake', id: '3' });
+  expect(added?.snapshot.titles.map((title) => title.text)).toEqual(['New title', 'Shin']);
 
   // The preview is consumed. A second import shows the added record as linked.
   expect((await request('/list-sync/fake/import/preview')).status).toBe(404);
@@ -485,6 +511,24 @@ test('a retryable failure requeues the job and a lost authorization pauses the c
   expect(reconnected.searchParams.get('listSyncResult')).toBe('connected');
 });
 
+test('an unexpected job error is an internal error and goes to Sentry', async () => {
+  await connect(`x${connected}`);
+  vi.mocked(Sentry.captureException).mockClear();
+  adapter.failures = [new TypeError('fixture defect')];
+  await request('/list-sync/fake/import', 'POST');
+  expect(latest(await run())).toMatchObject({
+    state: ListSyncJobState.Failed,
+    error: ListSyncErrorCode.InternalError,
+  });
+  expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+
+  // An expected stop is not reported.
+  adapter.complete = false;
+  await request('/list-sync/fake/import', 'POST');
+  expect(latest(await run()).error).toBe(ListSyncErrorCode.IncompleteScan);
+  expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+});
+
 test('pause blocks jobs and disconnect keeps Filecab entries', async () => {
   await connect(`p${connected}`);
   const kept = await entry('Kept', { status: 'planned' }, '8');
@@ -500,4 +544,18 @@ test('pause blocks jobs and disconnect keeps Filecab entries', async () => {
   expect(disconnected.providers[0]!.connection).toBeNull();
   expect(await auth.database.listSyncItem.count({ where: { entryId: kept.entryId } })).toBe(0);
   expect((await request(`/library/entries/${kept.entryId}`)).status).toBe(200);
+});
+
+test('the shared rate limit delays requests across limiter instances', async () => {
+  const provider = `${prefix}-rate`;
+  const windows = [{ windowMs: 400, max: 2 }];
+  // Two instances model two API processes that share the database.
+  const first = new ProviderRateLimiter(auth.database, provider, windows);
+  const second = new ProviderRateLimiter(auth.database, provider, windows);
+  const started = Date.now();
+  await Promise.all([first.acquire(), second.acquire()]);
+  expect(Date.now() - started).toBeLessThan(300);
+  await first.acquire();
+  expect(Date.now() - started).toBeGreaterThanOrEqual(350);
+  await auth.database.providerRequestSlot.deleteMany({ where: { provider } });
 });

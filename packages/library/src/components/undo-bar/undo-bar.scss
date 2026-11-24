@@ -30,6 +30,31 @@
     }
   }
 
+  &__message {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  &__close {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--fc-radius);
+    background: transparent;
+    color: var(--fc-muted);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--fc-text);
+    }
+  }
+
   &__text {
     flex: 1;
     min-width: 0;
