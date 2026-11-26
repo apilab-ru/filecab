@@ -12,15 +12,15 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-/** Validates one localized KinoPoisk title field. */
+/** Validates one localized KinoPoisk title field. Some provider entries have no name. */
 export class KinopoiskNameDto {
-  @IsString() name!: string;
+  @IsOptional() @IsString() name?: string | null;
   @IsOptional() @IsString() language?: string;
 }
 
-/** Validates a provider-scoped genre label. */
+/** Validates a provider-scoped genre label. An entry without a name is ignored. */
 export class KinopoiskGenreDto {
-  @IsString() name!: string;
+  @IsOptional() @IsString() name?: string | null;
 }
 
 /** Validates provider rating values independently from user ratings. */

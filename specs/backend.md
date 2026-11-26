@@ -544,8 +544,9 @@ reporting and does not stop startup.
 - Include the HTTP method and the Express route template. Do not include path parameter values or query text.
 - Omit request bodies, headers, parameter values, user identity, extra data and breadcrumbs.
 - Keep controlled error codes and messages with the stack trace. Replace unknown exception messages with a generic description.
-- Provider diagnostics keep only the origin, operation, failure stage, elapsed time, upstream status and a bounded network error code. Provider schema failures add the schema stage and bounded field paths.
-- Never include URLs with queries, response bodies, headers, search text, field values or credentials.
+- Provider diagnostics keep only the origin, operation, failure stage, elapsed time, upstream status and a bounded network error code. Provider schema failures add the schema stage, bounded field paths and a response excerpt. The excerpt is the JSON of the first invalid item in the response list, or of the response when no item is invalid. It has at most 2,000 characters. It contains only public provider catalog data.
+- A catalog data job that fails adds the job ID, the job position, the code and safe message of the API error and the provider diagnostic. The event message names the safe message of the API error.
+- Never include URLs with queries, full response bodies, headers, search text, user field values or credentials.
 
 Test event creation with an isolated Sentry transport. Tests must not send events to the
 configured project.

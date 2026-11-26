@@ -21,6 +21,21 @@
       opacity: 0.6;
       cursor: default;
     }
+
+    &--outlined {
+      width: min(100%, 152px);
+      min-height: 32px;
+      padding: 4px 8px;
+      border: 1px solid var(--fc-border);
+      border-radius: var(--fc-radius);
+      background: var(--fc-surface);
+      color: var(--fc-text);
+    }
+  }
+
+  &__chevron {
+    display: inline-flex;
+    margin-inline-start: auto;
   }
 
   &__star {

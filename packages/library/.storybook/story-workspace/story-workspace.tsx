@@ -11,7 +11,7 @@ import {
 import type { StoryWorkspaceProps } from './model-story-workspace';
 
 /** Pretends to persist entry changes so that card controls react like in the application. */
-export function StoryWorkspace({ entries: initial, children }: StoryWorkspaceProps) {
+export function StoryWorkspace({ entries: initial, children, importer }: StoryWorkspaceProps) {
   const [entries, setEntries] = useState<Entry[]>(initial);
   const [toasts, setToasts] = useState<WorkspaceToast[]>([]);
   const value = useMemo<WorkspaceContextValue>(() => {
@@ -25,6 +25,7 @@ export function StoryWorkspace({ entries: initial, children }: StoryWorkspacePro
       remove: async (row) => row,
       restore: async () => {},
       refresh: async () => {},
+      importer,
     };
 
     return {
@@ -55,7 +56,7 @@ export function StoryWorkspace({ entries: initial, children }: StoryWorkspacePro
         ),
       dismissToast: (id) => setToasts((current) => current.filter((item) => item.id !== id)),
     };
-  }, [entries, toasts]);
+  }, [entries, toasts, importer]);
 
   return (
     <WorkspaceContext.Provider value={value}>

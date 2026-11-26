@@ -166,7 +166,67 @@ describe('Kinopoisk unknown release years', () => {
     expect((await adapter.details('51', Locale.Ru)).snapshot.year).toBeNull();
   });
 
-  it('attaches bounded safe field paths to rejected provider schema data', async () => {
+  it('accepts a title or genre without a name and attaches the invalid search item', async () => {
+    // A real response item (id 647836): one `names` entry has no `name`.
+    const nameless = {
+      id: 647836,
+      type: 'movie',
+      year: 2014,
+      name: '$50 и девушки по вызову: Любовная история',
+      names: [
+        { language: 'EN', type: 'Original title on tmdb' },
+        { language: 'RU', name: '$50 и девушки по вызову: Любовная история' },
+      ],
+      genres: [{ name: null }, { name: 'драма' }],
+    };
+    const observe = vi
+      .fn<CatalogIdentityService['observe']>()
+      .mockImplementation(async (category, granularity, snapshot) => ({
+        schemaVersion: 1,
+        catalogId: 'catalog-fixture',
+        category,
+        granularity,
+        snapshot,
+      }));
+    const invalid = { id: 0, type: 'movie' };
+    const adapter = new KinopoiskDevAdapter(
+      'https://api.poiskkino.dev',
+      'private-key',
+      { observe } as unknown as CatalogIdentityService,
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ page: 1, limit: 50, total: 1, docs: [nameless] })),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ page: 1, limit: 50, total: 2, docs: [nameless, invalid] })),
+        ),
+    );
+    const request = {
+      provider: 'kinopoisk',
+      category: Category.Films,
+      locale: Locale.Ru,
+      query: 'Пятьдесят оттенков черного',
+      page: 1,
+      pageSize: 20,
+    };
+
+    const { results } = await adapter.search(request);
+    expect(results[0]!.snapshot.titles.map((title) => title.text)).toEqual([
+      '$50 и девушки по вызову: Любовная история',
+    ]);
+    expect(results[0]!.snapshot.genres).toHaveLength(1);
+    await expect(adapter.search(request)).rejects.toMatchObject({
+      providerDiagnostic: {
+        operation: 'search',
+        stage: 'schema',
+        validationFields: ['docs.1.id'],
+        responseExcerpt: JSON.stringify(invalid),
+      },
+    });
+  });
+
+  it('attaches bounded field paths and a trimmed excerpt to rejected provider schema data', async () => {
     const adapter = new KinopoiskDevAdapter(
       'https://api.poiskkino.dev',
       'private-key',
@@ -185,6 +245,7 @@ describe('Kinopoisk unknown release years', () => {
         operation: 'details',
         stage: 'schema',
         validationFields: ['year'],
+        responseExcerpt: expect.stringContaining('"year":-1'),
       },
     });
   });

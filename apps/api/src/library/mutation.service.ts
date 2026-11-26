@@ -22,11 +22,18 @@ import {
   type Backup,
   type BackupEntry,
   type BackupPreview,
+  type CatalogMatchTarget,
   backupChanges,
   compareBackup,
   toBackup,
+  importedEntry,
+  LibraryImportOutcome,
+  parseLibraryImport,
+  planLibraryImport,
+  type LibraryImportPreview,
+  type LibraryImportSummary,
 } from '@filecab/contracts';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { ApiException } from '../http/api-error';
 import type { PrismaClient, Prisma } from '../generated/prisma/client';
@@ -53,6 +60,11 @@ function json(value: unknown): Prisma.InputJsonValue {
 
 /** Gives a complete restore more time than an ordinary single-entry write. */
 const RESTORE_TRANSACTION = { maxWait: 10_000, timeout: 120_000 };
+
+/** Binds an import confirmation to the file content and the library revision. */
+function importInput(csv: string, revision: string): { digest: string; revision: string } {
+  return { digest: createHash('sha256').update(csv).digest('hex'), revision };
+}
 
 /** Limits the number of validation issues in one response. */
 const MAX_BACKUP_ISSUES = 1000;
@@ -887,5 +899,114 @@ export class LibraryMutationService {
     );
 
     return this.snapshot(ownerId);
+  }
+
+  /**
+   * Validates a CSV import file and plans each row against the active library. A valid file
+   * gets a confirmation bound to the owner, the file digest and the library revision. The
+   * import sends no catalog provider requests.
+   */
+  async previewImport(ownerId: string, csv: string): Promise<LibraryImportPreview> {
+    const previews = this.previews;
+
+    if (!previews) throw new MutationError(ApiErrorCode.Conflict);
+
+    const parsed = parseLibraryImport(csv);
+
+    if (parsed.issues.length)
+      return {
+        schemaVersion: 1,
+        issues: parsed.issues,
+        rows: [],
+        confirmationToken: null,
+        expiresAt: null,
+      };
+
+    return this.database.$transaction(
+      async (tx) => {
+        const library = await tx.userLibrary.findUnique({ where: { ownerId } });
+
+        if (!library) throw new MutationError(ApiErrorCode.NotFound);
+
+        const rows = await tx.libraryEntry.findMany({ where: { ownerId, deleted: false } });
+        const { token, expiresAt } = previews.sign(
+          ownerId,
+          'library-import',
+          importInput(csv, library.revision.toString()),
+        );
+
+        return {
+          schemaVersion: 1,
+          issues: [],
+          rows: planLibraryImport(
+            parsed.rows,
+            rows.map((row) => row.document as unknown as ServerEntry),
+          ),
+          confirmationToken: token,
+          expiresAt,
+        };
+      },
+      { isolationLevel: 'RepeatableRead' },
+    );
+  }
+
+  /**
+   * Adds the selected rows of a previewed file in one transaction. Each entry gets its own
+   * version and change record. A changed library or file returns a conflict without changes.
+   * Skipped rows are never added, and existing entries never change.
+   */
+  async importLibrary(
+    ownerId: string,
+    csv: string,
+    lines: number[],
+    confirmationToken: string,
+  ): Promise<LibraryImportSummary> {
+    const previews = this.previews;
+
+    if (!previews) throw new MutationError(ApiErrorCode.Conflict);
+
+    const parsed = parseLibraryImport(csv);
+
+    if (parsed.issues.length) throw new MutationError(ApiErrorCode.Conflict);
+
+    const selected = new Set(lines);
+    const added: CatalogMatchTarget[] = [];
+
+    await this.transaction(
+      ownerId,
+      async (tx) => {
+        const library = await tx.userLibrary.findUniqueOrThrow({ where: { ownerId } });
+        previews.verify(
+          confirmationToken,
+          ownerId,
+          'library-import',
+          importInput(csv, library.revision.toString()),
+          [],
+        );
+        const current = await tx.libraryEntry.findMany({ where: { ownerId, deleted: false } });
+        const plan = planLibraryImport(
+          parsed.rows,
+          current.map((row) => row.document as unknown as ServerEntry),
+        );
+        const now = new Date().toISOString();
+
+        for (const row of plan) {
+          if (row.outcome === LibraryImportOutcome.Skip || !selected.has(row.line)) continue;
+
+          const entry = { ...importedEntry(row, randomUUID(), now), serverVersion: '0' };
+          validateEntry(entry);
+          await this.publish(tx, ownerId, entry, true);
+          added.push({ entryId: entry.entryId, category: entry.category });
+        }
+      },
+      RESTORE_TRANSACTION,
+    );
+
+    return {
+      schemaVersion: 1,
+      added: added.length,
+      skipped: parsed.rows.length - added.length,
+      entries: added,
+    };
   }
 }

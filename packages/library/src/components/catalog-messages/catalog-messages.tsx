@@ -10,6 +10,7 @@ export function CatalogMessages({
   online,
   onRetry,
   hideEmpty = false,
+  hideMatching = false,
 }: CatalogMessagesProps) {
   const { t } = useTranslation();
   const { reconciling, reconcile } = useWorkspace();
@@ -17,7 +18,7 @@ export function CatalogMessages({
   const messages: CatalogMessage[] = [
     {
       key: 'matching',
-      visible: Boolean(reconciling),
+      visible: Boolean(reconciling) && !hideMatching,
       text: t('catalogMatching', { title: reconciling?.entry.userTitle ?? '' }),
       action: { label: t('Cancel'), onClick: () => reconcile(null) },
     },

@@ -15,5 +15,8 @@ export enum SyncOperation {
   ListSyncPreview = 'list-sync-preview',
   ListSyncApply = 'list-sync-apply',
   ListSyncCancelPreview = 'list-sync-cancel-preview',
+  CatalogMatchStatus = 'catalog-match-status',
+  CatalogMatchStart = 'catalog-match-start',
+  CatalogMatchStop = 'catalog-match-stop',
   Messaging = 'messaging',
 }

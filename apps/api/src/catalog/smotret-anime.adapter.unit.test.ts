@@ -50,6 +50,32 @@ function jsonResponse(body: unknown, status = 200, headers?: Record<string, stri
 }
 
 describe('SmotretAnimeAdapter fixtures', () => {
+  it('returns the other provider names of a search result outside the snapshot', async () => {
+    const { adapter, observed } = fixture(async () =>
+      jsonResponse({
+        data: [
+          series(12, {
+            titles: { ru: 'Эльф не может сидеть на диете' },
+            allTitles: ['Эльф не может сидеть на диете', ' Эльф не может похудеть ', 'Elyase'],
+          }),
+        ],
+      }),
+    );
+    const response = await adapter.search({
+      provider: 'smotret',
+      category: Category.Anime,
+      locale: Locale.Ru,
+      query: 'Эльф не может похудеть',
+      page: 1,
+      pageSize: 10,
+      filters: {},
+    });
+    expect(response.results[0]!.alternativeTitles).toEqual(['Эльф не может похудеть', 'Elyase']);
+    expect(observed[0]!.titles.map((title: { text: string }) => title.text)).toEqual([
+      'Эльф не может сидеть на диете',
+    ]);
+  });
+
   it.each([
     { posterUrl: origin, expected: null },
     { posterUrl: `${origin}/`, expected: null },

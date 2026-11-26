@@ -3,8 +3,11 @@ import {
   emptySnapshot,
   mergedLink,
   Category,
+  CatalogMatchJobState,
+  CatalogMatchOutcome,
   Granularity,
   Status,
+  type CatalogMatchJob,
   type CatalogRecord,
   type Entry,
   type LibraryMutationPreview,
@@ -79,6 +82,7 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
     failSearch: false,
     previews: 0,
     applies: 0,
+    matchJobs: [] as CatalogMatchJob[],
   };
   await context.route('http://127.0.0.1:3001/api/v1/**', async (route) => {
     const url = new URL(route.request().url());
@@ -132,6 +136,9 @@ async function backend(context: BrowserContext, initial: Entry[] = []) {
         hasMore: url.searchParams.get('page') === '1',
       });
     }
+
+    if (url.pathname.endsWith('/library/catalog-match'))
+      return json({ schemaVersion: 1, jobs: state.matchJobs });
 
     if (url.pathname.endsWith('/library')) {
       state.reads += 1;
@@ -292,8 +299,18 @@ test('website editor keeps a conflicted draft, removes the link, deletes with Un
   const save = page.getByRole('button', { name: 'Save', exact: true });
   await expect(save).toBeDisabled();
   await expect(page.getByText('Episode total unknown')).toBeVisible();
+  const editorRating = page
+    .getByRole('dialog', { name: 'Edit entry', exact: true })
+    .getByRole('button', { name: 'Rating', exact: true });
+  await editorRating.click();
+  const picker = page.getByRole('dialog', { name: 'Your rating', exact: true });
+  await expect(picker.getByRole('button', { name: '9', exact: true, pressed: true })).toBeVisible();
+  await picker.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expect(picker).toHaveCount(0);
+  await expect(editorRating).toHaveText('Unrated');
+  await expect(save).toBeEnabled();
+  expect(state.entries[0].rating).toBe(9);
   await page.getByLabel('Comment', { exact: true }).fill('Changed on the website');
-  await page.getByRole('dialog').getByLabel('Rating', { exact: true }).selectOption('0');
   state.conflictOnce = true;
   const reads = state.reads;
   await save.click();
@@ -324,6 +341,35 @@ test('website editor keeps a conflicted draft, removes the link, deletes with Un
   await page.getByRole('button', { name: 'Undo', exact: true }).click();
   await expect(page.locator('.library-card__title:visible')).toHaveText('Catalog title');
   expect(state.entries[0]).toMatchObject({ deleted: false, serverVersion: '6' });
+});
+
+test('entry editor pairs fields and keeps actions visible in a short viewport', async ({
+  page,
+  context,
+}) => {
+  await backend(context, [saved()]);
+  await page.setViewportSize({ width: 900, height: 700 });
+  await page.goto('/library/films');
+  await page.getByRole('button', { name: 'Edit', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Edit entry', exact: true });
+  const category = dialog.getByRole('combobox', { name: 'Category', exact: true });
+  const status = dialog.getByRole('combobox', { name: 'Status', exact: true });
+  const rating = dialog.getByRole('button', { name: 'Rating', exact: true });
+  const progress = dialog.getByRole('textbox', { name: 'Progress', exact: true });
+  await expect(dialog).toHaveCSS('width', '460px');
+  expect((await category.boundingBox())!.x).toBeLessThan((await status.boundingBox())!.x);
+  expect((await rating.boundingBox())!.x).toBeLessThan((await progress.boundingBox())!.x);
+
+  await page.setViewportSize({ width: 360, height: 320 });
+  const bounds = (await dialog.boundingBox())!;
+  expect(bounds).toMatchObject({ x: 16, y: 16, width: 328, height: 288 });
+  expect((await category.boundingBox())!.y).toBeLessThan((await status.boundingBox())!.y);
+  const save = dialog.getByRole('button', { name: 'Save', exact: true });
+  await expect(save).toBeInViewport({ ratio: 1 });
+  const comment = dialog.getByRole('textbox', { name: 'Comment', exact: true });
+  await comment.scrollIntoViewIfNeeded();
+  await expect(comment).toBeInViewport({ ratio: 1 });
+  await expect(save).toBeInViewport({ ratio: 1 });
 });
 
 test('catalog debounce, late responses, errors and hasMore retain the latest search', async ({
@@ -493,6 +539,105 @@ test('manual-to-saved catalog merge requires preview, keeps the manual UUID and 
     catalogId,
     sources: donor.sources,
   });
+});
+
+test('a catalog data item opens a dialog that links the entry through the editor', async ({
+  page,
+  context,
+}) => {
+  const manual = { ...saved(), userTitle: 'Двойник', snapshot: emptySnapshot() };
+  const state = await backend(context, [manual]);
+  state.matchJobs = [
+    {
+      jobId: 'job-1',
+      provider: 'kinopoisk',
+      state: CatalogMatchJobState.Succeeded,
+      progress: { done: 1, total: 1 },
+      counts: { [CatalogMatchOutcome.Ambiguous]: 1 },
+      items: [
+        { entryId: manual.entryId, title: 'Двойник', outcome: CatalogMatchOutcome.Ambiguous },
+      ],
+      pause: null,
+      resumeAt: null,
+      createdAt: timestamp,
+      finishedAt: timestamp,
+    },
+  ];
+  await page.goto('/settings');
+  const item = page.getByRole('button', { name: /^Двойник: several catalog titles match/ });
+  await item.click();
+  const dialog = page.getByRole('dialog', { name: 'Link a catalog title' });
+  const header = dialog.locator('.fc-dialog__header');
+  const search = header.getByRole('searchbox');
+  const deleteEntry = header.getByRole('button', { name: 'Delete library entry' });
+  await expect(deleteEntry).toHaveCSS('width', '32px');
+  await expect(deleteEntry).toHaveCSS('height', '32px');
+  // The dialog searches the catalog for the entry title.
+  await expect(search).toHaveValue('Двойник');
+  await expect.poll(() => state.searches.at(-1)?.searchParams.get('query')).toBe('Двойник');
+  await header.getByRole('button', { name: 'Clear search' }).click();
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue('');
+  await search.fill('Двойник');
+  await expect(dialog.getByRole('button', { name: 'Link', exact: true })).toBeVisible();
+  const grid = dialog.locator('.title-results--grid');
+  await expect(grid).toHaveCSS('grid-template-columns', /^(\d+(\.\d+)?px ){3}\d+(\.\d+)?px$/);
+  await header.getByRole('button', { name: 'Close dialog' }).click();
+  await expect(dialog).toHaveCount(0);
+  await item.click();
+  // The header stays with the dialog when the search stacks on a narrow screen.
+  await page.setViewportSize({ width: 390, height: 480 });
+  const [title, input] = await Promise.all([
+    header.getByRole('heading').boundingBox(),
+    search.boundingBox(),
+  ]);
+  expect(title!.y + title!.height).toBeLessThan(input!.y);
+  await expect.poll(() => dialog.evaluate((node) => node.scrollHeight - node.clientHeight)).toBe(0);
+  await expect(grid).toHaveCSS('grid-template-columns', /^\d+(\.\d+)?px$/);
+  await dialog.getByRole('button', { name: 'Link', exact: true }).click();
+  // The shared editor replaces the dialog. Save links at once, without a preview step.
+  await expect(dialog).toHaveCount(0);
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('region', { name: 'Association preview' })).toHaveCount(0);
+  expect(state.applies).toBe(1);
+  expect(state.entries[0]).toMatchObject({ entryId: manual.entryId, catalogId });
+  // A linked entry leaves the list.
+  await expect(item).toHaveCount(0);
+});
+
+test('the catalog data dialog deletes the title with Undo', async ({ page, context }) => {
+  const manual = { ...saved(), userTitle: 'Мусор', snapshot: emptySnapshot() };
+  const state = await backend(context, [manual]);
+  state.matchJobs = [
+    {
+      jobId: 'job-1',
+      provider: 'kinopoisk',
+      state: CatalogMatchJobState.Succeeded,
+      progress: { done: 1, total: 1 },
+      counts: { [CatalogMatchOutcome.NotFound]: 1 },
+      items: [{ entryId: manual.entryId, title: 'Мусор', outcome: CatalogMatchOutcome.NotFound }],
+      pause: null,
+      resumeAt: null,
+      createdAt: timestamp,
+      finishedAt: timestamp,
+    },
+  ];
+  await page.goto('/settings');
+  const item = page.getByRole('button', { name: /^Мусор: not found in the catalog/ });
+  await item.click();
+  const dialog = page.getByRole('dialog', { name: 'Link a catalog title' });
+  await dialog
+    .locator('.fc-dialog__header')
+    .getByRole('button', { name: 'Delete library entry' })
+    .click();
+  await expect(dialog).toHaveCount(0);
+  expect(state.entries[0]!.deleted).toBe(true);
+  await expect(item).toHaveCount(0);
+  // Undo restores the entry, and the item can be resolved again.
+  await page.getByRole('button', { name: 'Undo', exact: true }).click();
+  await expect(item).toBeVisible();
+  expect(state.entries[0]!.deleted).toBe(false);
 });
 
 test('a lost create response and duplicate submit do not create duplicate entries', async ({

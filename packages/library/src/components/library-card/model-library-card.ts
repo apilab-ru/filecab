@@ -17,6 +17,7 @@ export interface LibraryCardProps {
 /** Defines the main action on a catalog result. */
 export interface CardAction {
   label: string;
+  appearance?: 'link';
   disabled?: boolean;
   onClick: () => void;
 }

@@ -5,6 +5,7 @@ import { AuthFailureCode, AuthStage, logAuthStage } from './diagnostics';
 import { debugContext } from './connection';
 import { publicLibraryRepository } from './public-library-repository';
 import { listSyncRepository } from './list-sync-repository';
+import { catalogMatchRepository } from './catalog-match-repository';
 
 /** Maps safe worker failures into the shared error-reporting contract. */
 function authError(reply: AuthReply): AuthError | null {
@@ -31,6 +32,7 @@ export class ExtensionAuthRepository implements AuthRepository {
   readonly publicLibrary = publicLibraryRepository;
 
   readonly listSync = listSyncRepository;
+  readonly catalogMatch = catalogMatchRepository;
 
   private readonly listeners = new Set<() => void>();
 

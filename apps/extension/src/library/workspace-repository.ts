@@ -1,5 +1,5 @@
 import { WorkspaceConflictError, type WorkspaceRepository } from '@filecab/library';
-import { CatalogAssociationConflictError } from '@filecab/contracts';
+import { CatalogAssociationConflictError, parseLibraryImport } from '@filecab/contracts';
 import { LocalLibraryError, type LocalLibraryRepository } from './repository';
 import { parseBackup } from './backup';
 
@@ -62,6 +62,26 @@ export function localWorkspaceRepository(
     },
     async refresh() {
       await repository.snapshot();
+    },
+    importer: {
+      async previewImport(text) {
+        const parsed = parseLibraryImport(text);
+
+        if (parsed.issues.length)
+          return {
+            issues: parsed.issues,
+            rows: [],
+            confirm: () => Promise.reject(new WorkspaceConflictError()),
+          };
+
+        const preview = await repository.previewImport(parsed.rows);
+
+        return {
+          issues: [],
+          rows: preview.plan,
+          confirm: (lines) => mapConflict(() => repository.importRows(parsed.rows, preview, lines)),
+        };
+      },
     },
     backup: {
       exportBackup: () => repository.exportBackup(),

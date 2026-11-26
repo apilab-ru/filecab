@@ -6,6 +6,7 @@ export interface RatingPickerProps {
   title: string;
   clearLabel: string;
   unratedLabel: string;
+  outlined?: boolean;
   disabled?: boolean;
   busy?: boolean;
   error?: string;

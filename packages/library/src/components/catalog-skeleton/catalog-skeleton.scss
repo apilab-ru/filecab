@@ -1,7 +1,7 @@
 .catalog-skeleton {
   overflow: hidden;
   border: 1px solid var(--fc-border);
-  border-radius: 12px;
+  border-radius: var(--title-grid-card-radius, 12px);
   background: var(--fc-surface);
   animation: catalog-skeleton-pulse 1.5s ease-in-out infinite alternate;
 
@@ -23,7 +23,7 @@
   }
 
   &__cover {
-    aspect-ratio: 25 / 16;
+    aspect-ratio: var(--title-grid-artwork-ratio, 25 / 16);
     background: var(--fc-border);
 
     .title-results--list & {
@@ -40,7 +40,7 @@
     flex-direction: column;
     justify-content: space-between;
     box-sizing: border-box;
-    height: 118px;
+    height: var(--title-grid-card-body-height, 118px);
     padding: 12px 14px;
 
     .title-results--list & {

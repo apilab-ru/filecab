@@ -10,6 +10,8 @@ import type {
   BackupPreview,
   CatalogAssociationRequest,
   AccountInfo,
+  LibraryImportPreview,
+  LibraryImportSummary,
   LibraryMutationResult,
   LibraryMutationPreview,
   OwnerSnapshot,
@@ -182,6 +184,30 @@ export function onlineWorkspaceRepository(ownerId: string): WorkspaceRepository 
       accept([restored]);
     },
     refresh,
+    importer: {
+      async previewImport(text) {
+        const preview = await ownerRequest<LibraryImportPreview>(ownerId, '/import/preview', {
+          csv: text,
+        });
+
+        return {
+          issues: preview.issues,
+          rows: preview.rows,
+          confirm: async (lines) => {
+            const summary = await mutate(() =>
+              ownerRequest<LibraryImportSummary>(ownerId, '/import', {
+                csv: text,
+                lines,
+                confirmationToken: preview.confirmationToken,
+              }),
+            );
+            await refresh();
+
+            return summary;
+          },
+        };
+      },
+    },
     backup: {
       exportBackup: () => ownerRequest<Backup>(ownerId, '/backup', undefined, 'GET'),
       async previewRestore(text) {

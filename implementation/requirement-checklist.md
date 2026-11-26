@@ -96,7 +96,7 @@ change logs before 18 November 2026.
 
 - [x] [External list sync](../specs/user-list-sync-spec.md) (step 19): Done. Step 20 registers Shikimori, so the Settings card shows when `SHIKIMORI_ENABLED=true`. [Step 19](#step-19-external-list-synchronization)
 - [x] [Shikimori](../specs/integration-shikimori-spec.md) (step 20): Done with a mocked provider. Not checked against the live API. [Step 20](#step-20-shikimori-synchronization)
-- [ ] [Library import from CSV](../specs/library-import.md) (step 21): Pending.
+- [x] [Library import from CSV](../specs/library-import.md) (step 21): Done on the website and in the extension. [Step 21](#step-21-library-import-from-csv)
 
 ## Evidence
 
@@ -176,6 +176,8 @@ propagation, browser-locale start, draft retention, Escape and focus, responsive
 - The extension Settings sync card shows the account link, refresh, recovery and review controls. They were hidden. Replication stays mounted on the Library page and in the popup.
 - An entry has at most one viewing link. Only a create adds it, an update can only remove it, and a merge keeps the survivor link (19 November 2026). Source reassignment is removed.
 - Browser tests (18 November 2026): the website editor conflict, delete and Undo, and the extension offline add, validation, conflict, quota failure, delete, Undo and restart. All 37 browser tests pass with one worker and in parallel.
+- Editor rating picker: Chromium checks passed for clearing the draft rating on the website, selecting a rating offline in the extension, and saving from cards in grid and list mode. Formatting, workspace boundaries, type checking, and all 256 unit tests passed.
+- Editor layout: Chromium verified the 460 px dialog, the 16 px margins, the single-column view on a narrow screen, and the action buttons during field scroll. All 37 browser tests in the catalog, extension storage and page capture suites passed. Formatting, workspace boundaries, type checking, and all 256 unit tests passed.
 
 ### Step 12: catalog services
 
@@ -273,6 +275,19 @@ pagination during loading and skeletons (15–16 November 2026).
 - Tests (23 November 2026): unit 237 (15 Shikimori adapter tests), integration 62, browser 46 pass. Format, lint and boundaries pass. Typecheck has the existing error in `apps/extension/src/popup/components/popup/popup.tsx`.
 - Fix (23 November 2026): imports from Shikimori failed with "service not available". Imported entries had no `userTitle` when the provider sent localized titles, so `validateEntry` rejected them. The runner reported the internal error as a provider failure. Now imported entries keep `userTitle` and the snapshot titles. A rejected entry fails only its item (`invalid-entry`). An unexpected error ends the job with `internal-error`. Job failures go to Sentry; before, the runner only wrote to the console.
 - Limits: not run against the live Shikimori API. The page signal and the token response fields are not documented, so the adapter handles both forms.
+
+### Step 21: library import from CSV
+
+- Decisions (24 November 2026): flexible format (comma, semicolon or tab; English and Russian aliases for columns, categories and statuses); a row without a status gets `complete` with a rating and `planned` without one; website and extension.
+- [Parser and plan](../packages/contracts/src/domain/library-import.ts): RFC 4180 records with physical line numbers, 10 MiB and 10,000-row limits, issue codes with line and column, reference formats and categories, duplicates by reference, link and title with year. Both platforms use it.
+- API: `POST /library/import/preview` returns issues or planned rows with a token bound to the owner, the SHA-256 of the file and the library revision. `POST /library/import` checks the token, plans again and publishes each selected row in one transaction. Skipped rows are never added. The body limit is 11 MiB for these routes.
+- Extension: `previewImport` and `importRows` check the account and the local revision, then write one journal document.
+- Settings: Import from CSV section with file errors (20 shown), a preview dialog with Select all and Select none, possible duplicates not selected, and a result toast. The popup links to the full page.
+- Sample: `my-films.csv` (352 rows, `;`, Title/Type/Rating/Year) parses with no issues: 266 films, 53 TV series, 33 anime; 166 rated rows become completed.
+- Catalog data job (24 November 2026, owner decisions: exact matches only, a background server job, accounts only): `CatalogMatchJob` table with one active job for each account, [runner](../apps/api/src/catalog-match/catalog-match-runner.ts), [exact match rule](../packages/contracts/src/domain/catalog-match.ts), routes `GET/POST /library/catalog-match` and `POST /library/catalog-match/stop`, Settings section [Catalog data](../packages/library/src/components/catalog-match-settings/catalog-match-settings.tsx). An import starts the jobs for its new entries. One job for each account and provider (24 November 2026, owner request: a broken provider must not stop another provider); new entries join the active job of their provider; an invalid provider response fails only its entry; a provider timeout pauses the job. Tests: 6 match rule unit tests, 3 integration tests (link, duplicate, several matches, not found, title-only match without a year, alternative provider name, reference, Kinopoisk quota pause while anime links, invalid response, joining an active job, waiting for sync, Stop), Kinopoisk adapter tests for titles and genres without a name. A Settings item with several matches or no match opens the [resolve dialog](../packages/library/src/components/catalog-match-resolve/catalog-match-resolve.tsx); e2e test: the dialog searches the entry title and links at Save in the editor. An association without a merge applies at Save without a preview (owner request, 24 November 2026); a merge still shows the preview.
+- Catalog match dialog: the [mockup](../specs/mockup-catalog-match-resolve-dialog.png) guides the fixed header, search controls and responsive result cards. All 21 website catalog tests, 3 extension catalog tests and 6 catalog match unit tests passed. The extension build, UI, library and website type checks, formatting and package boundary checks passed.
+- Reduced dialog scale: Chromium verifies the 32 by 32 CSS pixel delete button, the narrow layout and the regular catalog card geometry. All 4 targeted browser tests and the format check passed.
+- Tests (24 November 2026): unit 248 (10 import parser and plan tests), integration 65 (2 CSV import API tests: outcomes, selection, replication changes, no outside requests, line errors, stale previews, changed files, 10 MiB limit), browser 47 (device import with a possible duplicate and a stale preview). Format, lint and boundaries pass. Typecheck has the existing error in `apps/extension/src/popup/components/popup/popup.tsx`.
 
 ### Tooling
 

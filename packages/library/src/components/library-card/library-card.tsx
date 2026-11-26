@@ -198,10 +198,11 @@ export function LibraryCard({
         )}
         {primaryAction && (
           <Button
-            className="library-card__primary-action fc-button--primary"
+            className={`library-card__primary-action ${primaryAction.appearance === 'link' ? 'library-card__primary-action--link' : 'fc-button--primary'}`}
             disabled={primaryAction.disabled}
             onClick={primaryAction.onClick}
           >
+            {primaryAction.appearance === 'link' && <Icon name={IconName.Link} />}
             {primaryAction.label}
           </Button>
         )}

@@ -120,6 +120,11 @@ export interface CatalogRecord {
   category: Category;
   granularity: Granularity;
   snapshot: Snapshot;
+  /**
+   * Other names that the provider knows for the title. Only search results have them. They help
+   * an exact match and are not stored in the snapshot.
+   */
+  alternativeTitles?: string[];
 }
 
 export type CatalogLookup =

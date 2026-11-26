@@ -6,4 +6,6 @@ export interface CatalogResultsProps {
   columns?: TitleColumn[];
   records: CatalogRecord[];
   view: 'cards' | 'list';
+  /** Shows the cards without personal controls, edit or delete. */
+  readOnly?: boolean;
 }

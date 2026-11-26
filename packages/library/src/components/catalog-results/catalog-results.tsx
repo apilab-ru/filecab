@@ -4,7 +4,7 @@ import { CatalogResult } from '../catalog-result/catalog-result';
 import type { CatalogResultsProps } from './model-catalog-results';
 
 /** Renders catalog and search results with one item component in either layout. */
-export function CatalogResults({ records, view, columns }: CatalogResultsProps) {
+export function CatalogResults({ records, view, columns, readOnly }: CatalogResultsProps) {
   return (
     <div className="title-results-region">
       <TitleResults
@@ -12,7 +12,7 @@ export function CatalogResults({ records, view, columns }: CatalogResultsProps) 
         layout={view === 'list' ? LibraryLayout.List : LibraryLayout.Grid}
       >
         {records.map((record) => (
-          <CatalogResult key={record.catalogId} record={record} />
+          <CatalogResult key={record.catalogId} record={record} readOnly={readOnly} />
         ))}
       </TitleResults>
     </div>

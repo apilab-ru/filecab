@@ -98,12 +98,46 @@ function validationFields(errors: ValidationError[], prefix = ''): string[] {
     .slice(0, 10);
 }
 
-/** Attaches safe schema diagnostics to a rejected provider response. */
+/** The schema diagnostic keeps at most this many characters of the rejected response. */
+const RESPONSE_EXCERPT_LENGTH = 2000;
+
+/**
+ * Returns a trimmed JSON copy of the rejected response part: the list item of the first invalid
+ * field (for example `docs.14` for `docs.14.names.0.name`), else the whole response.
+ */
+function responseExcerpt(value: unknown, fields: string[]): string {
+  const [list, index] = fields[0]?.split('.') ?? [];
+  let part = value;
+
+  if (
+    list &&
+    index !== undefined &&
+    /^\d+$/.test(index) &&
+    typeof value === 'object' &&
+    value !== null &&
+    Array.isArray((value as Record<string, unknown>)[list])
+  )
+    part = ((value as Record<string, unknown>)[list] as unknown[])[Number(index)];
+
+  let text: string;
+  try {
+    text = JSON.stringify(part) ?? String(part);
+  } catch {
+    text = String(part);
+  }
+
+  return text.length > RESPONSE_EXCERPT_LENGTH
+    ? `${text.slice(0, RESPONSE_EXCERPT_LENGTH)}…`
+    : text;
+}
+
+/** Attaches schema diagnostics and a trimmed copy of the rejected response part. */
 function schemaFailure(
   origin: string,
   operation: 'search' | 'discovery' | 'details',
   started: number,
   fields: string[],
+  value: unknown,
 ) {
   return new ApiException(
     502,
@@ -119,6 +153,7 @@ function schemaFailure(
       stage: 'schema',
       elapsedMs: Math.round(performance.now() - started),
       validationFields: fields,
+      responseExcerpt: responseExcerpt(value, fields),
     },
   );
 }
@@ -157,7 +192,7 @@ function normalizeMovie(
 ) {
   const source = `https://www.kinopoisk.ru/${CATALOG_PATHS[category]}/${movie.id}/`;
   const titles = (movie.names ?? []).flatMap(({ name, language }) =>
-    name.trim()
+    name?.trim()
       ? [
           {
             text: name,
@@ -239,7 +274,7 @@ function normalizeMovie(
     genres: [
       ...new Map(
         (movie.genres ?? []).flatMap(({ name }) => {
-          if (!name.trim()) return [];
+          if (!name?.trim()) return [];
 
           const genre = genreCandidate(name.trim(), retrievedAt, source);
 
@@ -576,7 +611,7 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     const started = performance.now();
 
     if (typeof value !== 'object' || value === null || Array.isArray(value))
-      throw schemaFailure(this.origin, operation, started, ['response']);
+      throw schemaFailure(this.origin, operation, started, ['response'], value);
 
     const result = plainToInstance(KinopoiskMoviesResponseDto, value);
     const errors = validateSync(result, {
@@ -585,7 +620,7 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     });
 
     if (errors.length)
-      throw schemaFailure(this.origin, operation, started, validationFields(errors));
+      throw schemaFailure(this.origin, operation, started, validationFields(errors), value);
 
     return result;
   }
@@ -595,7 +630,7 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     const started = performance.now();
 
     if (typeof value !== 'object' || value === null || Array.isArray(value))
-      throw schemaFailure(this.origin, 'discovery', started, ['response']);
+      throw schemaFailure(this.origin, 'discovery', started, ['response'], value);
 
     const result = plainToInstance(KinopoiskCursorResponseDto, value);
     const errors = validateSync(result, {
@@ -604,7 +639,7 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     });
 
     if (errors.length)
-      throw schemaFailure(this.origin, 'discovery', started, validationFields(errors));
+      throw schemaFailure(this.origin, 'discovery', started, validationFields(errors), value);
 
     return result;
   }
@@ -614,7 +649,7 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     const started = performance.now();
 
     if (typeof value !== 'object' || value === null || Array.isArray(value))
-      throw schemaFailure(this.origin, 'details', started, ['response']);
+      throw schemaFailure(this.origin, 'details', started, ['response'], value);
 
     const result = plainToInstance(KinopoiskMovieDto, value);
     const errors = validateSync(result, {
@@ -623,7 +658,7 @@ export class KinopoiskDevAdapter implements CatalogSearchAdapter {
     });
 
     if (errors.length)
-      throw schemaFailure(this.origin, 'details', started, validationFields(errors));
+      throw schemaFailure(this.origin, 'details', started, validationFields(errors), value);
 
     return result;
   }

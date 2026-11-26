@@ -7,7 +7,7 @@ import {
   titleFor,
   type EntryPatch,
 } from '@filecab/contracts';
-import { Button, ConfirmDialog } from '@filecab/ui';
+import { Button, ConfirmDialog, RatingPicker } from '@filecab/ui';
 import { ProgressControl } from '../progress-control/progress-control';
 import { StatusSelect } from '../status-select/status-select';
 import { useTranslation } from 'react-i18next';
@@ -17,11 +17,7 @@ import { useLocalStore } from '../../hooks/use-local-store';
 import { WorkspaceConflictError, type WorkspacePreview } from '../../models/workspace';
 import { retainedFields } from '../../domain/catalog-selection';
 import { isViewingUrl } from '../../domain/entry-form';
-import {
-  MERGE_FIELD_LABELS,
-  RATING_VALUES,
-  type WorkspaceEditorProps,
-} from './model-workspace-editor';
+import { MERGE_FIELD_LABELS, type WorkspaceEditorProps } from './model-workspace-editor';
 import './workspace-editor.scss';
 
 /** Edits catalog and manual drafts with version-bound previews and recoverable failures. */
@@ -90,12 +86,19 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
             draft.other,
             values.fields,
           );
-          setters.preview(preview);
 
-          return false;
+          // A merge deletes the other entry, so the owner confirms the preview. A plain
+          // association applies at once; the preview still checks the version.
+          if (draft.other) {
+            setters.preview(preview);
+
+            return false;
+          }
+
+          await preview.confirm();
+        } else {
+          await values.preview.confirm();
         }
-
-        await values.preview.confirm();
       } else {
         await state.repository.save(
           draft.row?.entry.entryId ?? draft.id,
@@ -178,8 +181,9 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
       onOpenChange={(open) => {
         if (!open) cancel();
       }}
-      title={t(entry ? 'Edit' : 'addTitle')}
-      description={t(association ? 'catalogAssociationDescription' : 'catalogDraftDescription')}
+      className="workspace-editor-dialog"
+      title={t(entry ? 'editEntry' : 'addTitle')}
+      description={association ? t('catalogAssociationDescription') : undefined}
     >
       <form
         className="workspace-editor"
@@ -189,226 +193,227 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
           void save();
         }}
       >
-        <label className="workspace-editor__field">
-          {t('Title')}
-          <input
-            ref={titleInput}
-            className="workspace-editor__input"
-            name="title"
-            required={titleRequired}
-            maxLength={10000}
-            value={values.fields.userTitle}
-            onChange={(event) => change({ userTitle: event.target.value })}
-          />
-        </label>
-        <label className="workspace-editor__field">
-          {t('Category')}
-          <select
-            className="workspace-editor__input"
-            disabled={Boolean(draft.catalog || entry?.catalogId)}
-            value={values.category}
-            onChange={(event) => {
-              setters.category(event.target.value as Category);
-              setters.dirty(true);
-            }}
-          >
-            {Object.values(Category).map((category) => (
-              <option key={category} value={category}>
-                {t(category)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="workspace-editor__field workspace-editor__field--inline">
-          <span aria-hidden="true">{t('Status')}</span>
-          <StatusSelect
-            allowNone
-            value={values.fields.status}
-            onChange={(status) => change({ status })}
-          />
-        </div>
-        <label className="workspace-editor__field">
-          {t('Rating')}
-          <select
-            className="workspace-editor__input"
-            aria-label={t('Rating')}
-            value={values.fields.rating}
-            onChange={(event) => change({ rating: Number(event.target.value) })}
-          >
-            <option value={0}>{t('unrated')}</option>
-            {RATING_VALUES.map((rating) => (
-              <option key={rating} value={rating}>
-                {rating}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="workspace-editor__field">
-          <span aria-hidden="true">{t('Progress')}</span>
-          <ProgressControl
-            live
-            value={values.fields.progress}
-            total={total}
-            describedBy={progressHint}
-            onChange={(progress) => change({ progress })}
-          />
-        </div>
-        <p id={progressHint} className="workspace-editor__hint">
-          {total === null && t('episodeTotalUnknown')}
-          {total !== null && t('episodeTotal', { total })}
-        </p>
-        <label className="workspace-editor__field">
-          {t('Comment')}
-          <textarea
-            className="workspace-editor__input"
-            aria-label={t('Comment')}
-            maxLength={100000}
-            value={values.fields.comment}
-            onChange={(event) => change({ comment: event.target.value })}
-          />
-        </label>
-        {linkOwner && (
-          <p className="workspace-editor__hint workspace-editor__hint--warning" role="status">
-            {t('linkMoves', {
-              title: titleFor(
-                linkOwner.entry.snapshot,
-                locale,
-                t('Untitled'),
-                linkOwner.entry.userTitle,
-              ).text,
-            })}
-          </p>
-        )}
-        {entry && !draft.link && (
-          <div className="workspace-editor__field">
-            {t('ViewingLink')}
-            <div className="workspace-editor__link">
-              {values.link && isViewingUrl(values.link) && (
-                <a
-                  className="workspace-editor__link-url"
-                  href={values.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {values.link}
-                </a>
-              )}
-              {values.link && !isViewingUrl(values.link) && (
-                <span className="workspace-editor__link-url">{values.link}</span>
-              )}
-              {!values.link && <span className="workspace-editor__hint">{t('noLink')}</span>}
-              {values.link && (
-                <Button
-                  type="button"
-                  disabled={association}
-                  onClick={() => {
-                    setters.link('');
-                    setters.dirty(true);
-                    setters.preview(null);
-                  }}
-                >
-                  {t('removeLink')}
-                </Button>
+        <div className="workspace-editor__body">
+          <label className="workspace-editor__field">
+            {t('Title')}
+            <input
+              ref={titleInput}
+              className="workspace-editor__input"
+              name="title"
+              required={titleRequired}
+              maxLength={10000}
+              value={values.fields.userTitle}
+              onChange={(event) => change({ userTitle: event.target.value })}
+            />
+          </label>
+          <div className="workspace-editor__paired-fields">
+            <label className="workspace-editor__field">
+              {t('Category')}
+              <select
+                className="workspace-editor__input"
+                disabled={Boolean(draft.catalog || entry?.catalogId)}
+                value={values.category}
+                onChange={(event) => {
+                  setters.category(event.target.value as Category);
+                  setters.dirty(true);
+                }}
+              >
+                {Object.values(Category).map((category) => (
+                  <option key={category} value={category}>
+                    {t(category)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="workspace-editor__field">
+              <span aria-hidden="true">{t('Status')}</span>
+              <StatusSelect
+                allowNone
+                value={values.fields.status}
+                onChange={(status) => change({ status })}
+              />
+            </div>
+            <div className="workspace-editor__field">
+              <span aria-hidden="true">{t('Rating')}</span>
+              <RatingPicker
+                outlined
+                value={values.fields.rating}
+                label={t('Rating')}
+                title={t('yourRating')}
+                clearLabel={t('clearRating')}
+                unratedLabel={t('unrated')}
+                busy={values.busy}
+                onChange={async (rating) => {
+                  change({ rating });
+
+                  return true;
+                }}
+              />
+            </div>
+            <div className="workspace-editor__field">
+              <span aria-hidden="true">{t('Progress')}</span>
+              <ProgressControl
+                live
+                className="workspace-editor__progress"
+                value={values.fields.progress}
+                total={total}
+                describedBy={total === null ? progressHint : undefined}
+                onChange={(progress) => change({ progress })}
+              />
+              {total === null && (
+                <p id={progressHint} className="workspace-editor__hint">
+                  {t('episodeTotalUnknown')}
+                </p>
               )}
             </div>
           </div>
-        )}
-        {draft.other && (
-          <section className="workspace-editor__merge">
-            <p>{t('catalogMergeChoices')}</p>
-            {(Object.keys(values.fields) as (keyof typeof values.fields)[]).map((field) => (
-              <label className="workspace-editor__field" key={field}>
-                {t(MERGE_FIELD_LABELS[field])}
-                <select
-                  className="workspace-editor__input"
-                  defaultValue="survivor"
-                  onChange={(event) =>
-                    change({
-                      [field]:
-                        event.target.value === 'other' ? draft.other!.entry[field] : entry![field],
-                    })
-                  }
-                >
-                  <option value="survivor">
-                    {t('catalogKeepManual')}: {String(entry![field] ?? '')}
-                  </option>
-                  <option value="other">
-                    {t('catalogKeepSaved')}: {String(draft.other!.entry[field] ?? '')}
-                  </option>
-                </select>
-              </label>
-            ))}
-          </section>
-        )}
-        {values.preview && (
-          <section className="workspace-editor__preview" aria-label={t('catalogPreview')}>
-            <h3 className="workspace-editor__preview-title">{t('catalogPreview')}</h3>
-            {values.preview.changes.map(({ before, proposed }) => (
-              <div className="workspace-editor__preview-entry" key={before.entryId}>
-                <p>{before.userTitle || before.entryId}</p>
-                <dl>
-                  <dt>{t('Title')}</dt>
-                  <dd>{proposed.userTitle}</dd>
-                  <dt>{t('Status')}</dt>
-                  <dd>{proposed.status ? t(proposed.status) : t('No status')}</dd>
-                  <dt>{t('Rating')}</dt>
-                  <dd>{proposed.rating}</dd>
-                  <dt>{t('Progress')}</dt>
-                  <dd>{proposed.progress}</dd>
-                  <dt>{t('Comment')}</dt>
-                  <dd>{proposed.comment}</dd>
-                  <dt>{t('ViewingLink')}</dt>
-                  <dd>{proposed.sources[0]?.originalUrl ?? t('noLink')}</dd>
-                  <dt>{t('catalogRetainedIdentity')}</dt>
-                  <dd>
-                    {proposed.entryId} · {proposed.createdAt}
-                  </dd>
-                  <dt>{t('catalogAction')}</dt>
-                  <dd>{t(proposed.deleted ? 'Deleted' : 'catalogKeep')}</dd>
-                </dl>
+          <label className="workspace-editor__field">
+            {t('Comment')}
+            <textarea
+              className="workspace-editor__input workspace-editor__comment"
+              aria-label={t('Comment')}
+              maxLength={100000}
+              value={values.fields.comment}
+              onChange={(event) => change({ comment: event.target.value })}
+            />
+          </label>
+          {linkOwner && (
+            <p className="workspace-editor__hint workspace-editor__hint--warning" role="status">
+              {t('linkMoves', {
+                title: titleFor(
+                  linkOwner.entry.snapshot,
+                  locale,
+                  t('Untitled'),
+                  linkOwner.entry.userTitle,
+                ).text,
+              })}
+            </p>
+          )}
+          {entry && !draft.link && (
+            <div className="workspace-editor__viewing">
+              <span className="workspace-editor__label">{t('ViewingLink')}</span>
+              <div className="workspace-editor__link">
+                {values.link && isViewingUrl(values.link) && (
+                  <a
+                    className="workspace-editor__link-url"
+                    href={values.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {values.link}
+                  </a>
+                )}
+                {values.link && !isViewingUrl(values.link) && (
+                  <span className="workspace-editor__link-url">{values.link}</span>
+                )}
+                {!values.link && <span className="workspace-editor__hint">{t('noLink')}</span>}
+                {values.link && (
+                  <Button
+                    type="button"
+                    disabled={association}
+                    onClick={() => {
+                      setters.link('');
+                      setters.dirty(true);
+                      setters.preview(null);
+                    }}
+                  >
+                    {t('removeLink')}
+                  </Button>
+                )}
               </div>
-            ))}
-          </section>
-        )}
-        {values.error && !(draft.row && values.conflict) && (
-          <p className="workspace-editor__error" role="alert">
-            {t(values.error, { defaultValue: values.error })}
-          </p>
-        )}
-        {draft.row && values.conflict && (
-          <section className="workspace-editor__conflict" role="alert">
-            <p className="workspace-editor__error">{t('entryConflict')}</p>
-            <div className="workspace-editor__actions">
-              <Button type="button" onClick={reload}>
-                {t('Reload entry')}
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  rebase();
-                  setters.preview(null);
-                  setters.error('');
-                  setters.conflict(false);
-                }}
-              >
-                {t('catalogRebase')}
-              </Button>
             </div>
-          </section>
-        )}
-        <div className="workspace-editor__actions">
-          <Button
-            type="submit"
-            disabled={values.busy || !values.dirty || values.conflict || !state.repository}
-          >
-            {t(values.preview ? 'catalogConfirm' : 'save')}
-          </Button>
-          <Button type="button" disabled={values.busy} onClick={cancel}>
-            {t('Cancel')}
-          </Button>
+          )}
+          {draft.other && (
+            <section className="workspace-editor__merge">
+              <p>{t('catalogMergeChoices')}</p>
+              {(Object.keys(values.fields) as (keyof typeof values.fields)[]).map((field) => (
+                <label className="workspace-editor__field" key={field}>
+                  {t(MERGE_FIELD_LABELS[field])}
+                  <select
+                    className="workspace-editor__input"
+                    defaultValue="survivor"
+                    onChange={(event) =>
+                      change({
+                        [field]:
+                          event.target.value === 'other'
+                            ? draft.other!.entry[field]
+                            : entry![field],
+                      })
+                    }
+                  >
+                    <option value="survivor">
+                      {t('catalogKeepManual')}: {String(entry![field] ?? '')}
+                    </option>
+                    <option value="other">
+                      {t('catalogKeepSaved')}: {String(draft.other!.entry[field] ?? '')}
+                    </option>
+                  </select>
+                </label>
+              ))}
+            </section>
+          )}
+          {values.preview && (
+            <section className="workspace-editor__preview" aria-label={t('catalogPreview')}>
+              <h3 className="workspace-editor__preview-title">{t('catalogPreview')}</h3>
+              {values.preview.changes.map(({ before, proposed }) => (
+                <div className="workspace-editor__preview-entry" key={before.entryId}>
+                  <p>{before.userTitle || before.entryId}</p>
+                  <dl>
+                    <dt>{t('Title')}</dt>
+                    <dd>{proposed.userTitle}</dd>
+                    <dt>{t('Status')}</dt>
+                    <dd>{proposed.status ? t(proposed.status) : t('No status')}</dd>
+                    <dt>{t('Rating')}</dt>
+                    <dd>{proposed.rating}</dd>
+                    <dt>{t('Progress')}</dt>
+                    <dd>{proposed.progress}</dd>
+                    <dt>{t('Comment')}</dt>
+                    <dd>{proposed.comment}</dd>
+                    <dt>{t('ViewingLink')}</dt>
+                    <dd>{proposed.sources[0]?.originalUrl ?? t('noLink')}</dd>
+                    <dt>{t('catalogRetainedIdentity')}</dt>
+                    <dd>
+                      {proposed.entryId} · {proposed.createdAt}
+                    </dd>
+                    <dt>{t('catalogAction')}</dt>
+                    <dd>{t(proposed.deleted ? 'Deleted' : 'catalogKeep')}</dd>
+                  </dl>
+                </div>
+              ))}
+            </section>
+          )}
+          {values.error && !(draft.row && values.conflict) && (
+            <p className="workspace-editor__error" role="alert">
+              {t(values.error, { defaultValue: values.error })}
+            </p>
+          )}
+          {draft.row && values.conflict && (
+            <section className="workspace-editor__conflict" role="alert">
+              <p className="workspace-editor__error">{t('entryConflict')}</p>
+              <div className="workspace-editor__actions">
+                <Button type="button" onClick={reload}>
+                  {t('Reload entry')}
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    rebase();
+                    setters.preview(null);
+                    setters.error('');
+                    setters.conflict(false);
+                  }}
+                >
+                  {t('catalogRebase')}
+                </Button>
+              </div>
+            </section>
+          )}
+        </div>
+        <div className="workspace-editor__footer">
           {canFindMatch && (
             <Button
               type="button"
+              className="workspace-editor__find-match"
               onClick={() => {
                 reconcile(draft.row!);
                 close();
@@ -420,6 +425,21 @@ export function WorkspaceEditor({ draft }: WorkspaceEditorProps) {
               {t('catalogFindMatch')}
             </Button>
           )}
+          <Button
+            type="button"
+            className="workspace-editor__cancel"
+            disabled={values.busy}
+            onClick={cancel}
+          >
+            {t('Cancel')}
+          </Button>
+          <Button
+            type="submit"
+            className="fc-button--primary"
+            disabled={values.busy || !values.dirty || values.conflict || !state.repository}
+          >
+            {t(values.preview ? 'catalogConfirm' : 'save')}
+          </Button>
         </div>
       </form>
     </ConfirmDialog>

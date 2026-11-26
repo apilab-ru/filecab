@@ -5,7 +5,7 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, type Request, type Response, type NextFunction } from 'express';
-import { AppModule, type ListSyncOptions } from '../app.module';
+import { AppModule, type CatalogMatchOptions, type ListSyncOptions } from '../app.module';
 import type { ApiEnvironment } from '../config/environment';
 import { COOKIE_NAMES } from '../auth/credentials';
 import type { GoogleIdentityProvider } from '../auth/google';
@@ -23,12 +23,16 @@ import { publicRouteMiddleware } from './public-rate-limit';
 /** Backup files can be up to 10 MiB. Other JSON bodies keep the 1 MiB limit. */
 const BACKUP_BODY_LIMIT = 10 * 1024 * 1024;
 
+/** A CSV import request carries a file of up to 10 MiB in JSON. */
+const IMPORT_BODY_LIMIT = 11 * 1024 * 1024;
+
 /** Supplies controlled test dependencies without changing production routing. */
 export interface ApiOptions {
   readiness?: DatabaseReadiness;
   google?: GoogleIdentityProvider;
   diagnostic?: (record: RequestDiagnostic) => void;
   listSync?: ListSyncOptions;
+  catalogMatch?: CatalogMatchOptions;
 }
 
 /** Configures the HTTP boundary shared by production and test applications. */
@@ -127,6 +131,11 @@ export function configureApiApplication(
     '/api/v1/library/backup',
     json({ limit: BACKUP_BODY_LIMIT, strict: true, inflate: false }),
   );
+  // A 10 MiB CSV file grows when JSON escapes quotes and line breaks.
+  app.use(
+    '/api/v1/library/import',
+    json({ limit: IMPORT_BODY_LIMIT, strict: true, inflate: false }),
+  );
   app.useBodyParser('json', { limit: '1mb', strict: true, inflate: false });
   app.use((error: unknown, _request: Request, response: Response, _next: NextFunction) => {
     sendApiError(error, response);
@@ -189,7 +198,13 @@ export async function createApiApplication(
   options: ApiOptions = {},
 ): Promise<NestExpressApplication> {
   const app = await NestFactory.create<NestExpressApplication>(
-    AppModule.configure(environment, options.readiness, options.google, options.listSync),
+    AppModule.configure(
+      environment,
+      options.readiness,
+      options.google,
+      options.listSync,
+      options.catalogMatch,
+    ),
     { logger: false, bodyParser: false, abortOnError: false },
   );
   configureApiApplication(

@@ -7,7 +7,7 @@ import { Button, Icon, IconName, FILECAB_ICON_URL } from '@filecab/ui';
 import { LibraryMode, LibraryPage, PopupSearchPage, SettingsPage } from '@filecab/library';
 import type { PopupProps } from './model-popup';
 
-const MODES = [LibraryMode.Page, LibraryMode.Search];
+const MODES = [LibraryMode.Page, LibraryMode.Search] as const;
 
 /** Renders popup navigation and routes while retaining the background data adapter. */
 export function Popup({ fullPageUrl, iconUrl = FILECAB_ICON_URL, children }: PopupProps) {

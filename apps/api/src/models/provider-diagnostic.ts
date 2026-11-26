@@ -8,4 +8,9 @@ export interface ProviderDiagnostic {
   upstreamStatus?: number;
   networkCode?: string;
   validationFields?: string[];
+  /**
+   * A trimmed JSON copy of the rejected part of a provider response: the first invalid item of
+   * `docs`, else the start of the response. Only schema failures have it.
+   */
+  responseExcerpt?: string;
 }

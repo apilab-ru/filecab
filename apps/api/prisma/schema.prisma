@@ -31,6 +31,7 @@ model User {
   library                UserLibrary?
   listSyncs              ListSyncConnection[]
   listSyncAuthorizations ListSyncAuthorization[]
+  catalogMatchJobs       CatalogMatchJob[]
 }
 
 /// One library per account; entries are stored as individual LibraryEntry rows.
@@ -378,4 +379,38 @@ model ProviderRequestSlot {
   takenAt  DateTime @default(now()) @db.Timestamptz(3)
 
   @@index([provider, takenAt])
+}
+
+/// Durable job that finds catalog data for entries without a catalog item. Each provider has
+/// its own job.
+model CatalogMatchJob {
+  id          String    @id @db.Uuid
+  ownerId     String    @db.Uuid
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// Catalog provider of the job. CatalogMatchJob_active_owner_provider_key (SQL) allows one
+  /// queued or running job for each account and provider.
+  provider    String
+  /// CatalogMatchJobState value.
+  state       String
+  /// Entry UUIDs in processing order. New entries of the provider join an active job.
+  entryIds    Json
+  /// When entries last joined. The wait for unsynced device entries counts from this time.
+  enqueuedAt  DateTime  @default(now()) @db.Timestamptz(3)
+  /// The index of the next entry.
+  cursor      Int       @default(0)
+  /// Partial record of CatalogMatchOutcome counts.
+  counts      Json
+  /// CatalogMatchItem list of entries that were not linked.
+  items       Json
+  /// CatalogMatchPause value of a waiting job.
+  pause       String?
+  /// How many times the job waited for a provider limit.
+  pauses      Int       @default(0)
+  runAfter    DateTime  @default(now()) @db.Timestamptz(3)
+  lockedUntil DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  finishedAt  DateTime? @db.Timestamptz(3)
+
+  @@index([state, runAfter])
+  @@index([ownerId, createdAt])
 }

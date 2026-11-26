@@ -7,6 +7,8 @@ export interface CatalogMessagesProps {
   onRetry: () => void;
   /** Hides the empty result message when other titles are already shown. */
   hideEmpty?: boolean;
+  /** Hides the matching message when the caller already names the entry. */
+  hideMatching?: boolean;
 }
 
 /** Describes one catalog status message and its optional action. */

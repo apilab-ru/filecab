@@ -46,14 +46,14 @@ Every control that edits a status uses one status dropdown: the popup cards, the
 - An open list does not lock the page scroll.
 - On a card, a status choice saves at once with the current entry version. In the editor, it changes the draft.
 - A full-page card shows the dropdown on the poster. A list row shows it in the status column.
-- The editor shows the Status label and the dropdown on one line.
+- In the editor, put the Status label above the dropdown.
 - The editor and the full-page cards offer No status, which clears the status. Library filters are not status edits and keep their own select.
 
 ## Progress control
 
 The popup cards, the library and catalog cards and the editor use one progress control.
 
-- It shows −, a number field, the episode total and +, then a progress bar.
+- It shows −, a number field, the episode total and +, then a progress bar. In the editor, put the episode total after +.
 - A click on the bar sets the progress to the episode at the click position, rounded to a whole episode. Without a known total, the bar has no action.
 - The number field accepts digits only. A blank or invalid value returns the current value.
 - On a card, each change saves at once with the current entry version. In the editor, each change updates the draft, and Save persists it.
@@ -90,12 +90,24 @@ Keep the result in place. After the save, hide Add and show the saved state and 
 rating control. Prevent duplicate submissions. A failed write shows an error and permits a retry.
 Edit opens the saved entry. Manual creation does not need a provider response.
 
+## Entry editor layout
+
+Use the [entry editor mockup](mockup-media-edit-dialog.png).
+
+- Set the dialog width to 460 px. Keep at least 16 px on each side of the dialog.
+- Keep at least 16 px above and below the dialog. Scroll the fields when they do not fit. Keep the heading and action buttons visible.
+- If the window height is 220 px or less, scroll the full dialog.
+- Put Category and Status in one row. Put Rating and Progress in the next row. Use one column when two columns do not fit.
+- Give Title and Comment the full width. Put the viewing link next to its label.
+- Put Cancel and Save at the bottom right. Use the primary button style for Save.
+
 ## Association and merge
 
 - Catalog association uses the entry version. It keeps the entry UUID, added date and user fields.
 - If a second entry has the catalog identity, show both entries and the chosen user fields before the merge.
 - The manual entry survives. It keeps the link of the entry with the latest modified time. If that entry has no link, it keeps the link of the other entry. The preview shows the kept link.
-- Confirm the preview before apply. Check both versions again before apply.
+- An association without a merge applies at Save. It still checks the entry version, and a stale version shows a conflict.
+- A merge shows the preview. The owner confirms it before apply. Check both versions again before apply.
 - On the website, association and merge use one server transaction.
 - In the extension, a local merge uses a durable journal. Complete journal recovery before reads, writes or replication.
 - If a newer row conflicts with recovery, stop. Keep the journal for raw recovery export.
@@ -202,6 +214,8 @@ Use the rating popup from the light card mockup for saved cards and list rows.
 - Escape and an outside click close the popup without a write.
 
 Library mode and saved catalog results use the same picker. Provider scores are display only.
+Use the same picker in the entry editor. Highlight the score in the draft.
+Select a score or clear it to update the draft and close the picker. Save the score when the user selects Save in the editor.
 
 ## Pagination and loading
 

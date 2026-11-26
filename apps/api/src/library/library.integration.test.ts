@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, expect, test } from 'vitest';
+import { afterAll, beforeAll, expect, test, vi } from 'vitest';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import type {
   ApiError,
   Backup,
+  LibraryImportPreview,
+  LibraryImportSummary,
   PublicLibrary,
   BackupPreview,
   LibraryMutationPreview,
@@ -1192,4 +1194,126 @@ test('a username publishes a read-only projection without hidden entries or priv
     body: '{}',
   });
   expect(write.status).toBe(404);
+});
+
+/** Previews a CSV import for an owner. */
+async function previewImport(csv: string, owner: SessionTokens) {
+  const response = await request('/import/preview', 'POST', { csv }, owner);
+  expect(response.status).toBe(200);
+
+  return (await response.json()) as LibraryImportPreview;
+}
+
+test('CSV import previews rows, adds only the selection and publishes replication changes', async () => {
+  const owner = await login(`import-${randomUUID()}`);
+  const link = `https://example.com/${randomUUID()}`;
+  await create({ category: 'films', userTitle: 'Курск', sourceUrls: [link] }, owner);
+  const outside = vi.spyOn(globalThis, 'fetch');
+  const csv = [
+    'Title;Type;Rating;Year;Link;Reference',
+    `Безумные родители;Film;6;2017;;kinopoisk:title:1`,
+    `Курск;Film;10;2018;;`,
+    `Other;Film;;2020;${link};`,
+    `Дандадан;Anime;10;2024;;shikimori:anime:57334`,
+    `Повтор;TV series;;2020;;kinopoisk:title:1`,
+  ].join('\n');
+
+  const preview = await previewImport(csv, owner);
+  expect(preview.issues).toEqual([]);
+  expect(preview.rows.map((row) => [row.line, row.outcome, row.reason])).toEqual([
+    [2, 'add', null],
+    [3, 'possible-duplicate', 'same-title'],
+    [4, 'skip', 'same-link'],
+    [5, 'add', null],
+    [6, 'skip', 'repeated-reference'],
+  ]);
+  expect(preview.rows[0]).toMatchObject({ status: 'complete', statusFromRating: true });
+  const before = await auth.database.userLibrary.findUniqueOrThrow({
+    where: { ownerId: owner.ownerId },
+  });
+
+  // A selected skip row is never added. The possible duplicate stays out unless selected.
+  const response = await request(
+    '/import',
+    'POST',
+    { csv, lines: [2, 4, 5], confirmationToken: preview.confirmationToken },
+    owner,
+  );
+  expect(response.status).toBe(200);
+  expect((await response.json()) as LibraryImportSummary).toEqual({
+    schemaVersion: 1,
+    added: 2,
+    skipped: 3,
+    entries: [
+      { entryId: expect.any(String), category: expect.any(String) },
+      { entryId: expect.any(String), category: expect.any(String) },
+    ],
+  });
+  // No catalog provider requests: only this test's own API calls.
+  expect(
+    outside.mock.calls.filter(([url]) => !String(url).startsWith(base.replace(/\/library$/, ''))),
+  ).toEqual([]);
+  outside.mockRestore();
+
+  const snapshot = (await (await request('', 'GET', undefined, owner)).json()) as OwnerSnapshot;
+  const added = snapshot.entries.find((entry) => entry.userTitle === 'Дандадан')!;
+  expect(added).toMatchObject({
+    category: 'anime',
+    catalogId: null,
+    status: 'complete',
+    rating: 10,
+    snapshot: { year: 2024, references: [{ namespace: 'shikimori', id: '57334' }] },
+  });
+  expect(added.snapshot.references[0]!.provenance.verified).toBe(false);
+  expect(snapshot.entries.filter((entry) => entry.userTitle === 'Курск')).toHaveLength(1);
+  const changes = await auth.database.entryChange.count({
+    where: { ownerId: owner.ownerId, revision: { gt: before.revision } },
+  });
+  expect(changes).toBe(2);
+
+  // The token is single-use in effect: the library revision changed.
+  const replay = await request(
+    '/import',
+    'POST',
+    { csv, lines: [2], confirmationToken: preview.confirmationToken },
+    owner,
+  );
+  expect(replay.status).toBe(409);
+});
+
+test('CSV import reports line errors and refuses stale previews and changed files', async () => {
+  const owner = await login(`import-stale-${randomUUID()}`);
+  const invalid = await previewImport('category,title,rating\nfilms,A,11\ncartoon,B,\n', owner);
+  expect(invalid).toMatchObject({
+    rows: [],
+    confirmationToken: null,
+    issues: [
+      { line: 2, column: 'rating', code: 'invalid-rating' },
+      { line: 3, column: 'category', code: 'invalid-category' },
+    ],
+  });
+
+  const csv = 'category,title\nfilms,Stale\n';
+  const preview = await previewImport(csv, owner);
+  const changed = await request(
+    '/import',
+    'POST',
+    { csv: `${csv}films,Extra\n`, lines: [2, 3], confirmationToken: preview.confirmationToken },
+    owner,
+  );
+  expect(changed.status).toBe(409);
+  await create({ userTitle: 'Edit after preview' }, owner);
+  const stale = await request(
+    '/import',
+    'POST',
+    { csv, lines: [2], confirmationToken: preview.confirmationToken },
+    owner,
+  );
+  expect(stale.status).toBe(409);
+  const entries = await auth.database.libraryEntry.count({ where: { ownerId: owner.ownerId } });
+  expect(entries).toBe(1);
+
+  // Files up to 10 MiB reach the parser, which checks the size in bytes.
+  const large = await previewImport(`category,title\nfilms,${'я'.repeat(5_300_000)}\n`, owner);
+  expect(large.issues).toEqual([{ line: 0, column: null, code: 'file-too-large' }]);
 });

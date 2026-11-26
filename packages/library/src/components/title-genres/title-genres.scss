@@ -15,12 +15,12 @@
   &__icon {
     display: grid;
     place-items: center;
-    width: 28px;
-    height: 28px;
+    width: var(--title-card-overlay-size, 28px);
+    height: var(--title-card-overlay-size, 28px);
     border-radius: 50%;
     background: #101720b3;
     color: #fff;
-    font-size: 16px;
+    font-size: var(--title-card-overlay-glyph-size, 16px);
   }
 
   &__button {

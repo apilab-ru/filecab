@@ -1,12 +1,16 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthControls } from '../../components/auth-controls/auth-controls';
 import { BackupSettings } from '../../components/backup-settings/backup-settings';
+import { LibraryImportSettings } from '../../components/library-import-settings/library-import-settings';
+import { CatalogMatchSettings } from '../../components/catalog-match-settings/catalog-match-settings';
 import { PublicLibrarySettings } from '../../components/public-library-settings/public-library-settings';
 import { ListSyncSettings } from '../../components/list-sync-settings/list-sync-settings';
 import '../../styles/interface-controls.scss';
 import './settings-page.scss';
 
 import { Button, Icon, IconName, Select } from '@filecab/ui';
+import type { CatalogMatchTarget } from '@filecab/contracts';
 import { useAuth } from '../../hooks/use-auth';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
 import { useSyncSettings } from '../../hooks/use-sync-settings';
@@ -18,7 +22,9 @@ export function SettingsPage({ popup, restoreUrl }: SettingsPageProps) {
   const { t } = useTranslation();
   const { locale, theme, setLocale, setTheme } = useInterfacePreferences();
   const { syncSettings, setSyncPanel } = useSyncSettings();
-  const { account, publicLibrary, listSync } = useAuth();
+  const { account, publicLibrary, listSync, catalogMatch } = useAuth();
+  // Entries of the latest import. The catalog data job starts for them.
+  const [imported, setImported] = useState<CatalogMatchTarget[] | null>(null);
 
   return (
     <div className="settings-content">
@@ -72,6 +78,21 @@ export function SettingsPage({ popup, restoreUrl }: SettingsPageProps) {
         <h2 className="settings-card__title">{t('backup')}</h2>
         <BackupSettings restoreUrl={restoreUrl} />
       </section>
+      <section className="settings-card">
+        <h2 className="settings-card__title">{t('libraryImport')}</h2>
+        <LibraryImportSettings importUrl={restoreUrl} onImported={setImported} />
+      </section>
+      {account && (
+        <section className="settings-card">
+          <h2 className="settings-card__title">{t('catalogMatch')}</h2>
+          <CatalogMatchSettings
+            key={account.ownerId}
+            ownerId={account.ownerId}
+            repository={catalogMatch}
+            imported={imported}
+          />
+        </section>
+      )}
       <section className="settings-card">
         <h2 className="settings-card__title">{t('theme')}</h2>
         <div className="settings-appearance" role="group" aria-label={t('theme')}>

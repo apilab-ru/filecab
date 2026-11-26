@@ -1,23 +1,23 @@
 .title-results {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 326px));
+  grid-template-columns: var(--title-grid-columns, repeat(4, minmax(0, 326px)));
   align-content: start;
   align-items: start;
-  gap: 20px;
+  gap: var(--title-grid-gap, 20px);
   margin: 0;
   padding: 2px 4px 18px 0;
   list-style: none;
 
   @media (max-width: 1000px) {
-    grid-template-columns: repeat(3, minmax(0, 326px));
+    grid-template-columns: var(--title-grid-columns, repeat(3, minmax(0, 326px)));
   }
 
   @media (max-width: 850px) {
-    grid-template-columns: repeat(2, minmax(0, 326px));
+    grid-template-columns: var(--title-grid-columns, repeat(2, minmax(0, 326px)));
   }
 
   @media (max-width: 420px) {
-    gap: 12px;
+    gap: var(--title-grid-gap, 12px);
   }
 
   &--list {

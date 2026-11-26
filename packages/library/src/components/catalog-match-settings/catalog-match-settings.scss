@@ -1,0 +1,63 @@
+.catalog-match-settings {
+  display: grid;
+  gap: 12px;
+
+  &__description {
+    margin: 0;
+    color: var(--fc-muted);
+    font-size: 13px;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  &__button {
+    min-width: 160px;
+  }
+
+  &__job {
+    display: grid;
+    gap: 6px;
+  }
+
+  &__provider {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  &__state {
+    margin: 0;
+    font-size: 13px;
+  }
+
+  &__items {
+    display: grid;
+    gap: 4px;
+    margin: 0;
+    padding-left: 18px;
+    color: var(--fc-muted);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  &__resolve {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--fc-accent);
+    font: inherit;
+    text-align: left;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    cursor: pointer;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--fc-text);
+    }
+  }
+}

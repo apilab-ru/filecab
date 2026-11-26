@@ -111,6 +111,11 @@ export class SmotretSeriesDto {
 
   @IsOptional()
   @IsArray()
+  @IsString({ each: true })
+  allTitles?: string[];
+
+  @IsOptional()
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => SmotretLinkDto)
   links?: SmotretLinkDto[];

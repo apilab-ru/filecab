@@ -46,7 +46,11 @@ test('offline edits across full-page tabs validate input, resolve conflicts, und
     await popup.getByLabel('Comment').fill('  exact note\nsecond line  ');
     await expect(popup.getByText('Viewing link')).toHaveCount(0);
     await expect(popup.getByText('Episode total unknown')).toBeVisible();
-    await popup.getByRole('dialog').getByLabel('Rating', { exact: true }).selectOption('7');
+    await popup.getByRole('dialog').getByRole('button', { name: 'Rating', exact: true }).click();
+    await popup
+      .getByRole('dialog', { name: 'Your rating', exact: true })
+      .getByRole('button', { name: '7', exact: true })
+      .click();
     await save.click();
     await expect(popup.getByRole('dialog')).toHaveCount(0);
     await expect(full.locator('.local-library__entry-title')).toHaveText('  Offline title  ');
@@ -1189,6 +1193,89 @@ test('popup uses the existing brand icon, compact header actions and Page/Search
 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
       true,
+    );
+  } finally {
+    await context.close();
+    await rm(profile, { recursive: true, force: true });
+  }
+});
+
+test('CSV import on the device previews rows, adds the selection and refuses a stale preview', async () => {
+  const profile = await mkdtemp(join(tmpdir(), 'filecab-import-'));
+  const { context, origin } = await launch(profile);
+  try {
+    const page = await context.newPage();
+    await page.goto(`${origin}/full-page.html`);
+    await expect(page.getByRole('button', { name: 'Add manual entry' })).toBeVisible();
+    await page.evaluate(async (url) => {
+      const { LocalLibraryRepository, Category } = (await import(
+        url
+      )) as typeof import('./fixtures/storage');
+      const repository = await LocalLibraryRepository.open();
+      try {
+        await repository.create(Category.Films, { userTitle: 'Курск' });
+      } finally {
+        await repository.close();
+      }
+    }, `${origin}/storage-test.js`);
+    await page.goto(`${origin}/full-page.html#/settings`);
+    const csv =
+      'Title;Type;Rating;Year\nКурск;Film;10;2018\nДандадан;Anime;10;2024\nНовый;TV series;;2020\n';
+    const file = { name: 'films.csv', mimeType: 'text/csv', buffer: Buffer.from(csv) };
+    await page.locator('.library-import-settings__file').setInputFiles(file);
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toContainText('Add: 2 · Possible duplicates: 1 · Skip: 0');
+    // The possible duplicate is not selected by default.
+    await expect(dialog.getByRole('checkbox', { name: /Курск/ })).not.toBeChecked();
+    await dialog.getByRole('button', { name: 'Import selected (2)' }).click();
+    await expect(
+      page.getByRole('status').filter({ hasText: 'Added: 2. Skipped: 1.' }),
+    ).toBeVisible();
+
+    // A library change after the check makes the preview stale. Nothing is added.
+    await page.locator('.library-import-settings__file').setInputFiles(file);
+    await expect(dialog).toBeVisible();
+    await page.evaluate(async (url) => {
+      const { LocalLibraryRepository, Category } = (await import(
+        url
+      )) as typeof import('./fixtures/storage');
+      const repository = await LocalLibraryRepository.open();
+      try {
+        await repository.create(Category.Anime, { userTitle: 'Change after check' });
+      } finally {
+        await repository.close();
+      }
+    }, `${origin}/storage-test.js`);
+    // All rows are possible duplicates now. Select them to try the import.
+    await dialog.getByRole('button', { name: 'Select all' }).click();
+    await dialog.getByRole('button', { name: 'Import selected (3)' }).click();
+    await expect(
+      page.getByRole('alert').filter({ hasText: 'The library changed after the check.' }),
+    ).toBeVisible();
+
+    const titles = await page.evaluate(async (url) => {
+      const { LocalLibraryRepository } = (await import(url)) as typeof import('./fixtures/storage');
+      const repository = await LocalLibraryRepository.open();
+      try {
+        const snapshot = await repository.snapshot();
+
+        return snapshot.rows.map((row) => [
+          row.entry.userTitle,
+          row.entry.category,
+          row.entry.status,
+          row.entry.snapshot.year,
+        ]);
+      } finally {
+        await repository.close();
+      }
+    }, `${origin}/storage-test.js`);
+    expect(titles.sort()).toEqual(
+      [
+        ['Change after check', 'anime', null, null],
+        ['Дандадан', 'anime', 'complete', 2024],
+        ['Курск', 'films', null, null],
+        ['Новый', 'tv', 'planned', 2020],
+      ].sort(),
     );
   } finally {
     await context.close();

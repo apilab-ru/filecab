@@ -13,6 +13,12 @@ import {
   type Category,
   type Entry,
   type EntryPatch,
+  importedEntry,
+  LibraryImportOutcome,
+  planLibraryImport,
+  type LibraryImportPlanRow,
+  type LibraryImportRow,
+  type LibraryImportSummary,
 } from '@filecab/contracts';
 import {
   assertStoredRecords,
@@ -44,6 +50,13 @@ export interface LocalBackupPreview {
   owner: string;
   revision: number;
   comparison: BackupComparison;
+}
+
+/** Binds a device import preview to the account binding and the local library revision. */
+export interface LocalImportPreview {
+  owner: string;
+  revision: number;
+  plan: LibraryImportPlanRow[];
 }
 
 /** Computes revision metadata from the same committed rows as the entries. */
@@ -644,6 +657,78 @@ export class LocalLibraryRepository {
         })),
       });
       await recoverLocalMerges(this.database);
+    });
+  }
+
+  /** Plans validated CSV rows against the device library without changing it. */
+  async previewImport(rows: LibraryImportRow[]): Promise<LocalImportPreview> {
+    return this.locked(async () => {
+      const current = await this.rows();
+
+      return {
+        owner: await this.owner(),
+        revision: snapshotOf(current).revision,
+        plan: planLibraryImport(
+          rows,
+          current.map((row) => row.entry),
+        ),
+      };
+    });
+  }
+
+  /**
+   * Adds the selected rows of a previewed import. One journal document holds all new
+   * entries, so a crash adds all or none. Skipped rows and existing entries never change.
+   * Replication pushes the new entries as ordinary changes.
+   */
+  async importRows(
+    rows: LibraryImportRow[],
+    preview: Pick<LocalImportPreview, 'owner' | 'revision'>,
+    lines: number[],
+  ): Promise<LibraryImportSummary> {
+    return this.locked(async () => {
+      const current = await this.rows();
+      const previous = snapshotOf(current);
+
+      if (previous.revision !== preview.revision || (await this.owner()) !== preview.owner)
+        throw new LocalLibraryError('CONFLICT');
+
+      const selected = new Set(lines);
+      const now = Date.now();
+      const createdAt = new Date(now).toISOString();
+      const added = planLibraryImport(
+        rows,
+        current.map((row) => row.entry),
+      )
+        .filter((row) => row.outcome !== LibraryImportOutcome.Skip && selected.has(row.line))
+        .map((row) => importedEntry(row, crypto.randomUUID(), createdAt));
+      const summary: LibraryImportSummary = {
+        schemaVersion: 1,
+        added: added.length,
+        skipped: rows.length - added.length,
+        entries: added.map((entry) => ({ entryId: entry.entryId, category: entry.category })),
+      };
+
+      if (!added.length) return summary;
+
+      if (!Number.isSafeInteger(previous.revision + added.length))
+        throw new LocalLibraryError('STORAGE_UNAVAILABLE');
+
+      const localUpdatedAt = Math.max(now, previous.updatedAt);
+      await this.database.merges.incrementalUpsert({
+        id: crypto.randomUUID(),
+        rows: added.map((entry, index) => ({
+          entryId: entry.entryId,
+          entry,
+          localRevision: previous.revision + index + 1,
+          localUpdatedAt,
+          undoBefore: null,
+          undoUntil: null,
+        })),
+      });
+      await recoverLocalMerges(this.database);
+
+      return summary;
     });
   }
 

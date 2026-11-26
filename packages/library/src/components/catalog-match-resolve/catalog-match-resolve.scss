@@ -1,0 +1,189 @@
+.fc-dialog.catalog-match-resolve-dialog {
+  --resolve-inset: clamp(9px, 1.35vw, 25px);
+
+  display: flex;
+  flex-direction: column;
+  width: min(1110px, max(680px, 61.54vw), calc(100vw - 10px));
+  height: min(540px, max(360px, 61.54dvh), calc(100dvh - 10px));
+  padding: 0;
+  overflow: hidden;
+  border-radius: 10px;
+
+  .fc-dialog__header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    flex-shrink: 0;
+    gap: clamp(8px, 0.92vw, 17px);
+    padding: clamp(9px, 1.1vw, 20px) var(--resolve-inset);
+    border-bottom: 1px solid var(--fc-border);
+
+    @media (max-width: 680px) {
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 6px;
+    }
+  }
+
+  .fc-dialog__title {
+    margin: 0;
+    font-size: clamp(15px, 1.23vw, 21px);
+    line-height: 1.15;
+  }
+
+  .fc-dialog__description {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .fc-dialog__actions {
+    flex: 1;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    min-height: 0;
+  }
+}
+
+.catalog-match-resolve {
+  --title-grid-columns: repeat(4, minmax(0, 1fr));
+  --title-grid-gap: clamp(8px, 1.05vw, 18px);
+  --title-grid-artwork-ratio: 16 / 9;
+  --title-grid-card-radius: 8px;
+  --title-grid-card-body-height: 76px;
+  --title-card-overlay-size: 18px;
+  --title-card-overlay-glyph-size: 11px;
+
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(8px, 1.72vw, 30px) var(--resolve-inset) 0;
+
+  @media (max-width: 1050px) {
+    --title-grid-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  @media (max-width: 760px) {
+    --title-grid-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 420px) {
+    --title-grid-columns: minmax(0, 1fr);
+  }
+
+  &__search {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    gap: 6px;
+    min-width: 0;
+    min-height: clamp(32px, 2.46vw, 42px);
+    padding-inline: clamp(6px, 0.74vw, 12px) 5px;
+    border: 1px solid var(--fc-border);
+    border-radius: 8px;
+    background: var(--fc-input);
+    color: var(--fc-muted);
+
+    &:focus-within {
+      border-color: var(--fc-accent);
+      box-shadow: 0 0 0 1px var(--fc-accent);
+    }
+
+    @media (max-width: 680px) {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    .fc-icon {
+      width: 15px;
+      height: 15px;
+    }
+  }
+
+  &__query {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--fc-text);
+    font: inherit;
+    font-size: clamp(14px, 1.02vw, 17px);
+    line-height: 1.2;
+
+    &::-webkit-search-cancel-button {
+      display: none;
+    }
+  }
+
+  &__actions {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: clamp(8px, 1.1vw, 20px);
+
+    &::before {
+      position: absolute;
+      inset-block: 15%;
+      inset-inline-start: 50%;
+      border-inline-start: 1px solid var(--fc-border);
+      content: '';
+    }
+
+    @media (max-width: 680px) {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+
+  &__clear.fc-button,
+  &__close.fc-button,
+  &__delete.fc-button {
+    aspect-ratio: 1;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--fc-muted);
+
+    &:hover {
+      background: var(--fc-selected);
+    }
+  }
+
+  &__clear.fc-button {
+    width: 24px;
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  &__close.fc-button,
+  &__delete.fc-button {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 24px;
+    line-height: 1;
+  }
+
+  &__delete.fc-button {
+    background: color-mix(in srgb, var(--fc-danger) 10%, var(--fc-surface));
+    color: var(--fc-danger);
+
+    &:hover {
+      background: color-mix(in srgb, var(--fc-danger) 18%, var(--fc-surface));
+    }
+
+    .fc-icon {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}

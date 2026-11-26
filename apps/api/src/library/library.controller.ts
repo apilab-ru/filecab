@@ -60,6 +60,12 @@ import {
 } from './response.dto';
 import { MutationError } from './proposals';
 import { BackupDto, BackupPreviewDto, BackupRestoreDto } from './backup.dto';
+import {
+  LibraryImportPreviewDto,
+  LibraryImportPreviewRequestDto,
+  LibraryImportRequestDto,
+  LibraryImportSummaryDto,
+} from './library-import.dto';
 
 /** Constructs manual metadata without accepting client-supplied catalog snapshots. */
 function manualSnapshot(): Snapshot {
@@ -332,6 +338,43 @@ export class LibraryController {
       input.backup,
       input.confirmationToken,
       input.confirmEmpty,
+    );
+  }
+
+  @Post('import/preview')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Validate a CSV file and preview the import',
+    description:
+      'Body limit 11 MiB; the file can be 10 MiB. Issues give the line and column. Rows give add, skip or possible-duplicate with a reason. The token binds the owner, the file digest and the library revision. No catalog provider requests.',
+  })
+  @ApiBody({ type: LibraryImportPreviewRequestDto })
+  @ApiResponse({ status: 200, type: LibraryImportPreviewDto })
+  previewImport(
+    @CurrentAccount() account: AuthIdentity,
+    @Body(new RequestDtoPipe(LibraryImportPreviewRequestDto)) input: LibraryImportPreviewRequestDto,
+  ): Promise<LibraryImportPreviewDto> {
+    return this.mutations.previewImport(account.ownerId, input.csv);
+  }
+
+  @Post('import')
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Add the selected rows of a previewed CSV file',
+    description:
+      'One transaction adds the selected add and possible-duplicate rows. Skipped rows and existing entries never change. A changed library or file returns 409 without changes.',
+  })
+  @ApiBody({ type: LibraryImportRequestDto })
+  @ApiResponse({ status: 200, type: LibraryImportSummaryDto })
+  importLibrary(
+    @CurrentAccount() account: AuthIdentity,
+    @Body(new RequestDtoPipe(LibraryImportRequestDto)) input: LibraryImportRequestDto,
+  ): Promise<LibraryImportSummaryDto> {
+    return this.mutations.importLibrary(
+      account.ownerId,
+      input.csv,
+      input.lines,
+      input.confirmationToken,
     );
   }
 }

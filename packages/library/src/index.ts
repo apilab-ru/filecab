@@ -42,6 +42,8 @@ export type { WorkspaceRepository, WorkspaceRow, WorkspacePreview } from './mode
 export { WorkspaceConflictError } from './models/workspace';
 export { BackupValidationError } from './models/backup';
 export type { BackupRepository, BackupRestorePreview } from './models/backup';
+export type { LibraryImportPlan, LibraryImportRepository } from './models/library-import';
+export { CatalogMatchBusyError, type CatalogMatchRepository } from './models/catalog-match';
 export {
   UsernameInvalidError,
   UsernameReadError,

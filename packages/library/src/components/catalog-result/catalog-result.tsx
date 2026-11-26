@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Status, titleFor, type EntryPatch } from '@filecab/contracts';
 import { useLocalStore } from '../../hooks/use-local-store';
 import { LibraryCard } from '../library-card/library-card';
+import type { CardAction } from '../library-card/model-library-card';
 import { useTranslation } from 'react-i18next';
 import { useWorkspace } from '../../hooks/use-workspace';
 import { useInterfacePreferences } from '../../hooks/use-interface-preferences';
@@ -9,7 +10,7 @@ import { catalogResultState, useCatalogSelect } from '../../hooks/use-catalog-se
 import type { CatalogResultProps } from './model-catalog-result';
 
 /** Shows catalog metadata and separate private saved state without treating titles as identity. */
-export function CatalogResult({ record }: CatalogResultProps) {
+export function CatalogResult({ record, readOnly = false }: CatalogResultProps) {
   const { t } = useTranslation();
   const { locale } = useInterfacePreferences();
   const { state, open, draft, reconciling, remove } = useWorkspace();
@@ -48,8 +49,14 @@ export function CatalogResult({ record }: CatalogResultProps) {
       setters.busy(false);
     }
   };
-  const primaryAction = {
-    label: t(reconciling ? 'catalogAssociate' : 'addTitle'),
+  const resolveLink = readOnly && Boolean(reconciling);
+  let actionLabel: string = t(reconciling ? 'catalogAssociate' : 'addTitle');
+
+  if (resolveLink) actionLabel = t('catalogMatchLink');
+
+  const primaryAction: CardAction = {
+    label: actionLabel,
+    appearance: resolveLink ? 'link' : undefined,
     disabled: blocked,
     onClick: () => {
       if (reconciling) {
@@ -74,12 +81,13 @@ export function CatalogResult({ record }: CatalogResultProps) {
 
   return (
     <LibraryCard
-      entry={saved?.entry}
+      entry={readOnly ? undefined : saved?.entry}
       snapshot={record.snapshot}
-      showProviderRating={!saved}
-      edit={!reconciling && !blocked ? () => select(record) : undefined}
-      remove={saved && !blocked ? () => void remove(saved) : undefined}
-      primaryAction={!saved || reconciling ? primaryAction : undefined}
+      showProviderRating={readOnly || !saved}
+      readOnly={readOnly}
+      edit={!readOnly && !reconciling && !blocked ? () => select(record) : undefined}
+      remove={!readOnly && saved && !blocked ? () => void remove(saved) : undefined}
+      primaryAction={reconciling || (!readOnly && !saved) ? primaryAction : undefined}
       alert={conflict ? t('catalogIdentityConflict') : error || undefined}
     />
   );

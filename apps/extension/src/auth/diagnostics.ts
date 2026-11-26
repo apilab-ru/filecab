@@ -75,12 +75,14 @@ export class AuthFailure extends Error {
   }
 }
 
-/** Emits only static stage/outcome labels and safe diagnostic metadata. */
+/** Emits only static stage/outcome labels and safe diagnostic metadata in development builds. */
 export function logAuthStage(
   stage: AuthStage,
   outcome: 'started' | 'ok' | 'failed',
   diagnostic?: AuthDiagnostic,
 ): void {
+  if (!import.meta.env.DEV) return;
+
   console.info('[Filecab auth]', { stage, outcome, ...diagnostic });
 }
 

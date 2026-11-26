@@ -58,7 +58,12 @@ export function syncRequest<T>(
 /** Reads or saves the public library username of the linked account through the worker. */
 export function accountRequest<T>(
   ownerId: string,
-  operation: SyncOperation.ReadUsername | SyncOperation.SaveUsername,
+  operation:
+    | SyncOperation.ReadUsername
+    | SyncOperation.SaveUsername
+    | SyncOperation.CatalogMatchStatus
+    | SyncOperation.CatalogMatchStart
+    | SyncOperation.CatalogMatchStop,
   body?: unknown,
 ): Promise<T> {
   return bridgeRequest<T>(ownerId, operation, body);

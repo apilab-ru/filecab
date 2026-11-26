@@ -16,6 +16,7 @@ export function RatingPicker({
   title,
   clearLabel,
   unratedLabel,
+  outlined = false,
   disabled,
   busy,
   error,
@@ -38,7 +39,7 @@ export function RatingPicker({
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger
-        className="fc-rating-picker__trigger"
+        className={`fc-rating-picker__trigger${outlined ? ' fc-rating-picker__trigger--outlined' : ''}`}
         aria-label={label}
         disabled={disabled || busy}
       >
@@ -48,6 +49,11 @@ export function RatingPicker({
           <Icon name={value > 0 ? IconName.Star : IconName.StarOutline} />
         </span>
         {value > 0 ? `${value} / 10` : unratedLabel}
+        {outlined && (
+          <span className="fc-rating-picker__chevron">
+            <Icon name={IconName.Down} />
+          </span>
+        )}
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner

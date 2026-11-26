@@ -1,4 +1,5 @@
 import type { AccountInfo } from '@filecab/contracts';
+import type { CatalogMatchRepository } from './catalog-match';
 import type { ListSyncRepository } from './list-sync';
 import type { PublicLibraryRepository } from './public-library';
 
@@ -34,6 +35,7 @@ export interface AuthState {
 export interface AuthRepository {
   readonly publicLibrary: PublicLibraryRepository;
   readonly listSync: ListSyncRepository;
+  readonly catalogMatch: CatalogMatchRepository;
   getSnapshot: () => AuthState;
   subscribe: (listener: () => void) => () => void;
   signIn: () => Promise<void>;

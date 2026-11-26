@@ -1,6 +1,7 @@
 import { createContext } from 'react';
 import type { CatalogRecord, Category, Entry, EntryPatch } from '@filecab/contracts';
 import type { BackupRepository } from './backup';
+import type { LibraryImportRepository } from './library-import';
 
 /** Pairs an entry with the platform revision used for optimistic concurrency. */
 export interface WorkspaceRow {
@@ -47,6 +48,8 @@ export interface WorkspaceRepository {
   refresh(): Promise<void>;
   /** Exports and restores the complete library. */
   backup?: BackupRepository;
+  /** Adds entries from a CSV file. */
+  importer?: LibraryImportRepository;
 }
 
 /** Supplies the complete active owner or device library to catalog matching. */

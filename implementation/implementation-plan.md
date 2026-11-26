@@ -66,14 +66,16 @@ Tests: `apps/api/src/list-sync/shikimori-list.adapter.unit.test.ts`, `list-sync.
 
 Specs: [Library import](../specs/library-import.md).
 
-Code: backup and restore (step 17) for the file selection, preview and confirmation pattern. No import code exists yet.
+Code: `packages/contracts/src/domain/library-import.ts` (parser, plan, new entry), `apps/api/src/library/mutation.service.ts` (`previewImport`, `importLibrary`), `library-import.dto.ts`, `library.controller.ts`, `apps/web/src/online-library/workspace-repository.ts`, `apps/extension/src/library/repository.ts` (`previewImport`, `importRows`), `packages/library/src/components/library-import-settings/`.
 
-- [ ] CSV parser and validation of the documented columns and references, with line numbers in errors.
-- [ ] Preview: rows to add, skip and possible duplicates, with reasons and row selection.
-- [ ] Confirmation bound to the owner, file digest and library revision.
-- [ ] Add-only transaction through the common mutation service, with replication changes.
-- [ ] Import control in Settings, next to backup and restore.
-- [ ] Test format and reference errors, skipped rows, possible duplicates, cancel, stale previews and no provider requests.
+Tests: `packages/contracts/src/domain/library-import.unit.test.ts`, `apps/api/src/library/library.integration.test.ts` (CSV import), `tests/e2e/extension-storage.spec.ts` (device import), `library-import-settings.stories.tsx`.
+
+- [x] CSV parser and validation of the documented columns and references, with line numbers in errors.
+- [x] Preview: rows to add, skip and possible duplicates, with reasons and row selection.
+- [x] Confirmation bound to the owner, file digest and library revision.
+- [x] Add-only transaction through the common mutation service, with replication changes.
+- [x] Import control in Settings, next to backup and restore.
+- [x] Test format and reference errors, skipped rows, possible duplicates, cancel, stale previews and no provider requests.
 
 ## 22. Release readiness
 

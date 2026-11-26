@@ -5,7 +5,7 @@
   min-width: 0;
   overflow: hidden;
   border: 1px solid var(--fc-border);
-  border-radius: 12px;
+  border-radius: var(--title-grid-card-radius, 12px);
   background: var(--fc-input);
 
   &:has(.library-card__edit) {
@@ -15,6 +15,44 @@
   &:has(.fc-rating-picker__trigger[data-popup-open]) {
     outline: 2px solid var(--fc-accent);
     outline-offset: 2px;
+  }
+
+  &:has(.library-card__primary-action--link) {
+    .library-card__body {
+      grid-template-rows: auto 15px 24px;
+      gap: 2px 5px;
+      min-height: var(--title-grid-card-body-height, 76px);
+      padding: 5px 9px;
+    }
+
+    .library-card__title {
+      font-size: clamp(13px, 0.92vw, 16px);
+    }
+
+    .library-card__year,
+    .library-card__rating {
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .library-card__rating .fc-icon {
+      width: 12px;
+      height: 12px;
+    }
+
+    .library-card__overlay-bar:not(:has([aria-expanded='true'])) {
+      gap: 5px;
+      margin: 0 6px 5px 7px;
+    }
+
+    .library-card__placeholder {
+      gap: 7px;
+    }
+
+    .library-card__placeholder .fc-icon {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .title-results--grid &:has(> .title-details) {
@@ -58,7 +96,7 @@
   &__artwork {
     position: relative;
     grid-area: 1 / 1;
-    aspect-ratio: 25 / 16;
+    aspect-ratio: var(--title-grid-artwork-ratio, 25 / 16);
     background: var(--fc-input);
 
     .title-results--list & {
@@ -133,8 +171,8 @@
     flex: none;
     place-items: center;
     box-sizing: border-box;
-    width: 28px;
-    height: 28px;
+    width: var(--title-card-overlay-size, 28px);
+    height: var(--title-card-overlay-size, 28px);
     margin-left: auto;
     padding: 0;
     border: 1px solid #ffffff50;
@@ -142,7 +180,7 @@
     background: #101720b3;
     color: #fff;
     font:
-      italic 700 15px / 1 Georgia,
+      italic 700 var(--title-card-overlay-glyph-size, 15px) / 1 Georgia,
       serif;
     cursor: pointer;
 
@@ -454,6 +492,29 @@
       margin-top: 0;
       padding: 4px 8px;
       font-size: 12px;
+    }
+  }
+
+  &__primary-action--link.fc-button {
+    grid-row: 3;
+    justify-self: end;
+    gap: 5px;
+    width: auto;
+    min-height: 22px;
+    padding-inline: 8px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--fc-selected);
+    color: var(--fc-accent);
+    font-size: 12px;
+
+    &:hover {
+      background: color-mix(in srgb, var(--fc-accent) 18%, var(--fc-input));
+    }
+
+    .fc-icon {
+      width: 12px;
+      height: 12px;
     }
   }
 

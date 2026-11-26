@@ -14,6 +14,10 @@
   color: var(--fc-text);
   z-index: var(--fc-layer-dialog);
 
+  &--wide {
+    width: min(760px, calc(100vw - 32px));
+  }
+
   &__backdrop {
     position: fixed;
     inset: 0;

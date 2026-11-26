@@ -16,7 +16,7 @@ import { HealthController } from './health/health.controller';
 import { DATABASE_READINESS, PostgresReadiness, type DatabaseReadiness } from './health/readiness';
 import { CatalogController } from './catalog/catalog.controller';
 import { CatalogIdentityService } from './catalog/catalog-identity.service';
-import { CatalogSearchService } from './catalog/catalog-search.service';
+import { CATALOG_DEFAULT_PROVIDERS, CatalogSearchService } from './catalog/catalog-search.service';
 import { CatalogCacheService } from './catalog/catalog-cache.service';
 import { CatalogGenreAdminController } from './catalog/catalog-genre-admin.controller';
 import { CatalogGenreService } from './catalog/catalog-genre.service';
@@ -30,6 +30,9 @@ import { SERVED_PAGE_RULES, servePageRules } from './page-rules/served-page-rule
 import { ListSyncController } from './list-sync/list-sync.controller';
 import { ListSyncService } from './list-sync/list-sync.service';
 import { ListSyncRunner } from './list-sync/list-sync-runner';
+import { CatalogMatchController } from './catalog-match/catalog-match.controller';
+import { CatalogMatchRunner } from './catalog-match/catalog-match-runner';
+import { CatalogMatchService } from './catalog-match/catalog-match.service';
 import { CredentialCipher } from './list-sync/credential-cipher';
 import type { ListSyncAdapter } from './list-sync/list-sync-adapter';
 import { ProviderRateLimiter, type RateWindow } from './list-sync/provider-rate-limiter';
@@ -44,6 +47,15 @@ export interface ListSyncOptions {
   adapters?: ListSyncAdapter[];
   pollMs: number | null;
 }
+
+/** Configures the catalog data job. Null disables polling. `pace` waits after provider requests. */
+export interface CatalogMatchOptions {
+  pollMs: number | null;
+  pace?: (provider: string) => number;
+}
+
+/** Polls for catalog data jobs every 5 seconds by default. */
+const CATALOG_MATCH_POLL_MS = 5000;
 
 /** Injects the external list adapters. */
 const LIST_SYNC_ADAPTERS = Symbol('LIST_SYNC_ADAPTERS');
@@ -94,6 +106,7 @@ export class AppModule {
     readiness?: DatabaseReadiness,
     google?: GoogleIdentityProvider,
     listSync: ListSyncOptions = { pollMs: LIST_SYNC_POLL_MS },
+    catalogMatch: CatalogMatchOptions = { pollMs: CATALOG_MATCH_POLL_MS },
   ): DynamicModule {
     const cipher = environment.encryptionKey
       ? new CredentialCipher(environment.encryptionKey)
@@ -113,6 +126,7 @@ export class AppModule {
         CatalogCacheAdminController,
         PageRulesController,
         ListSyncController,
+        CatalogMatchController,
       ],
       providers: [
         { provide: AUTH_ENVIRONMENT, useValue: environment },
@@ -206,6 +220,38 @@ export class AppModule {
             mutations: LibraryMutationService,
             adapters: ListSyncAdapter[],
           ) => new ListSyncRunner(auth.database, adapters, cipher, mutations, listSync.pollMs),
+        },
+        {
+          provide: CatalogMatchService,
+          inject: [AuthService, CatalogSearchService],
+          useFactory: (auth: AuthService, catalog: CatalogSearchService) =>
+            new CatalogMatchService(auth.database, (category) => {
+              const provider = CATALOG_DEFAULT_PROVIDERS[category];
+
+              return catalog
+                .capabilities()
+                .providers.some(
+                  (item) => item.provider === provider && item.categories.includes(category),
+                )
+                ? provider
+                : null;
+            }),
+        },
+        {
+          provide: CatalogMatchRunner,
+          inject: [AuthService, CatalogSearchService, LibraryMutationService],
+          useFactory: (
+            auth: AuthService,
+            catalog: CatalogSearchService,
+            mutations: LibraryMutationService,
+          ) =>
+            new CatalogMatchRunner(
+              auth.database,
+              catalog,
+              mutations,
+              catalogMatch.pollMs,
+              catalogMatch.pace,
+            ),
         },
         {
           provide: DATABASE_READINESS,

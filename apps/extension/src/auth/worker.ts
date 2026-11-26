@@ -31,6 +31,9 @@ const LIBRARY_ROUTES = new Map<string, { path: string; method: 'GET' | 'POST' | 
   [SyncOperation.Push, { path: 'replication/push', method: 'POST' }],
   [SyncOperation.ReadUsername, { path: 'account/username', method: 'GET' }],
   [SyncOperation.SaveUsername, { path: 'account/username', method: 'PUT' }],
+  [SyncOperation.CatalogMatchStatus, { path: 'library/catalog-match', method: 'GET' }],
+  [SyncOperation.CatalogMatchStart, { path: 'library/catalog-match', method: 'POST' }],
+  [SyncOperation.CatalogMatchStop, { path: 'library/catalog-match/stop', method: 'POST' }],
 ]);
 
 const SYNC_HTTP_ERRORS: Partial<Record<number, ApiErrorCode | SyncErrorCode>> = {
@@ -589,8 +592,12 @@ export function registerAuthWorker(): void {
 
       return { account: await accountState() };
     };
-    const operation =
-      action === 'auth.diagnostics' ? execute() : queue.then(() => authStep(stage, execute));
+    // Library requests stay serialized with auth operations but are not auth stages to log.
+    let operation: Promise<unknown>;
+
+    if (action === 'auth.diagnostics') operation = execute();
+    else if (action === 'sync.request') operation = queue.then(execute);
+    else operation = queue.then(() => authStep(stage, execute));
 
     if (action !== 'auth.status' && action !== 'auth.diagnostics' && action !== 'sync.request')
       void operation

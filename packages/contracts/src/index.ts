@@ -24,3 +24,30 @@ export * from './models/list-sync-issue';
 export * from './models/list-sync-error-code';
 export type * from './models/list-sync';
 export { LIST_SYNC_ROUTES, listSyncPath, type ListSyncRoute } from './domain/list-sync-routes';
+export * from './models/library-import-issue-code';
+export * from './models/library-import-outcome';
+export type * from './models/library-import';
+export {
+  LIBRARY_IMPORT_MAX_BYTES,
+  LIBRARY_IMPORT_MAX_ROWS,
+  importedEntry,
+  parseLibraryImport,
+  planLibraryImport,
+} from './domain/library-import';
+export {
+  CATALOG_MATCH_MAX_ENTRIES,
+  CatalogMatchJobState,
+  CatalogMatchOutcome,
+  CatalogMatchPause,
+  type CatalogMatchItem,
+  type CatalogMatchJob,
+  type CatalogMatchStart,
+  type CatalogMatchStatus,
+  type CatalogMatchTarget,
+} from './models/catalog-match';
+export {
+  catalogMatchTitle,
+  matchCatalogRecord,
+  normalizeTitleForMatch,
+  userTitleRepeatsCatalog,
+} from './domain/catalog-match';

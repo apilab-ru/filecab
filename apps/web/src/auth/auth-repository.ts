@@ -3,6 +3,7 @@ import { QueryObserver } from '@tanstack/react-query';
 import { currentAccount, login, logout, queryClient } from './session';
 import { publicLibraryRepository } from './public-library-repository';
 import { listSyncRepository } from './list-sync-repository';
+import { catalogMatchRepository } from './catalog-match-repository';
 
 const SERVICE_ERROR = 'Account service unavailable. Please retry.';
 
@@ -11,6 +12,7 @@ export class WebsiteAuthRepository implements AuthRepository {
   readonly publicLibrary = publicLibraryRepository;
 
   readonly listSync = listSyncRepository;
+  readonly catalogMatch = catalogMatchRepository;
 
   private readonly observer = new QueryObserver(queryClient, {
     queryKey: ['account'],

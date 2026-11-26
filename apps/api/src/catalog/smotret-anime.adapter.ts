@@ -62,6 +62,8 @@ const SMOTRET_COUNTED_EPISODE_TYPES = new Set([
   'tv_special',
 ]);
 const SMOTRET_MAX_EPISODE_RECORDS = 5000;
+/** A search result keeps at most this many alternative titles. */
+const SMOTRET_MAX_ALTERNATIVE_TITLES = 50;
 const SMOTRET_FIELDS = [
   'id',
   'myAnimeListId',
@@ -75,6 +77,7 @@ const SMOTRET_FIELDS = [
   'posterUrl',
   'posterUrlSmall',
   'titles',
+  'allTitles',
   'links',
   'genres',
 ].join(',');
@@ -191,6 +194,16 @@ function assertDetailCollectionLimits(series: SmotretSeriesDto, maxGenres: numbe
       'Smotret detail exceeded its item limit',
       true,
     );
+}
+
+/** Returns the other provider names of a series that are not among its localized titles. */
+function alternativeTitlesOf(series: SmotretSeriesDto, titles: LocalizedText[]): string[] {
+  const known = new Set(titles.map((title) => title.text.trim()));
+  const names = (series.allTitles ?? [])
+    .map((name) => name.trim())
+    .filter((name) => name && !known.has(name));
+
+  return [...new Set(names)].slice(0, SMOTRET_MAX_ALTERNATIVE_TITLES);
 }
 
 /** Normalizes a validated provider record while retaining source attribution and namespaces. */
@@ -409,7 +422,7 @@ function wait(milliseconds: number): Promise<void> {
 
 /** Implements the documented public Smotret catalog API with bounded requests. */
 export class SmotretAnimeAdapter implements CatalogSearchAdapter {
-  readonly schemaVersion = 2;
+  readonly schemaVersion = 3;
   readonly capability: CatalogProviderCapability = {
     provider: 'smotret',
     categories: [Category.Anime],
@@ -479,13 +492,13 @@ export class SmotretAnimeAdapter implements CatalogSearchAdapter {
 
       const normalized = normalizeSeries(series, request.locale, this.origin, retrievedAt, false);
 
-      results.push(
-        await this.identity.observe(
-          normalized.category,
-          normalized.granularity,
-          normalized.snapshot,
-        ),
+      const record = await this.identity.observe(
+        normalized.category,
+        normalized.granularity,
+        normalized.snapshot,
       );
+      const alternativeTitles = alternativeTitlesOf(series, normalized.snapshot.titles);
+      results.push(alternativeTitles.length ? { ...record, alternativeTitles } : record);
     }
 
     return {
