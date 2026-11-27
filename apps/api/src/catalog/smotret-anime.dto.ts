@@ -73,7 +73,8 @@ export class SmotretSeriesDto {
 
   @IsOptional()
   @IsInt()
-  @Min(1)
+  // Smotret sends 0 when the series has no AniDB match.
+  @Min(0)
   aniDbId?: number;
 
   @IsOptional()

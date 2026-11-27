@@ -414,3 +414,28 @@ model CatalogMatchJob {
   @@index([state, runAfter])
   @@index([ownerId, createdAt])
 }
+
+/// Durable job that reads the provider details of stored catalog items again.
+model CatalogRefreshJob {
+  id          String    @id @db.Uuid
+  /// Catalog provider of the job. CatalogRefreshJob_active_provider_key (SQL) allows one
+  /// queued or running job for each provider.
+  provider    String
+  /// CatalogRefreshJobState value.
+  state       String
+  /// The last processed catalog item ID. Items are processed in ID order.
+  cursor      String?   @db.Uuid
+  /// Partial record of CatalogRefreshOutcome counts.
+  counts      Json
+  /// Library entries that received a new snapshot.
+  entries     Int       @default(0)
+  /// How many times the job waited for a provider limit.
+  pauses      Int       @default(0)
+  runAfter    DateTime  @default(now()) @db.Timestamptz(3)
+  lockedUntil DateTime? @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
+  finishedAt  DateTime? @db.Timestamptz(3)
+
+  @@index([state, runAfter])
+  @@index([provider, createdAt])
+}

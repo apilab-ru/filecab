@@ -37,6 +37,7 @@ describe target behavior, not implementation status.
 
 [Dark layout](mockup-dark.png) · [Light colors](mockup-light.png) ·
 [Light list](mockup-light-list.png) · [Settings](mockup-settings.png)
+https://www.figma.com/design/jeP8zMiyIcu38cg9yhp2uD/Filecab?node-id=0-1&t=R5cz4jW1bEjVudbf-1
 
 Use the supplied [SVG icons](../apps/extension/public/icons) and the
 [Filecab logo](../apps/extension/public/wish-list-icon.png).

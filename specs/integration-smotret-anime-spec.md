@@ -47,6 +47,42 @@ internal catalog ID.
 - Use offset `(page - 1) × limit` and one bounded lookahead row, before normalization.
 - Anime movies stay in the anime category.
 
+### Search details
+
+- Search reads the series details of each result that has no stored catalog identity. The catalog stores the identity when it has the `smotret/series` reference of the series.
+- A stored identity has no age limit. Search does not read the details of a stored series again. The [detail refresh job](#detail-refresh-job) updates stored series.
+- Search reads at most `CATALOG_PROVIDER_CONCURRENCY` details at the same time.
+- Use the detail only when it has the same series ID. Otherwise, use the search row.
+- A failed detail request does not fail the search. The result then contains only the search data.
+- A search result of a stored series contains the stored metadata, enriched with the search data.
+
+### Detail refresh job
+
+A durable server job reads the details of stored Smotret series again. It finds missing
+descriptions and changed episode counts.
+
+| Setting     | Value                                                                                   |
+| ----------- | --------------------------------------------------------------------------------------- |
+| Interval    | `CATALOG_REFRESH_INTERVAL_SECONDS`, default 86400 (24 h), minimum 3600, maximum 2592000 |
+| Active jobs | One queued or running job                                                               |
+| Pace        | 300 ms after each provider request                                                      |
+| Batch       | 25 series in each claim                                                                 |
+
+- The job selects a stored series when one of these conditions is true:
+  - The snapshot has no description.
+  - The declared episode total is unknown.
+  - The available episode count is unknown.
+  - The available episode count is less than the declared total.
+- The server starts a job when no job is active and the last job started before the interval.
+- `POST /api/v1/catalog/admin/refresh` with `{ "provider": "smotret" }` starts a job at once. When a job is active, the route returns the active job. A queued job starts at once, also when it waits for the provider. The pause count stays. A running job continues.
+- `GET /api/v1/catalog/admin/refresh?provider=smotret` returns the last job, or null.
+- Only an account in `CATALOG_OPERATOR_ACCOUNT_IDS` can use these routes. See [Genres](catalog-spec.md#genres) for the development exception.
+- The job continues after a server restart. A lock that expires lets another instance continue the job.
+- A rate limit, an outage or a timeout pauses the job. Use the waits of the catalog data job. After 40 pauses, the job fails.
+- A missing series, an invalid response or an identity conflict fails only that series. The job continues.
+- Report each failed series to Sentry as a warning. The report contains the job ID, the provider, the series ID, the catalog ID and the reason: the error code, the HTTP status, the safe message and the validation issues.
+- After each refreshed series, update the linked library entries. See [Details and safe enrichment](catalog-spec.md#details-and-safe-enrichment).
+
 ### External references
 
 | Source field    | Reference namespace                                 |
@@ -58,6 +94,7 @@ internal catalog ID.
 
 - Never pass Shikimori IDs as MAL IDs because the numbers are equal.
 - `myAnimeListId: 0` means no MAL match. Do not create a MAL reference or a MAL score for it.
+- `aniDbId: 0` means no AniDB match. Accept the value. Do not create an AniDB reference for it.
 - Reject negative and noninteger MAL IDs. Keep the series ID and the other results usable.
 - Ordinary search keeps MAL IDs as unverified references. An exact MAL lookup verifies a reference only when the returned record has that exact ID.
 - IDs parsed from provider links stay unverified for catalog identity. List synchronization compares the Shikimori ID from these links. See [Identity resolution](user-list-sync-spec.md#identity-resolution).

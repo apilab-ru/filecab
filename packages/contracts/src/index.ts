@@ -46,6 +46,12 @@ export {
   type CatalogMatchTarget,
 } from './models/catalog-match';
 export {
+  CatalogRefreshJobState,
+  CatalogRefreshOutcome,
+  type CatalogRefreshJob,
+  type CatalogRefreshStatus,
+} from './models/catalog-refresh';
+export {
   catalogMatchTitle,
   matchCatalogRecord,
   normalizeTitleForMatch,

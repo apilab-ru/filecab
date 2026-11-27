@@ -5,7 +5,12 @@ import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { json, type Request, type Response, type NextFunction } from 'express';
-import { AppModule, type CatalogMatchOptions, type ListSyncOptions } from '../app.module';
+import {
+  AppModule,
+  type CatalogMatchOptions,
+  type CatalogRefreshOptions,
+  type ListSyncOptions,
+} from '../app.module';
 import type { ApiEnvironment } from '../config/environment';
 import { COOKIE_NAMES } from '../auth/credentials';
 import type { GoogleIdentityProvider } from '../auth/google';
@@ -33,6 +38,7 @@ export interface ApiOptions {
   diagnostic?: (record: RequestDiagnostic) => void;
   listSync?: ListSyncOptions;
   catalogMatch?: CatalogMatchOptions;
+  catalogRefresh?: CatalogRefreshOptions;
 }
 
 /** Configures the HTTP boundary shared by production and test applications. */
@@ -204,6 +210,7 @@ export async function createApiApplication(
       options.google,
       options.listSync,
       options.catalogMatch,
+      options.catalogRefresh,
     ),
     { logger: false, bodyParser: false, abortOnError: false },
   );

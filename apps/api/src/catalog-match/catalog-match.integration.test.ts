@@ -237,6 +237,7 @@ beforeAll(async () => {
     },
     listSync: { adapters: [], pollMs: null },
     catalogMatch: { pollMs: null },
+    catalogRefresh: { pollMs: null },
   });
   await app.listen(0, '127.0.0.1');
   base = await app.getUrl();

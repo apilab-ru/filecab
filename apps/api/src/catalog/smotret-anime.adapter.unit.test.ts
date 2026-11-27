@@ -20,10 +20,16 @@ function series(id: number, values: Record<string, unknown> = {}) {
   return { id, titles: { en: `Series ${id}` }, ...values };
 }
 
-/** Creates an adapter whose fetch and persistence boundaries are observable. */
-function fixture(fetcher: typeof fetch) {
+/**
+ * Creates an adapter whose fetch and persistence boundaries are observable. By default, every
+ * series already has a stored identity, so search reads no details.
+ */
+function fixture(fetcher: typeof fetch, stored: (ids: string[]) => string[] = (ids) => ids) {
   const observed: Array<Record<string, any>> = [];
   const identity = {
+    storedIds: vi.fn(async (_namespace: string, _entity: string, ids: string[]) => {
+      return new Set(stored(ids));
+    }),
     observe: vi.fn(async (_category, _granularity, snapshot) => {
       observed.push(snapshot);
 
@@ -50,6 +56,65 @@ function jsonResponse(body: unknown, status = 200, headers?: Record<string, stri
 }
 
 describe('SmotretAnimeAdapter fixtures', () => {
+  const searchRequest = {
+    provider: 'smotret',
+    category: Category.Anime,
+    locale: Locale.Ru,
+    query: 'fixture',
+    page: 1,
+    pageSize: 10,
+    filters: {},
+  };
+
+  it('reads details in search only for series without a stored identity', async () => {
+    const paths: string[] = [];
+    const { adapter, observed } = fixture(
+      async (url) => {
+        const path = new URL(String(url)).pathname;
+        paths.push(path);
+
+        if (path === '/api/series/13')
+          return jsonResponse({
+            data: series(13, {
+              descriptions: [{ source: 'shikimori.me', value: 'Описание' }],
+              episodes: [{ id: 1, episodeType: 'tv' }],
+            }),
+          });
+
+        return jsonResponse({ data: [series(12), series(13)] });
+      },
+      (ids) => ids.filter((id) => id === '12'),
+    );
+
+    await adapter.search(searchRequest);
+
+    expect(paths).toEqual(['/api/series', '/api/series/13']);
+    expect(observed[0]!.descriptions).toEqual([]);
+    expect(observed[1]!.descriptions.map((value: { text: string }) => value.text)).toEqual([
+      'Описание',
+    ]);
+    expect(observed[1]!.availableEpisodeCount).toBe(1);
+  });
+
+  it.each([
+    { name: 'a failed detail request', detail: () => jsonResponse({}, 500) },
+    { name: 'a detail of another series', detail: () => jsonResponse({ data: series(99) }) },
+  ])('keeps the search row after $name', async ({ detail }) => {
+    const { adapter, observed } = fixture(
+      async (url) =>
+        new URL(String(url)).pathname === '/api/series/13'
+          ? detail()
+          : jsonResponse({ data: [series(13, { titles: { ru: 'Строка поиска' } })] }),
+      () => [],
+    );
+
+    const response = await adapter.search(searchRequest);
+
+    expect(response.results).toHaveLength(1);
+    expect(observed[0]!.titles[0].text).toBe('Строка поиска');
+    expect(observed[0]!.descriptions).toEqual([]);
+  });
+
   it('returns the other provider names of a search result outside the snapshot', async () => {
     const { adapter, observed } = fixture(async () =>
       jsonResponse({
@@ -140,6 +205,16 @@ describe('SmotretAnimeAdapter fixtures', () => {
       ['myanimelist', '12', false],
       ['shikimori', '12', false],
     ]);
+  });
+
+  it('accepts details without an AniDB match and creates no AniDB reference', async () => {
+    const { adapter, observed } = fixture(async () =>
+      jsonResponse({ data: series(13, { aniDbId: 0, myAnimeListId: 0 }) }),
+    );
+
+    await adapter.details('13', Locale.Ru);
+
+    expect(observed[0].references.map(({ namespace }: any) => namespace)).toEqual(['smotret']);
   });
 
   it.each([-1, 8])(

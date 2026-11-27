@@ -422,7 +422,7 @@ function wait(milliseconds: number): Promise<void> {
 
 /** Implements the documented public Smotret catalog API with bounded requests. */
 export class SmotretAnimeAdapter implements CatalogSearchAdapter {
-  readonly schemaVersion = 3;
+  readonly schemaVersion = 4;
   readonly capability: CatalogProviderCapability = {
     provider: 'smotret',
     categories: [Category.Anime],
@@ -484,13 +484,22 @@ export class SmotretAnimeAdapter implements CatalogSearchAdapter {
     const records = [...unique.values()];
     const hasMore = records.length > request.pageSize;
     const page = records.slice(0, request.pageSize);
+    const details = await this.searchDetails(page);
     const retrievedAt = new Date().toISOString();
     const results: CatalogRecord[] = [];
 
-    for (const series of page) {
-      assertDetailCollectionLimits(series, this.environment.budgets.maxGenres);
+    for (const row of page) {
+      assertDetailCollectionLimits(row, this.environment.budgets.maxGenres);
 
-      const normalized = normalizeSeries(series, request.locale, this.origin, retrievedAt, false);
+      const detail = details.get(row.id);
+      const series = detail ?? row;
+      const normalized = normalizeSeries(
+        series,
+        request.locale,
+        this.origin,
+        retrievedAt,
+        detail !== undefined,
+      );
 
       const record = await this.identity.observe(
         normalized.category,
@@ -604,6 +613,40 @@ export class SmotretAnimeAdapter implements CatalogSearchAdapter {
     const normalized = normalizeSeries(series, locale, this.origin, retrievedAt, true);
 
     return this.identity.observe(normalized.category, normalized.granularity, normalized.snapshot);
+  }
+
+  /**
+   * Reads the details of search rows that have no stored catalog identity, with at most the
+   * configured provider concurrency. A failed or mismatched detail keeps the search row.
+   */
+  private async searchDetails(page: SmotretSeriesDto[]): Promise<Map<number, SmotretSeriesDto>> {
+    const stored = await this.identity.storedIds(
+      'smotret',
+      'series',
+      page.map((series) => String(series.id)),
+    );
+    const queue = page.filter((series) => !stored.has(String(series.id)));
+    const details = new Map<number, SmotretSeriesDto>();
+    const worker = async () => {
+      for (let series = queue.shift(); series; series = queue.shift()) {
+        try {
+          const detail = await this.fetchSeries(series.id);
+
+          if (detail.id !== series.id) continue;
+
+          assertDetailCollectionLimits(detail, this.environment.budgets.maxGenres);
+          details.set(series.id, detail);
+        } catch (error) {
+          // The search result stays usable without its details.
+          if (!(error instanceof ApiException)) throw error;
+        }
+      }
+    };
+    const workers = Math.min(queue.length, this.environment.budgets.concurrency);
+
+    await Promise.all(Array.from({ length: workers }, worker));
+
+    return details;
   }
 
   /** Loads and validates a single documented series detail. */

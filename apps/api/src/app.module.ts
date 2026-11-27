@@ -33,6 +33,8 @@ import { ListSyncRunner } from './list-sync/list-sync-runner';
 import { CatalogMatchController } from './catalog-match/catalog-match.controller';
 import { CatalogMatchRunner } from './catalog-match/catalog-match-runner';
 import { CatalogMatchService } from './catalog-match/catalog-match.service';
+import { CatalogRefreshAdminController } from './catalog-refresh/catalog-refresh-admin.controller';
+import { CatalogRefreshRunner } from './catalog-refresh/catalog-refresh-runner';
 import { CredentialCipher } from './list-sync/credential-cipher';
 import type { ListSyncAdapter } from './list-sync/list-sync-adapter';
 import { ProviderRateLimiter, type RateWindow } from './list-sync/provider-rate-limiter';
@@ -54,8 +56,20 @@ export interface CatalogMatchOptions {
   pace?: (provider: string) => number;
 }
 
+/**
+ * Configures the catalog detail refresh job. Null disables polling and the interval start.
+ * `pace` waits after provider requests.
+ */
+export interface CatalogRefreshOptions {
+  pollMs: number | null;
+  pace?: (provider: string) => number;
+}
+
 /** Polls for catalog data jobs every 5 seconds by default. */
 const CATALOG_MATCH_POLL_MS = 5000;
+
+/** Checks for due and ready detail refresh jobs every minute by default. */
+const CATALOG_REFRESH_POLL_MS = 60_000;
 
 /** Injects the external list adapters. */
 const LIST_SYNC_ADAPTERS = Symbol('LIST_SYNC_ADAPTERS');
@@ -107,6 +121,7 @@ export class AppModule {
     google?: GoogleIdentityProvider,
     listSync: ListSyncOptions = { pollMs: LIST_SYNC_POLL_MS },
     catalogMatch: CatalogMatchOptions = { pollMs: CATALOG_MATCH_POLL_MS },
+    catalogRefresh: CatalogRefreshOptions = { pollMs: CATALOG_REFRESH_POLL_MS },
   ): DynamicModule {
     const cipher = environment.encryptionKey
       ? new CredentialCipher(environment.encryptionKey)
@@ -127,6 +142,7 @@ export class AppModule {
         PageRulesController,
         ListSyncController,
         CatalogMatchController,
+        CatalogRefreshAdminController,
       ],
       providers: [
         { provide: AUTH_ENVIRONMENT, useValue: environment },
@@ -251,6 +267,23 @@ export class AppModule {
               mutations,
               catalogMatch.pollMs,
               catalogMatch.pace,
+            ),
+        },
+        {
+          provide: CatalogRefreshRunner,
+          inject: [AuthService, CatalogSearchService, LibraryMutationService],
+          useFactory: (
+            auth: AuthService,
+            catalog: CatalogSearchService,
+            mutations: LibraryMutationService,
+          ) =>
+            new CatalogRefreshRunner(
+              auth.database,
+              catalog,
+              mutations,
+              environment.catalog.refreshIntervalSeconds * 1000,
+              catalogRefresh.pollMs,
+              catalogRefresh.pace,
             ),
         },
         {

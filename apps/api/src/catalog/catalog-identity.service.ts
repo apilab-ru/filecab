@@ -33,6 +33,18 @@ export class CatalogIdentityService {
     private readonly genres: CatalogGenreResolver,
   ) {}
 
+  /** Returns the external IDs of one namespace and entity that already have a catalog identity. */
+  async storedIds(namespace: string, entity: string, ids: string[]): Promise<Set<string>> {
+    if (!ids.length) return new Set();
+
+    const rows = await this.database.catalogReference.findMany({
+      where: { namespace, entity, externalId: { in: ids } },
+      select: { externalId: true },
+    });
+
+    return new Set(rows.map((row) => row.externalId));
+  }
+
   /** Resolves verified identities and safely enriches the matching catalog record. */
   async observe(
     category: Category,

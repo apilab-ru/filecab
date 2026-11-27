@@ -3,6 +3,7 @@ import {
   associateCatalog,
   CatalogAssociationConflictError,
   mergeCatalogSnapshots,
+  refreshEntrySnapshot,
   type CatalogAssociationRequest,
   type CatalogRecord,
   ConflictReason,
@@ -558,6 +559,47 @@ export class LibraryMutationService {
       },
       { isolationLevel: 'RepeatableRead' },
     );
+  }
+
+  /**
+   * Enriches the snapshots of active entries that link to a catalog item. This is a metadata
+   * refresh, not a user edit: a changed entry gets a new version and a change record, and keeps
+   * its `updatedAt`. Returns how many entries changed.
+   */
+  async refreshCatalogEntries(catalogId: string): Promise<number> {
+    const catalog = await this.database.catalogItem.findUnique({ where: { id: catalogId } });
+
+    if (!catalog) return 0;
+
+    const incoming = catalog.snapshot as unknown as Snapshot;
+    const rows = await this.database.libraryEntry.findMany({
+      where: { catalogId, deleted: false },
+      select: { id: true, ownerId: true },
+    });
+    let changed = 0;
+
+    for (const row of rows) {
+      const refreshed = await this.transaction(row.ownerId, async (tx) => {
+        const current = await tx.libraryEntry.findFirst({
+          where: { id: row.id, ownerId: row.ownerId },
+        });
+        const entry = current?.document as unknown as ServerEntry | undefined;
+
+        if (!entry || entry.deleted || entry.catalogId !== catalogId) return false;
+
+        const { snapshot } = refreshEntrySnapshot(entry, incoming);
+
+        if (isDeepStrictEqual(snapshot, entry.snapshot)) return false;
+
+        await this.publish(tx, row.ownerId, { ...entry, snapshot });
+
+        return true;
+      });
+
+      if (refreshed) changed += 1;
+    }
+
+    return changed;
   }
 
   async get(ownerId: string, entryId: string): Promise<ServerEntry> {

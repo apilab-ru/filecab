@@ -18,6 +18,14 @@ import {
   CATALOG_DEFAULT_PROVIDERS,
   type CatalogSearchService,
 } from '../catalog/catalog-search.service';
+import {
+  itemFailure,
+  MAX_PROVIDER_PAUSES,
+  PROVIDER_PACE_MS,
+  providerPause,
+  ProviderPause,
+  sleep,
+} from '../catalog/provider-pause';
 import type { PrismaClient } from '../generated/prisma/client';
 import { ApiException } from '../http/api-error';
 import type { LibraryMutationService } from '../library/mutation.service';
@@ -32,70 +40,17 @@ const BATCH = 25;
 /** The job keeps at most this many unlinked entries in its report. */
 const MAX_ITEMS = 500;
 
-/** Waits after each provider request, so the job stays far below provider limits. */
-const PACE_MS: Readonly<Record<string, number>> = { kinopoisk: 1200, smotret: 300 };
-
-/** A refused quota (403) waits 6 hours. The daily quota then has time to renew. */
-const QUOTA_WAIT_MS = 6 * 60 * 60 * 1000;
-
-/** Another provider failure waits 5 minutes, then twice as long each time, up to 6 hours. */
-const PROVIDER_WAIT_MS = 5 * 60 * 1000;
-
-/** After this many waits for a provider, the job fails. */
-const MAX_PAUSES = 40;
-
 /** Entries that a device has not synced yet are awaited for 10 minutes after the start. */
 const SYNC_GRACE_MS = 10 * 60 * 1000;
 
 /** A job checks again for unsynced entries after 30 seconds. */
 const SYNC_WAIT_MS = 30 * 1000;
 
-/** Waits for the given time. */
-function sleep(milliseconds: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
-/** Pauses the job until a provider can answer again. */
-class ProviderPause extends Error {
-  constructor(readonly delayMs: number) {
-    super('Provider pause');
-  }
-}
-
 /** Pauses the job until a device syncs its entries. */
 class SyncPause extends Error {
   constructor() {
     super('Sync pause');
   }
-}
-
-/**
- * Converts a provider limit, outage or timeout to a pause. Other failures stay as they are.
- */
-function providerPause(error: unknown, pauses: number): ProviderPause | null {
-  if (!(error instanceof ApiException)) return null;
-
-  if (error.code === ApiErrorCode.RateLimited)
-    return new ProviderPause(Math.max(60_000, (error.retryAfterSeconds ?? 60) * 1000));
-
-  if (error.code !== ApiErrorCode.ProviderUnavailable && error.code !== ApiErrorCode.TransportError)
-    return null;
-
-  if (error.providerDiagnostic?.upstreamStatus === 403) return new ProviderPause(QUOTA_WAIT_MS);
-
-  return new ProviderPause(Math.min(QUOTA_WAIT_MS, PROVIDER_WAIT_MS * 2 ** pauses));
-}
-
-/**
- * Returns true for a provider failure that concerns one entry only: a request error, other
- * than a rate limit, or a response that failed the provider schema.
- */
-function entryFailure(error: unknown): error is ApiException {
-  return (
-    error instanceof ApiException &&
-    ((error.httpStatus < 500 && error.code !== ApiErrorCode.RateLimited) ||
-      error.code === ApiErrorCode.InvalidResponse)
-  );
 }
 
 /**
@@ -158,7 +113,8 @@ export class CatalogMatchRunner implements OnApplicationBootstrap, OnModuleDestr
     private readonly catalog: CatalogSearchService,
     private readonly mutations: LibraryMutationService,
     private readonly pollMs: number | null = null,
-    private readonly pace: (provider: string) => number = (provider) => PACE_MS[provider] ?? 0,
+    private readonly pace: (provider: string) => number = (provider) =>
+      PROVIDER_PACE_MS[provider] ?? 0,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -304,7 +260,7 @@ export class CatalogMatchRunner implements OnApplicationBootstrap, OnModuleDestr
   private async wait(job: ClaimedJob, pause: CatalogMatchPause, delayMs: number): Promise<void> {
     if (pause === CatalogMatchPause.ProviderLimit) job.pauses += 1;
 
-    if (job.pauses > MAX_PAUSES) {
+    if (job.pauses > MAX_PROVIDER_PAUSES) {
       await this.fail(job, new Error('Provider limit did not end'));
 
       return;
@@ -408,7 +364,7 @@ export class CatalogMatchRunner implements OnApplicationBootstrap, OnModuleDestr
         if (error instanceof ProviderPause) throw error;
 
         // An unknown or unreadable reference falls back to the title search.
-        if (entryFailure(error)) {
+        if (itemFailure(error)) {
           reportInvalidResponse(job, error);
           continue;
         }
@@ -433,7 +389,7 @@ export class CatalogMatchRunner implements OnApplicationBootstrap, OnModuleDestr
           }),
         );
       } catch (error) {
-        if (entryFailure(error)) {
+        if (itemFailure(error)) {
           reportInvalidResponse(job, error);
 
           return result(CatalogMatchOutcome.Failed);

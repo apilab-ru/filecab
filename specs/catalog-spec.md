@@ -78,6 +78,8 @@ automatic installment grouping are not in scope.
 - A missing field keeps the known value. Removal of a value needs an explicit refresh policy.
 - Refresh never changes entry UUIDs or user titles, notes, status, rating, progress or links.
 - Refresh never deletes saved entries or snapshots.
+- A catalog refresh enriches the snapshot of each library entry that links to the catalog item. This is a metadata refresh, not a user edit. See [Domain contract](domain-contract.md).
+- An entry that changes gets a new server version and a change record. Its `updatedAt` does not change. An entry without a change keeps its version. Deleted entries do not change.
 
 ### Normalized media metadata
 
