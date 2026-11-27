@@ -144,6 +144,15 @@ For unsaved results, show an approximate provider rating on a 10-point scale:
 
 If no score is available, show Unrated. Never save a provider score as a personal rating.
 
+### Poster preview
+
+Use the [poster preview mockup](mockup-card-cover-hover.png) for shared library and catalog cards, including the link dialog.
+
+- When the pointer stays on a poster, show the full image next to the poster. Keep the image proportions. Show a frame and an arrow that points to the poster.
+- Prefer the right side. Change the position when there is not enough space. Keep the preview inside the window.
+- Keep the card size and its controls. Close the preview when the pointer leaves the poster or the user presses Escape.
+- Show the poster placeholder when its image is missing or fails to load. Do not show a preview for the placeholder.
+
 ### Genres and details
 
 - Show genre icons in a row at the bottom of the poster. Use the genre icon font. Show an icon only for a genre key that has a glyph.

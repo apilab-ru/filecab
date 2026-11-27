@@ -547,6 +547,15 @@ test('a catalog data item opens a dialog that links the entry through the editor
 }) => {
   const manual = { ...saved(), userTitle: 'Двойник', snapshot: emptySnapshot() };
   const state = await backend(context, [manual]);
+  const result = record('Двойник');
+  result.snapshot.posterUrl = 'https://posters.test/match.svg';
+  state.records = [result];
+  await context.route(result.snapshot.posterUrl, (route) =>
+    route.fulfill({
+      contentType: 'image/svg+xml',
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600"><rect width="400" height="600" fill="#7297dd"/></svg>',
+    }),
+  );
   state.matchJobs = [
     {
       jobId: 'job-1',
@@ -582,6 +591,23 @@ test('a catalog data item opens a dialog that links the entry through the editor
   await expect(dialog.getByRole('button', { name: 'Link', exact: true })).toBeVisible();
   const grid = dialog.locator('.title-results--grid');
   await expect(grid).toHaveCSS('grid-template-columns', /^(\d+(\.\d+)?px ){3}\d+(\.\d+)?px$/);
+  const poster = grid.locator('.library-card__poster');
+  await expect(poster).toHaveJSProperty('naturalWidth', 400);
+  await poster.hover();
+  const preview = page.locator('.fc-image-preview__image');
+  await expect(preview).toBeInViewport({ ratio: 1 });
+  const thumbnail = (await poster.boundingBox())!;
+  const fullImage = (await preview.boundingBox())!;
+  expect(fullImage.x).toBeGreaterThan(thumbnail.x + thumbnail.width);
+  expect(fullImage.width / fullImage.height).toBeCloseTo(400 / 600, 2);
+  await page.keyboard.press('Escape');
+  await expect(preview).toHaveCount(0);
+  await expect(dialog).toBeVisible();
+  await search.hover();
+  await poster.hover();
+  await expect(preview).toBeVisible();
+  await search.hover();
+  await expect(preview).toHaveCount(0);
   await header.getByRole('button', { name: 'Close dialog' }).click();
   await expect(dialog).toHaveCount(0);
   await item.click();
@@ -594,6 +620,8 @@ test('a catalog data item opens a dialog that links the entry through the editor
   expect(title!.y + title!.height).toBeLessThan(input!.y);
   await expect.poll(() => dialog.evaluate((node) => node.scrollHeight - node.clientHeight)).toBe(0);
   await expect(grid).toHaveCSS('grid-template-columns', /^\d+(\.\d+)?px$/);
+  await poster.hover();
+  await expect(preview).toBeInViewport({ ratio: 1 });
   await dialog.getByRole('button', { name: 'Link', exact: true }).click();
   // The shared editor replaces the dialog. Save links at once, without a preview step.
   await expect(dialog).toHaveCount(0);
@@ -1093,6 +1121,13 @@ test('unsaved catalog cards match the mockup size and covers scale on narrow scr
   const narrowCover = await card.locator('.library-card__artwork').boundingBox();
   expect(narrowCard!.width).toBeLessThan(box!.width);
   expect(narrowCover!.width / narrowCover!.height).toBeCloseTo(25 / 16, 2);
+  const thumbnail = card.locator('.library-card__poster');
+  const preview = page.locator('.fc-image-preview__image');
+  await thumbnail.hover();
+  await expect(preview).toBeInViewport({ ratio: 1 });
+  await thumbnail.click();
+  await expect(page.getByRole('dialog', { name: 'Add title', exact: true })).toBeVisible();
+  await expect(preview).toHaveCount(0);
 });
 
 test('catalog separates sort field and supported direction and can restore provider order', async ({

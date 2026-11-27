@@ -4,6 +4,7 @@ export { Select } from './components/select/select';
 export type { SelectOption } from './components/select/model-select';
 export { ConfirmDialog } from './components/confirm-dialog/confirm-dialog';
 export { Icon } from './components/icon/icon';
+export { ImagePreview } from './components/image-preview/image-preview';
 export { IconProvider } from './providers/icon-provider/icon-provider';
 export { IconName } from './models/icon-name';
 

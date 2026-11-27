@@ -9,7 +9,7 @@ import './library-card.scss';
 import { useLocalStore } from '../../hooks/use-local-store';
 
 import { titleFor } from '@filecab/contracts';
-import { Button, Icon, IconName, RatingPicker } from '@filecab/ui';
+import { Button, Icon, IconName, ImagePreview, RatingPicker } from '@filecab/ui';
 import { TitleGenres } from '../title-genres/title-genres';
 import { TitleDetails } from '../title-details/title-details';
 import type { LibraryCardProps } from './model-library-card';
@@ -89,12 +89,9 @@ export function LibraryCard({
     >
       <div className="library-card__artwork">
         {snapshot.posterUrl && failedPoster !== snapshot.posterUrl ? (
-          <img
+          <ImagePreview
             className="library-card__poster"
             src={snapshot.posterUrl}
-            alt=""
-            loading="lazy"
-            referrerPolicy="no-referrer"
             onError={() => setFailedPoster(snapshot.posterUrl)}
           />
         ) : (

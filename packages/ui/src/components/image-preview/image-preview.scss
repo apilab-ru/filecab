@@ -1,0 +1,53 @@
+.fc-image-preview {
+  &__positioner {
+    z-index: var(--fc-layer-popup);
+    pointer-events: none;
+
+    &[data-anchor-hidden] {
+      visibility: hidden;
+    }
+  }
+
+  &__frame {
+    position: relative;
+    width: max-content;
+    padding: 3px;
+    border-radius: 10px;
+    background: var(--fc-surface);
+    box-shadow: 0 4px 14px rgb(11 18 32 / 35%);
+  }
+
+  &__image {
+    position: relative;
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: min(154px, calc(100vw - 22px));
+    max-height: min(224px, calc(var(--available-height) - 6px));
+    border-radius: 7px;
+    object-fit: contain;
+  }
+
+  &__arrow {
+    width: 10px;
+    height: 10px;
+    background: var(--fc-surface);
+    transform: rotate(45deg);
+
+    &[data-side='right'] {
+      left: -4px;
+    }
+
+    &[data-side='left'] {
+      right: -4px;
+    }
+
+    &[data-side='bottom'] {
+      top: -4px;
+    }
+
+    &[data-side='top'] {
+      bottom: -4px;
+    }
+  }
+}
